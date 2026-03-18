@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pressure Management Scoring Criteria</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #2d6a4f;
+    --green-light: #d8f3dc;
+    --yellow: #b5860d;
+    --yellow-light: #fff9e6;
+    --orange: #c05621;
+    --orange-light: #fef0e6;
+    --red: #9b1c1c;
+    --red-light: #fde8e8;
+    --bg: #f4f0ef;
+    --text: #1a1a2e;
+    --border: #ddd8cc;
+    --header-bg: #273747;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 28px 24px;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 1320px;
+    margin: 0 auto;
+  }
+
+  .intro {
+    margin-bottom: 24px;
+    border-left: 4px solid var(--header-bg);
+    padding-left: 20px;
+  }
+
+  .intro h1 {
+    font-family: 'Source Serif 4', serif;
+    font-size: 1.3rem;
+    color: var(--header-bg);
+    margin-bottom: 8px;
+  }
+
+  .intro p {
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: #444;
+  }
+
+  .threshold-bar {
+    display: flex;
+    gap: 16px;
+    margin: 16px 0 24px;
+    flex-wrap: wrap;
+  }
+
+  .threshold-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 0.85rem;
+  }
+
+  .threshold-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .section-title {
+    font-family: 'Source Serif 4', serif;
+    font-size: 1.05rem;
+    color: var(--header-bg);
+    margin-bottom: 12px;
+  }
+
+  .table-wrapper {
+    overflow-x: hidden;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    width: 100%;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+    background: white;
+    table-layout: fixed;
+  }
+
+  thead tr {
+    background: var(--header-bg);
+    color: white;
+  }
+
+  thead th {
+    padding: 12px 10px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    word-wrap: break-word;
+  }
+
+  thead th:first-child {
+    width: 75px;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  tbody td {
+    padding: 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    line-height: 1.5;
+    word-wrap: break-word;
+  }
+
+  tbody td:first-child {
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.95rem;
+    width: 75px;
+    white-space: nowrap;
+    border-right: 2px solid var(--border);
+  }
+
+  .score-100 { background: var(--green-light); }
+  .score-100 td:first-child { color: var(--green); }
+
+  .score-75 { background: #f0faf4; }
+  .score-75 td:first-child { color: #3d8b5e; }
+
+  .score-50 { background: var(--yellow-light); }
+  .score-50 td:first-child { color: var(--yellow); }
+
+  .score-25 { background: var(--orange-light); }
+  .score-25 td:first-child { color: var(--orange); }
+
+  .score-0 { background: var(--red-light); }
+  .score-0 td:first-child { color: var(--red); }
+
+  tbody tr:last-child td { border-bottom: none; }
+
+  .legend {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+    font-size: 0.78rem;
+    color: #666;
+    align-items: center;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .legend-swatch {
+    width: 18px;
+    height: 10px;
+    border-radius: 2px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="intro">
+    <h1>Environmental Pressures at Priority Habitat Sites</h1>
+    <p>Pressure management is measured across 96 Priority Habitat sites by scoring how well six key environmental pressures are being managed: ungulates, pest plants, possum browse, predation, environmental disturbance, and rabbits/hares. Each site receives an overall score (0–100%).</p>
+  </div>
+
+  <div class="threshold-bar">
+    <div class="threshold-item">
+      <div class="threshold-dot" style="background:#2d6a4f"></div>
+      <span><strong>Above 55%</strong> — Adequate management, ecosystems likely to improve</span>
+    </div>
+    <div class="threshold-item">
+      <div class="threshold-dot" style="background:#c05621"></div>
+      <span><strong>Below 55%</strong> — Greater management effort required to prevent degradation</span>
+    </div>
+  </div>
+
+  <div class="section-title">Scoring Criteria by Pressure Type</div>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Score</th>
+          <th>Ungulate Browsing</th>
+          <th>Pest Plants</th>
+          <th>Possum Browsing</th>
+          <th>Predation</th>
+          <th>Environmental Disturbance</th>
+          <th>Rabbit / Hare Browsing</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="score-100">
+          <td>100</td>
+          <td>Fully fenced (deer fence or no ungulates present), pressure fully managed</td>
+          <td>No mature problem plants seeding or present, pressure fully managed</td>
+          <td>No possums in site, pressure fully managed, no browse — or no suitable habitat</td>
+          <td>No predators, or eliminated, no predation pressure</td>
+          <td>Integrity and natural diversity of site fully represented, no further planting required</td>
+          <td>No rabbits, pressure fully managed or no suitable habitat</td>
+        </tr>
+        <tr class="score-75">
+          <td>75</td>
+          <td>Fully stock fenced, low pressure from ungulates in landscape</td>
+          <td>Problem weed management is reducing pressure</td>
+          <td>Minimal possum sign, pressure seems minimal or well managed</td>
+          <td>Effective control network per best practice, predation pressure managed to low levels</td>
+          <td>Very small areas open, minimal infill planting required</td>
+          <td>Low pressure from rabbits/hares, control effectively manages them to low numbers</td>
+        </tr>
+        <tr class="score-50">
+          <td>50</td>
+          <td>Partially fenced, or fenced from stock but with some ungulates in landscape / regular culling</td>
+          <td>Occasional problem weeds, not spreading — management holding pressure</td>
+          <td>Some possum sign and damage but canopy/vegetation relatively intact</td>
+          <td>Some trapping but not enough or serviced often enough, reducing predation pressure</td>
+          <td>Moderate open areas, some infill planting required</td>
+          <td>Some browse damage evident, some control, plants still surviving</td>
+        </tr>
+        <tr class="score-25">
+          <td>25</td>
+          <td>Poorly stock fenced and/or ungulates abundant, pressure inadequately managed</td>
+          <td>Common problem weeds and spreading, inadequately managed, likely to deteriorate</td>
+          <td>Pressure minimally managed, some control but clear vegetation damage</td>
+          <td>Visible sign of predators, minimal traps or bait, or trap servicing frequency inadequate</td>
+          <td>Large open areas, though core of site reasonably intact with reasonable species composition</td>
+          <td>Pressure managed minimally, high numbers of rabbits/hares</td>
+        </tr>
+        <tr class="score-0">
+          <td>0</td>
+          <td>No fencing and ungulates are browsing site, pressure unmanaged</td>
+          <td>Dense problem weeds spreading, lots of mature seeding plants throughout</td>
+          <td>No control, possum sign very evident, freshly stripped trees present</td>
+          <td>No predator control</td>
+          <td>Very large open areas, poor integrity, many species missing, site collapsing</td>
+          <td>Heavy browse/damage evident from rabbits/hares, no control</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="legend">
+    <span>Score colour guide:</span>
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--green-light);border:1px solid #aaa"></div> 100 — Fully managed</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#f0faf4;border:1px solid #aaa"></div> 75 — Well managed</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--yellow-light);border:1px solid #aaa"></div> 50 — Partially managed</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--orange-light);border:1px solid #aaa"></div> 25 — Inadequately managed</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--red-light);border:1px solid #aaa"></div> 0 — Unmanaged</div>
+  </div>
+
+</div>
