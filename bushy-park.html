@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Bushy Park Tarapuruhi</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green:    #2d6a4f;
+    --green2:   #4a9b6f;
+    --green-lt: #eaf3ee;
+    --green-md: #d0e8da;
+    --gold:     #c8a84b;
+    --gold-lt:  #f6f0e4;
+    --navy:     #1f2e35;
+    --bg:       #f4f0ef;
+    --surface:  #ffffff;
+    --border:   #ddddd8;
+    --muted:    #5a5a52;
+    --label:    #8a8a82;
+  }
+
+  html, body {
+    width: 969px;
+    height: 870px;
+    overflow: hidden;
+    background: var(--bg);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--navy);
+  }
+
+  /* ── MASTER LAYOUT ─────────────────────────── */
+  .wrapper {
+    display: grid;
+    grid-template-rows: 70px 420px 1fr;
+    height: 870px;
+    width: 969px;
+    padding: 0 12px 12px;
+    background: var(--bg);
+  }
+
+  /* ── TITLE STRIP — WBP style ───────────────── */
+  .title-strip {
+    background: var(--bg);
+    border-bottom: 2px solid var(--green);
+    display: flex;
+    align-items: flex-end;
+    padding: 0 4px 10px;
+  }
+  .title-strip h1 {
+    font-family: 'Source Serif 4', serif;
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--navy);
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+
+  /* ── TOP ROW — cards with gap ──────────────── */
+  .row-top {
+    display: grid;
+    grid-template-columns: 230px 1fr 290px;
+    gap: 10px;
+    padding: 10px 0 5px;
+    min-height: 0;
+  }
+
+  /* ── BOTTOM ROW ─────────────────────────────── */
+  .row-bottom {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 5px 0 0;
+    min-height: 0;
+  }
+
+  /* ── PANELS — rounded cards ──────────────────── */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .panel-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--green);
+    flex-shrink: 0;
+  }
+  .panel-sub {
+    font-size: 10px;
+    color: var(--label);
+    margin-top: -4px;
+    flex-shrink: 0;
+  }
+  .chart-wrap {
+    flex: 1;
+    position: relative;
+    min-height: 0;
+  }
+
+  /* ── STAT PANEL ──────────────────────────────── */
+  .stat-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .period-badge {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--green);
+    background: var(--green-lt);
+    border: 1px solid var(--green-md);
+    border-radius: 3px;
+    padding: 2px 7px;
+  }
+
+  /* 2×3 grid, fills the panel height */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: repeat(3, 1fr);
+    gap: 5px;
+    flex: 1;
+  }
+  .stat-box {
+    background: var(--green-lt);
+    border: 1px solid var(--green-md);
+    border-radius: 4px;
+    padding: 8px 10px 6px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .stat-box .s-val {
+    font-family: 'Source Serif 4', serif;
+    font-size: 23px;
+    font-weight: 600;
+    color: var(--green);
+    line-height: 1;
+  }
+  .stat-box .s-val.sm { font-size: 18px; }
+  .stat-box .s-key {
+    font-size: 9.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+    margin-top: 5px;
+    line-height: 1.3;
+  }
+
+  /* ── SUMMARY PANEL ───────────────────────────── */
+  .summary-section { margin-bottom: 6px; }
+  .summary-section:last-child { margin-bottom: 0; }
+
+  .sum-heading {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--green);
+    border-bottom: 1px solid var(--green-md);
+    padding-bottom: 2px;
+    margin-bottom: 4px;
+  }
+  .sum-heading.gold  { color: var(--gold);  border-color: #e8d9b5; }
+  .sum-heading.navy  { color: var(--navy);  border-color: var(--border); }
+
+  .sum-hero {
+    font-family: 'Source Serif 4', serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--navy);
+    line-height: 1;
+  }
+  .sum-unit { font-size: 12px; color: var(--muted); font-weight: 400; }
+  .sum-detail {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.45;
+    margin-top: 2px;
+  }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+  .pill {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 3px;
+    background: var(--green-lt);
+    color: var(--green);
+    border: 1px solid var(--green-md);
+  }
+  .pill.gold { background: var(--gold-lt); color: #8a6820; border-color: #e8d9b5; }
+  .pill.navy { background: #e9ecee; color: var(--navy); border-color: #c8cdd0; }
+
+  .contractor-row {
+    margin-top: 4px;
+    padding-top: 5px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .contractor-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--label);
+    margin-bottom: 2px;
+  }
+  .contractor-val {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--navy);
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- TITLE — WBP style -->
+  <div class="title-strip">
+    <h1>Bushy Park Tarapuruhi</h1>
+  </div>
+
+  <!-- TOP ROW -->
+  <div class="row-top">
+
+    <!-- Left: Stats -->
+    <div class="panel">
+      <div class="panel-title">Programme at a Glance</div>
+      <div class="panel-sub">2024–25 Financial Year</div>
+      <div class="stat-grid">
+        <div class="stat-box">
+          <div class="s-val">7,330</div>
+          <div class="s-key">Volunteer Hours</div>
+        </div>
+        <div class="stat-box">
+          <div class="s-val">100+</div>
+          <div class="s-key">Volunteers</div>
+        </div>
+        <div class="stat-box">
+          <div class="s-val">13</div>
+          <div class="s-key">Forest Audits Completed</div>
+        </div>
+        <div class="stat-box">
+          <div class="s-val">89 ha</div>
+          <div class="s-key">Sanctuary Area Protected</div>
+        </div>
+        <div class="stat-box">
+          <div class="s-val">800 ha</div>
+          <div class="s-key">Halo Zone Covered</div>
+        </div>
+        <div class="stat-box">
+          <div class="s-val sm">&lt;2 wks</div>
+          <div class="s-key">Rat Incursion Response Time</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Middle: Trap network -->
+    <div class="panel">
+      <div class="panel-title">Biosecurity Infrastructure</div>
+      <div class="panel-sub">Trap network and monitoring equipment</div>
+      <div class="chart-wrap">
+        <canvas id="trapChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Right: Activity summary -->
+    <div class="panel">
+      <div class="panel-title">Activity Summary</div>
+
+      <div class="summary-section">
+        <div class="sum-heading">Incursion Response</div>
+        <div><span class="sum-hero">120+</span> <span class="sum-unit">kg bait deployed</span></div>
+        <div class="sum-detail">Rat entry via fence breach following tree fall. Eradicated within 2 weeks using 50×50 bait grid and 4,500 tracking cards. 9-week follow-up confirmed success.</div>
+        <div class="pill-row">
+          <span class="pill">4,500 tracking cards</span>
+          <span class="pill">2.5 month response</span>
+        </div>
+      </div>
+
+      <div class="summary-section">
+        <div class="sum-heading gold">Mouse Control</div>
+        <div class="sum-detail">11-week sanctuary-wide knockdown triggered at 16.6% mouse tracking rate in February. Trap network upgraded and expanded during the year.</div>
+        <div class="pill-row">
+          <span class="pill gold">16.6% trigger rate</span>
+          <span class="pill gold">11-week programme</span>
+        </div>
+      </div>
+
+      <div class="summary-section">
+        <div class="sum-heading navy">Weed Species Targeted</div>
+        <div class="sum-detail">Selaginella · Banana Passionfruit · Chocolate Vine · Agapanthus · Thistle · Inkweed</div>
+        <div class="pill-row">
+          <span class="pill navy">6+ species</span>
+          <span class="pill navy">Bi-monthly fence spraying</span>
+        </div>
+      </div>
+
+      <div class="contractor-row">
+        <div class="contractor-label">Sanctuary Manager</div>
+        <div class="contractor-val">Forest &amp; Bird / Bushy Park Trust</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM ROW -->
+  <div class="row-bottom">
+
+    <div class="panel">
+      <div class="panel-title">Revegetation 2024–25</div>
+      <div class="panel-sub">Native plants planted and raised by volunteers</div>
+      <div class="chart-wrap">
+        <canvas id="revetChart"></canvas>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Monitoring &amp; Control Activity</div>
+      <div class="panel-sub">Key metrics for the 2024–25 year</div>
+      <div class="chart-wrap">
+        <canvas id="activityChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+Chart.defaults.color = '#5a5a52';
+
+const green   = '#2d6a4f';
+const green2  = '#4a9b6f';
+const greenLt = '#8dc9a6';
+const gold    = '#c8a84b';
+const goldLt  = '#e8d9b5';
+const border  = '#ddddd8';
+
+/* ── TRAP NETWORK ── */
+new Chart(document.getElementById('trapChart'), {
+  type: 'bar',
+  data: {
+    labels: ['DOC200 Traps', 'Victor Traps', 'New Halo Traps (24-25)', 'Incl. Hood Traps', 'Trail Cameras'],
+    datasets: [{
+      label: 'Count',
+      data: [110, 10, 25, 12, 15],
+      backgroundColor: [green, green2, gold, goldLt, greenLt],
+      borderRadius: 3,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.x} units` } }
+    },
+    scales: {
+      x: {
+        grid: { color: border },
+        ticks: { font: { size: 10 } },
+        title: { display: true, text: 'Count', font: { size: 10 }, color: '#8a8a82' }
+      },
+      y: { grid: { display: false }, ticks: { font: { size: 10.5 } } }
+    }
+  }
+});
+
+/* ── REVEGETATION ── */
+new Chart(document.getElementById('revetChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Native Plants'],
+    datasets: [
+      { label: 'Planted in ground', data: [2500], backgroundColor: green, borderRadius: 3, barThickness: 60 },
+      { label: 'Raised in nursery', data: [3000], backgroundColor: greenLt, borderRadius: 3, barThickness: 60 }
+    ]
+  },
+  options: {
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: true, position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12, padding: 12 } },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y.toLocaleString()} plants` } }
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+      y: {
+        grid: { color: border },
+        ticks: { font: { size: 10 } },
+        title: { display: true, text: 'No. of Plants', font: { size: 10 }, color: '#8a8a82' }
+      }
+    }
+  }
+});
+
+/* ── MONITORING ACTIVITY ── */
+new Chart(document.getElementById('activityChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Forest Audits', 'Dog Audits', 'Bait Deployed (kg)', 'Tracking Cards Used', 'New Halo Traps Added', 'Trail Cameras Deployed', 'Weed Species Targeted'],
+    datasets: [{
+      label: 'Value',
+      data: [13, 4, 120, 4500, 25, 15, 6],
+      backgroundColor: [green, green, gold, gold, green2, green2, greenLt],
+      borderRadius: 3,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => {
+            const units = ['audits','audits','kg','cards','traps','cameras','species'];
+            return ` ${ctx.parsed.x.toLocaleString()} ${units[ctx.dataIndex]}`;
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        type: 'logarithmic',
+        grid: { color: border },
+        ticks: { font: { size: 10 } },
+        title: { display: true, text: 'Value (log scale)', font: { size: 10 }, color: '#8a8a82' }
+      },
+      y: { grid: { display: false }, ticks: { font: { size: 10.5 } } }
+    }
+  }
+});
+</script>
+</body>
+</html>
