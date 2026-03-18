@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Icon Sites</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@300;400;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy:    #1f2e35;
+    --bg:      #f4f0ef;
+    --surface: #ffffff;
+    --border:  #ddddd8;
+    --muted:   #5a5a52;
+
+    /* six accent colours */
+    --c-green:  #2d6a4f;
+    --c-teal:   #1a535c;
+    --c-olive:  #3d5c2e;
+    --c-slate:  #2c6e8a;
+    --c-gold:   #b08d57;
+    --c-navy:   #273747;
+  }
+
+  html, body {
+    width: 1920px;
+    height: 870px;
+    overflow: hidden;
+    background: var(--bg);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--navy);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 20px;
+    padding: 20px 28px;
+    height: 870px;
+    width: 1920px;
+  }
+
+  /* base card — accent colour injected via --c / --c-lt / --c-btn per card class */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    border-top: 4px solid var(--c);
+    display: flex;
+    flex-direction: column;
+    padding: 22px 26px 20px;
+    gap: 12px;
+    opacity: 0;
+    transform: translateY(14px);
+    animation: fadeUp 0.45s ease forwards;
+  }
+  .card:nth-child(1) { animation-delay: 0.04s; }
+  .card:nth-child(2) { animation-delay: 0.08s; }
+  .card:nth-child(3) { animation-delay: 0.12s; }
+  .card:nth-child(4) { animation-delay: 0.16s; }
+  .card:nth-child(5) { animation-delay: 0.20s; }
+  .card:nth-child(6) { animation-delay: 0.24s; }
+
+  @keyframes fadeUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* per-card colour themes */
+  .card-green { --c: var(--c-green); --c-lt: #eaf3ee; }
+  .card-teal  { --c: var(--c-teal);  --c-lt: #e8f2f3; }
+  .card-olive { --c: var(--c-olive); --c-lt: #edf3e8; }
+  .card-slate { --c: var(--c-slate); --c-lt: #e5f1f7; }
+  .card-gold  { --c: var(--c-gold);  --c-lt: #f6f0e4; }
+  .card-navy  { --c: var(--c-navy);  --c-lt: #e9ecee; }
+
+  .card-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--c);
+    margin-top: 2px;
+  }
+  .card-title {
+    font-family: 'Source Serif 4', serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--navy);
+    line-height: 1.2;
+  }
+  .card-desc {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--muted);
+    font-weight: 300;
+    flex: 1;
+  }
+
+  .card-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .meta-box {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px 11px;
+    background: var(--c-lt);
+  }
+  .meta-key {
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--c);
+    margin-bottom: 3px;
+  }
+  .meta-val {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--navy);
+    line-height: 1.3;
+  }
+
+  .card-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--c);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 18px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    width: fit-content;
+    transition: opacity 0.18s ease;
+    margin-top: 2px;
+  }
+  .card-btn:hover { opacity: 0.82; }
+  .btn-arrow { transition: transform 0.18s ease; display: inline-block; }
+  .card-btn:hover .btn-arrow { transform: translateX(3px); }
+</style>
+</head>
+<body>
+<div class="grid">
+
+  <!-- 1. Bushy Park — green -->
+  <div class="card card-green">
+    <div>
+      <div class="card-label">Icon Site · Whanganui</div>
+      <div class="card-title">Bushy Park Tarapuruhi</div>
+    </div>
+    <p class="card-desc">An 89 ha predator-proof forest sanctuary northwest of Whanganui, protecting a rare remnant of temperate lowland bush effectively free of pest mammals since 2005. Home to reintroduced hihi, tīeke, toutouwai, popokatea and tītipounamu.</p>
+    <div class="card-meta">
+      <div class="meta-box"><div class="meta-key">Area</div><div class="meta-val">89 ha</div></div>
+      <div class="meta-box"><div class="meta-key">Location</div><div class="meta-val">Northwest of Whanganui</div></div>
+      <div class="meta-box"><div class="meta-key">Governed By</div><div class="meta-val">Bushy Park Trust / Forest &amp; Bird</div></div>
+      <div class="meta-box"><div class="meta-key">HRC Annual Budget</div><div class="meta-val">$52,400</div></div>
+    </div>
+    <a class="card-btn" href="/page/Bushy-Park" target="_blank"><span class="btn-arrow">→</span> Open Dashboard</a>
+  </div>
+
+  <!-- 2. Te Āpiti — teal -->
+  <div class="card card-teal">
+    <div>
+      <div class="card-label">Icon Site · Manawatū Gorge</div>
+      <div class="card-title">Te Āpiti Manawatū Gorge</div>
+    </div>
+    <p class="card-desc">Around 2,700 ha of forested gorge between Woodville and Ashhurst, encompassing the Te Āpiti Scenic Reserves and the Manawatū River. A well-used recreation corridor guided by a 2022 Masterplan and managed through a broad multi-agency group.</p>
+    <div class="card-meta">
+      <div class="meta-box"><div class="meta-key">Area</div><div class="meta-val">~2,700 ha</div></div>
+      <div class="meta-box"><div class="meta-key">Location</div><div class="meta-val">Woodville to Ashhurst</div></div>
+      <div class="meta-box"><div class="meta-key">Governed By</div><div class="meta-val">Te Āpiti Governance Group</div></div>
+      <div class="meta-box"><div class="meta-key">HRC Annual Budget</div><div class="meta-val">$424,000</div></div>
+    </div>
+    <a class="card-btn" href="/page/Te-Apiti" target="_blank"><span class="btn-arrow">→</span> Open Dashboard</a>
+  </div>
+
+  <!-- 3. Kia Whārite — olive -->
+  <div class="card card-olive">
+    <div>
+      <div class="card-label">Icon Site · Mt Ruapehu Foothills</div>
+      <div class="card-title">Kia Whārite</div>
+    </div>
+    <p class="card-desc">A 180,000 ha landscape-scale predator and pest control project running since 2008, west and northwest of Mt Ruapehu. Kiwi population growth of 10% per year and 50 whio pairs on key rivers have both been achieved and sustained.</p>
+    <div class="card-meta">
+      <div class="meta-box"><div class="meta-key">Area</div><div class="meta-val">180,000+ ha</div></div>
+      <div class="meta-box"><div class="meta-key">Location</div><div class="meta-val">W &amp; NW of Mt Ruapehu</div></div>
+      <div class="meta-box"><div class="meta-key">Governed By</div><div class="meta-val">DOC &amp; Horizons</div></div>
+      <div class="meta-box"><div class="meta-key">HRC Annual Budget</div><div class="meta-val">$163,000</div></div>
+    </div>
+    <a class="card-btn" href="/page/Kia-Wharite" target="_blank"><span class="btn-arrow">→</span> Open Dashboard</a>
+  </div>
+
+  <!-- 4. Manawatū Estuary — slate blue -->
+  <div class="card card-slate">
+    <div>
+      <div class="card-label">Icon Site · Foxton Beach</div>
+      <div class="card-title">Manawatū Estuary</div>
+    </div>
+    <p class="card-desc">A 558 ha Ramsar-listed estuary at Foxton Beach with internationally recognised biodiversity values. Stewardship rests with the MEMT — a broad coalition of DOC, councils, iwi and community organisations, guided by the 2025–2035 Management Plan.</p>
+    <div class="card-meta">
+      <div class="meta-box"><div class="meta-key">Area</div><div class="meta-val">558 ha</div></div>
+      <div class="meta-box"><div class="meta-key">Location</div><div class="meta-val">Foxton Beach</div></div>
+      <div class="meta-box"><div class="meta-key">Governed By</div><div class="meta-val">Manawatū Estuary Management Team (MEMT)</div></div>
+      <div class="meta-box"><div class="meta-key">HRC Annual Budget</div><div class="meta-val">$78,000</div></div>
+    </div>
+    <a class="card-btn" href="/page/Manawatu-Estuary" target="_blank"><span class="btn-arrow">→</span> Open Dashboard</a>
+  </div>
+
+  <!-- 5. Pūkaha Mt Bruce — gold -->
+  <div class="card card-gold">
+    <div>
+      <div class="card-label">Icon Site · Eketāhuna</div>
+      <div class="card-title">Pūkaha Mt Bruce</div>
+    </div>
+    <p class="card-desc">A 942 ha unfenced wildlife sanctuary near Eketāhuna, straddling the Horizons–Wellington boundary. Features a visitor centre, education programmes and captive breeding for kōkako, kiwi, takahē, kākā, whio and kākāriki.</p>
+    <div class="card-meta">
+      <div class="meta-box"><div class="meta-key">Area</div><div class="meta-val">942 ha</div></div>
+      <div class="meta-box"><div class="meta-key">Location</div><div class="meta-val">Near Eketāhuna</div></div>
+      <div class="meta-box"><div class="meta-key">Governed By</div><div class="meta-val">Pūkaha Mount Bruce Board</div></div>
+      <div class="meta-box"><div class="meta-key">HRC Annual Budget</div><div class="meta-val">$93,000</div></div>
+    </div>
+    <a class="card-btn" href="/page/Pukaha-Mt-Bruce" target="_blank"><span class="btn-arrow">→</span> Open Dashboard</a>
+  </div>
+
+  <!-- 6. Ruahine Kiwi — navy -->
+  <div class="card card-navy">
+    <div>
+      <div class="card-label">Icon Site · Southern Ruahine</div>
+      <div class="card-title">Ruahine Kiwi</div>
+    </div>
+    <p class="card-desc">Launched in 2022, this community-led partnership between ENM's Source to Sea Collective and Te Kāuru Hapū Collective aims to reintroduce North Island eastern brown kiwi through a 23,000 ha mustelid trap network across the Southern Ruahine.</p>
+    <div class="card-meta">
+      <div class="meta-box"><div class="meta-key">Area</div><div class="meta-val">23,000 ha trap network</div></div>
+      <div class="meta-box"><div class="meta-key">Location</div><div class="meta-val">Southern Ruahine Range</div></div>
+      <div class="meta-box"><div class="meta-key">Governed By</div><div class="meta-val">Environment Network Manawatū</div></div>
+      <div class="meta-box"><div class="meta-key">HRC Annual Budget</div><div class="meta-val">$51,000</div></div>
+    </div>
+    <a class="card-btn" href="/page/Ruahine-Kiwi" target="_blank"><span class="btn-arrow">→</span> Open Dashboard</a>
+  </div>
+
+</div>
+</body>
+</html>
