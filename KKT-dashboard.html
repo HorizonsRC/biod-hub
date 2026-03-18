@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; font-family: 'DM Sans', sans-serif; background: #f5f4f0; color: #1e2d2f; overflow: hidden; }
+  .container { display: grid; grid-template-columns: 1fr 1fr; height: 100%; }
+
+  .left { background: #1c3438; color: #e8ede9; padding: 22px 18px 14px 18px; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+  .tag { display: inline-block; background: rgba(107,170,120,0.2); color: #8ecf99; font-size: 9px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; padding: 2px 7px; border-radius: 2px; width: fit-content; }
+  .left h2 { font-family: 'Source Serif 4', serif; font-size: 16px; font-weight: 600; line-height: 1.35; color: #f0f5f1; }
+  .left p { font-size: 12.5px; line-height: 1.55; color: #b0c4b8; }
+  .divider { border: none; border-top: 1px solid rgba(255,255,255,0.08); }
+  .highlights { display: flex; flex-direction: column; gap: 5px; }
+  .hi { display: flex; align-items: flex-start; gap: 7px; font-size: 12px; color: #b8ccc0; line-height: 1.45; }
+  .hi::before { content: ''; flex-shrink: 0; width: 4px; height: 4px; border-radius: 50%; background: #6baa78; margin-top: 5px; }
+
+  .right { background: #f5f4f0; padding: 20px 16px 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .right-header { font-size: 9.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #7a9a82; border-bottom: 1px solid #d6d3cc; padding-bottom: 7px; }
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stat-card { background: #fff; border: 1px solid #e0ddd8; border-radius: 5px; padding: 9px 12px; border-left: 3px solid #3d7a5a; }
+  .stat-card.b { border-left-color: #6baa78; }
+  .stat-card.c { border-left-color: #a5b8a8; }
+  .stat-card.d { border-left-color: #b5955a; }
+  .stat-number { font-family: 'Source Serif 4', serif; font-size: 26px; font-weight: 600; color: #1c3438; line-height: 1; margin-bottom: 3px; }
+  .stat-label { font-size: 13px; color: #5a7060; line-height: 1.3; }
+  .community-box { background: #edf3ef; border-radius: 5px; padding: 9px 12px; font-size: 13px; color: #3a5540; line-height: 1.5; border-left: 3px solid #6baa78; }
+  .community-box strong { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #5a8a65; margin-bottom: 3px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="left">
+    <div class="tag">Established 2021</div>
+    <h2>Kanorau Koiora Taketake<br>Indigenous Biodiversity Contestable Fund</h2>
+    <p>Supporting locally-led conservation projects across Manawatū-Whanganui. Open annually in April/May, grants fund activities with clear community involvement and biodiversity benefit — assessed by a Councillor panel and supported by Biodiversity staff throughout delivery.</p>
+    <hr class="divider"/>
+    <div class="highlights">
+      <div class="hi">Koitiata Wetlands Restoration Group — 34 events in one year, 500+ volunteer hours</div>
+      <div class="hi">Castlecliff Coast Care — 10–20 events/year engaging up to 40 volunteers</div>
+      <div class="hi">Ihaia Taueki Trust — grew from 30 to 70 whānau members planting in consecutive years</div>
+      <div class="hi">Ruahine Whio Protectors — 19 whio released through fund support</div>
+    </div>
+  </div>
+  <div class="right">
+    <div class="right-header">Fund outcomes · 2021–2025</div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-number">125</div>
+        <div class="stat-label">Projects funded</div>
+      </div>
+      <div class="stat-card b">
+        <div class="stat-number">33,998</div>
+        <div class="stat-label">Native plants planted</div>
+      </div>
+      <div class="stat-card c">
+        <div class="stat-number">1,328</div>
+        <div class="stat-label">Traps purchased</div>
+      </div>
+      <div class="stat-card d">
+        <div class="stat-number">16–28</div>
+        <div class="stat-label">Rare &amp; threatened habitats protected per year</div>
+      </div>
+    </div>
+    <div class="community-box">
+      <strong>Community Impact</strong>
+      The fund is typically oversubscribed, reflecting strong demand. Projects are assessed on biodiversity benefit and community engagement. Full reports available on the Horizons website.
+    </div>
+  </div>
+</div>
+</body>
+</html>
