@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Biodiversity Programme Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #273747;
+    --bg: #f4f0ef;
+    --cream: #faf8f5;
+    --green: #2d6a4f;
+    --green-mid: #52796f;
+    --green-light: #cde8d8;
+    --teal: #1a535c;
+    --gold: #b08d57;
+    --border: #ddd8cc;
+    --text: #1c2b1e;
+    --muted: #6b7c6e;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--navy);
+    padding: 16px 40px 14px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  header::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: 40%;
+    background: linear-gradient(135deg, transparent 0%, rgba(45,106,79,0.15) 100%);
+    pointer-events: none;
+  }
+
+  /* Subtle leaf pattern in header */
+  header::after {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 280px; height: 280px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.05);
+    pointer-events: none;
+  }
+
+  .header-inner {
+    max-width: 100%;
+    margin: 0 auto;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .header-eyebrow {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--green-light);
+    margin-bottom: 8px;
+    opacity: 0.9;
+  }
+
+  header h1 {
+    font-family: 'Source Serif 4', serif;
+    font-size: 2rem;
+    font-weight: 600;
+    color: #fff;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+
+  .header-tagline {
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.55);
+    margin-top: 6px;
+    font-weight: 300;
+    max-width: 420px;
+    line-height: 1.6;
+  }
+
+  .header-badge {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px;
+    padding: 12px 18px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .header-badge .badge-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.4);
+    display: block;
+  }
+
+  .header-badge .badge-value {
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.75);
+    font-weight: 500;
+    margin-top: 2px;
+  }
+
+  /* INTRO STRIP */
+  .intro-strip {
+    background: var(--cream);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 40px;
+  }
+
+  .intro-strip-inner {
+    max-width: 100%;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .intro-strip-line {
+    width: 3px;
+    height: 36px;
+    background: var(--green);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .intro-strip p {
+    font-size: 0.875rem;
+    line-height: 1.7;
+    color: #4a5c4e;
+    max-width: 860px;
+  }
+
+  /* MAIN CONTENT */
+  main {
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 28px 40px 10px;
+  }
+
+  .section-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* CARD GRID */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+
+  .card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    animation: fadeUp 0.5s ease both;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .card:nth-child(1) { animation-delay: 0.05s; }
+  .card:nth-child(2) { animation-delay: 0.12s; }
+  .card:nth-child(3) { animation-delay: 0.19s; }
+  .card:nth-child(4) { animation-delay: 0.26s; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.1);
+  }
+
+  .card-banner {
+    height: 8px;
+  }
+
+  .card-body {
+    padding: 10px 12px 8px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .card-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+    flex-shrink: 0;
+  }
+
+  .card-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .card-title {
+    font-family:'DM Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--navy);
+    margin-bottom: 4px;
+    line-height: 1.3;
+  }
+
+  .card-desc {
+    font-size: 0.85rem;;
+    line-height: 1.65;
+    color:  #3a3a3a;
+    flex: 1;
+    margin-bottom: 80px;
+  }
+
+  .card-footer {
+    border-top: 1px solid var(--border);
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fafaf9;
+  }
+
+.card-tag {
+    display: none;
+  }
+
+.card-arrow {
+    font-size: 0.78rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--navy);
+    opacity: 1;
+    transition: opacity 0.2s, gap 0.2s;
+  }
+
+  .card:hover .card-arrow {
+    opacity: 1;
+    gap: 8px;
+  }
+
+/* Colour themes per card */
+  .theme-green .card-banner { background: linear-gradient(90deg, #2d6a4f, #52796f); }
+  .theme-green .card-icon { background: #e8f5ee; }
+  .theme-green .card-icon svg { color: #2d6a4f; }
+  .theme-green .card-tag { background: #e8f5ee; color: #2d6a4f; }
+  .theme-green .card-footer { background: #e8f5ee; }
+
+  .theme-teal .card-banner { background: linear-gradient(90deg, #1a535c, #2d798a); }
+  .theme-teal .card-icon { background: #e4f2f5; }
+  .theme-teal .card-icon svg { color: #1a535c; }
+  .theme-teal .card-tag { background: #e4f2f5; color: #1a535c; }
+  .theme-teal .card-footer { background: #e4f2f5; }
+
+  .theme-gold .card-banner { background: linear-gradient(90deg, #b08d57, #c9a96e); }
+  .theme-gold .card-icon { background: #f7f0e4; }
+  .theme-gold .card-icon svg { color: #8a6a30; }
+  .theme-gold .card-tag { background: #f7f0e4; color: #8a6a30; }
+  .theme-gold .card-footer { background: #f7f0e4; }
+
+  .theme-navy .card-banner { background: linear-gradient(90deg, #273747, #3d5166); }
+  .theme-navy .card-icon { background: #e8ecf0; }
+  .theme-navy .card-icon svg { color: #273747; }
+  .theme-navy .card-tag { background: #e8ecf0; color: #273747; }
+  .theme-navy .card-footer { background: #e8ecf0; }
+
+  /* STATS ROW */
+  .stats-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+
+  .stat-item {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 22px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex: 1;
+    min-width: 180px;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .stat-item:nth-child(1) { animation-delay: 0.3s; }
+  .stat-item:nth-child(2) { animation-delay: 0.37s; }
+  .stat-item:nth-child(3) { animation-delay: 0.44s; }
+  .stat-item:nth-child(4) { animation-delay: 0.51s; }
+
+  .stat-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  .stat-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--navy);
+    margin-top: 1px;
+  }
+
+  /* FOOTER NOTE */
+  .footnote {
+    margin-top: 36px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-size: 0.75rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div>
+      <div class="header-eyebrow">Horizons Regional Council</div>
+      <h1>Biodiversity Programme Hub</h1>
+      <p class="header-tagline">A central tool for presenting and exploring biodiversity data, management outcomes, and programme investment across the Manawatū-Whanganui region.</p>
+    </div>
+    <div class="header-badge">
+      <span class="badge-label">Last updated</span>
+      <div class="badge-value">2024–25 Financial Year</div>
+    </div>
+  </div>
+</header>
+
+<div class="intro-strip">
+  <div class="intro-strip-inner">
+    <div class="intro-strip-line"></div>
+    <p>This hub provides access to the key tools and dashboards used to monitor and report on biodiversity management across our programme sites. Select a programme below to explore its data, maps, and reporting outputs.</p>
+  </div>
+</div>
+
+<main>
+
+  <div class="section-label">Programme Dashboards</div>
+
+  <div class="card-grid">
+
+    <!-- Priority Habitats -->
+    <a class="card theme-green" href="https://experience.arcgis.com/experience/a76cd45136564203b8fa66c94112ce37" target="_blank" title="Open Priority Habitats Pressure Management Dashboard">
+      <div class="card-banner"></div>
+      <div class="card-body">
+        <div class="card-icon">
+          <!-- Tree / habitat icon -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L6 9h3l-3 5h4l-2 3h8l-2-3h4l-3-5h3z"/>
+            <line x1="12" y1="19" x2="12" y2="22"/>
+          </svg>
+        </div>
+        <div class="card-title">Priority Habitats<br>Pressure Management</div>
+        <div class="card-desc">Annual pressure management scores across 96 priority habitat sites. Tracks how well key ecological threats such as ungulates, predators, pest plants, and possums are being managed.</div>
+      </div>
+      <div class="card-footer">
+        <span class="card-tag">96 Sites</span>
+        <span class="card-arrow">Open Dashboard →</span>
+      </div>
+    </a>
+
+    <!-- Icon Sites -->
+    <a class="card theme-teal" href="#" title="Open Icon Sites Dashboard">
+      <div class="card-banner"></div>
+      <div class="card-body">
+        <div class="card-icon">
+          <!-- map-pin -->
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+        </div>
+        <div class="card-title">Icon Sites</div>
+        <div class="card-desc">Reporting for high-profile biodiversity projects where the Biodiversity Team provides support alongside significant community involvement, including Manawatū Estuary, Ruahine Kiwi, Bushy Park, Kia Whārite, Te Āpiti, and Pūkaha Mount Bruce.</div>
+      </div>
+      <div class="card-footer">
+        <span class="card-tag">6 Sites</span>
+        <span class="card-arrow">Open Dashboard →</span>
+      </div>
+    </a>
+
+    <!-- KKT -->
+    <a class="card theme-gold" href="https://experience.arcgis.com/experience/ba7d5aba9ea7446183083e5443ed2165" title="Open KKT Dashboard">
+      <div class="card-banner"></div>
+      <div class="card-body">
+        <div class="card-icon">
+          <!-- heart-handshake -->
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19.414 14.414C21 12.828 22 11.5 22 9.5a5.5 5.5 0 0 0-9.591-3.676.6.6 0 0 1-.818.001A5.5 5.5 0 0 0 2 9.5c0 2.3 1.5 4 3 5.5l5.535 5.362a2 2 0 0 0 2.879.052 2.12 2.12 0 0 0-.004-3 2.124 2.124 0 1 0 3-3 2.124 2.124 0 0 0 3.004 0 2 2 0 0 0 0-2.828l-1.881-1.882a2.41 2.41 0 0 0-3.409 0l-1.71 1.71a2 2 0 0 1-2.828 0 2 2 0 0 1 0-2.828l2.823-2.762"/></svg>
+        </div>
+        <div class="card-title">Kanorau Koiora Taketake<br>(KKT) Fund Projects</div>
+        <div class="card-desc">A contestable community grant fund supporting locally-led projects that restore and protect indigenous biodiversity across the region.</div>
+      </div>
+      <div class="card-footer">
+        <span class="card-tag">Community Fund</span>
+        <span class="card-arrow">Open Dashboard →</span>
+      </div>
+    </a>
+
+    <!-- Totara Reserve -->
+    <a class="card theme-green" href="#" title="Open Tōtara Reserve Dashboard">
+      <div class="card-banner" style="background: linear-gradient(90deg, #3a7d5a, #5a9070);"></div>
+      <div class="card-body">
+        <div class="card-icon" style="background:#e8f5ee;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#2d6a4f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+        </div>
+        <div class="card-title">Tōtara Reserve<br>Regional Park</div>
+        <div class="card-desc">Access metrics, maps, and reporting for Tōtara Reserve Regional Park, covering biodiversity monitoring, management activity, and site condition over time.</div>
+      </div>
+      <div class="card-footer">
+        <span class="card-tag" style="background:#e8f5ee;color:#2d6a4f;">Regional Park</span>
+        <span class="card-arrow">Open Dashboard →</span>
+      </div>
+    </a>
+
+    <!-- Targeted Rates -->
+    <a class="card theme-navy" href="https://experience.arcgis.com/experience/de50b07324bb418ca0c85ff43705ff0d" title="Open Targeted Rates Dashboard">
+      <div class="card-banner"></div>
+      <div class="card-body">
+        <div class="card-icon">
+          <!-- target -->
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-target-icon lucide-target"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        </div>
+        <div class="card-title">Targeted Rates</div>
+        <div class="card-desc">Maps, metrics, and reporting for biodiversity work supported through targeted rates, covering site coverage and programme activity across the region.</div>
+      </div>
+      <div class="card-footer">
+        <span class="card-tag">Targeted Rates</span>
+        <span class="card-arrow">Open Dashboard →</span>
+      </div>
+    </a>
+
+  </div>
+
+  <div class="section-label">Programme at a Glance</div>
+
+  <div class="stats-row">
+    <div class="stat-item">
+      <div class="stat-dot" style="background:#2d6a4f"></div>
+      <div>
+        <div class="stat-label">Priority Habitat Sites</div>
+        <div class="stat-value">96 Sites Monitored</div>
+      </div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-dot" style="background:#1a535c"></div>
+      <div>
+        <div class="stat-label">Icon Sites</div>
+        <div class="stat-value">6 Flagship Sites</div>
+      </div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-dot" style="background:#b08d57"></div>
+      <div>
+        <div class="stat-label">KKT Programme</div>
+        <div class="stat-value">Placeholder</div>
+      </div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-dot" style="background:#273747"></div>
+      <div>
+        <div class="stat-label">Reporting Period</div>
+        <div class="stat-value">2024–25 Financial Year</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footnote">
+    This tool is intended for internal use and council reporting. Data is updated annually. For queries about site data or programme methodology, contact the Biodiversity Team.
+  </div>
+
+</main>
+
+</body>
+</html>
