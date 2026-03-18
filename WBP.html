@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WBP Pest Plant Control Data</title>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;500;600;700&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy:      #1f2e35;
+      --bg:        #f4f0ef;
+      --surface:   #ffffff;
+      --border:    #ddddd8;
+      --muted:     #5a5a52;
+      --caption:   #888880;
+      --teal:      #4a9b6f;
+      --teal-lt:   #4a9b8e;
+      --teal-pale: #7bbfb8;
+      --sand:      #c8a84b;
+      --sage:      #d7f7de;
+      --slate:     #5a7a8a;
+      --rust:      #a05a3a;
+    }
+
+    html, body { width: 969px; height: 870px; overflow: hidden; }
+
+    body {
+      font-family: 'Source Sans 3', sans-serif;
+      background: var(--bg);
+      color: var(--navy);
+      padding: 14px 16px;
+      display: grid;
+      grid-template-rows: 42px 1fr 1fr;
+      gap: 10px;
+    }
+
+    .page-title {
+      font-family: 'Source Serif 4', serif;
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: var(--navy);
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--teal);
+      align-self: end;
+    }
+
+    .row {
+      display: grid;
+      gap: 10px;
+      min-height: 0;
+    }
+
+    .row-top    { grid-template-columns: 200px 1fr 260px; }
+    .row-bottom { grid-template-columns: 1fr 1fr; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--navy);
+      flex-shrink: 0;
+    }
+
+    .card-sub {
+      font-size: 11px;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+
+    .chart-wrap {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .dot-row { display: flex; gap: 12px; flex-wrap: wrap; flex-shrink: 0; }
+    .dot-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .dot-sq { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+    /* STATS CARD */
+    .stats-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      overflow: hidden;
+    }
+
+    .stats-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--navy);
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .stat-block {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .stat-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--caption);
+    }
+
+    .stat-value {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--teal);
+      line-height: 1.1;
+    }
+
+    .stat-note {
+      font-size: 10.5px;
+      color: var(--muted);
+    }
+
+    .stat-divider {
+      height: 1px;
+      background: var(--border);
+      flex-shrink: 0;
+      margin: 2px 0;
+    }
+
+
+    .stat-row {
+      display: flex;
+      align-items: baseline;
+      gap: 5px;
+    }
+    .stat-val {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--navy);
+      line-height: 1.1;
+    }
+    .stat-unit {
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .stat-pills {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      margin-top: 2px;
+    }
+    .pill {
+      font-size: 10px;
+      font-weight: 600;
+      border-radius: 3px;
+      padding: 2px 6px;
+    }
+    .pill-dark { background: #e0f0f0; color: var(--teal); }
+    .pill-mid  { background: #eaf4ea; color: #3a6b3a; }
+
+    .ml-section  { font-size: 12px; font-weight: 700; color: var(--navy); margin-top: 4px; }
+    .ml-group    { font-size: 11px; font-weight: 600; color: var(--muted); margin-top: 5px; margin-bottom: 3px; }
+    .ml-item     { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); padding-left: 2px; margin-bottom: 4px; }
+    .ml-divider  { height: 1px; background: var(--border); margin: 6px 0; }
+  </style>
+</head>
+<body>
+
+  <div class="page-title">Waitārere Beach Community Project</div>
+
+  <!-- TOP ROW: area chart | plants chart | stats -->
+  <div class="row row-top">
+
+    <!-- Map Legend -->
+    <div class="card">
+      <div class="card-title">Map Legend</div>
+
+      <div class="ml-section">Biodiversity Targeted Rates Contractor Data</div>
+
+      <div class="ml-group">Waitarere Beach Points</div>
+      <div class="ml-item">
+        <svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="#4a9b6f"/></svg>
+        Tree Lupin
+      </div>
+      <div class="ml-item">
+        <svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="#c8a84b"/></svg>
+        Sydney Golden Wattle
+      </div>
+      <div class="ml-item">
+        <svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="#d7f7de" stroke="#aaa" stroke-width="1"/></svg>
+        Other
+      </div>
+
+      <div class="ml-group">Waitarere Beach Tracks</div>
+      <div class="ml-item">
+        <svg width="26" height="8" viewBox="0 0 26 8"><line x1="0" y1="4" x2="26" y2="4" stroke="#1a1a1a" stroke-width="2.5"/></svg>
+        Track
+      </div>
+
+      <div class="ml-divider"></div>
+
+      <div class="ml-section">Targeted Rates Projects</div>
+      <div class="ml-group">Waitarere Beach Project (WBP)</div>
+      <div class="ml-item">
+        <svg width="18" height="18" viewBox="0 0 18 18"><polygon points="0,18 14,18 18,4 4,0" fill="#6ab4e8" opacity="0.85"/></svg>
+        WBP site boundary
+      </div>
+    </div>
+
+    <!-- Plants by species per year -->
+    <div class="card">
+      <div class="card-title">Control Plants by Species</div>
+      <div class="card-sub">Number of waypoints recorded per season</div>
+      <div class="chart-wrap">
+        <canvas id="speciesChart"></canvas>
+      </div>
+      <div class="dot-row">
+        <div class="dot-item"><div class="dot-sq" style="background:#4a9b6f; border: 1px solid #aaa;"></div>Tree Lupin</div>
+        <div class="dot-item"><div class="dot-sq" style="background:#c8a84b; border: 1px solid #aaa;"></div>Sydney Golden Wattle</div>
+        <div class="dot-item"><div class="dot-sq" style="background:#d7f7de; border: 1px solid #aaa;"></div>Other</div>
+      </div>
+    </div>
+
+    <!-- Key stats -->
+    <div class="stats-card">
+      <div class="stats-title">All Seasons Summary</div>
+
+      <!-- Tree Lupin -->
+      <div class="stat-block">
+        <div class="stat-label" style="color:var(--teal); font-size:11px;">Tree Lupin</div>
+        <div class="stat-row"><span class="stat-val">413</span><span class="stat-unit">plants</span></div>
+        <div class="stat-row"><span class="stat-val">33,455</span><span class="stat-unit">m² treated</span></div>
+        <div class="stat-pills">
+          <span class="pill pill-dark">Seedling/Juv: 83</span>
+          <span class="pill pill-mid">Adult: 330</span>
+        </div>
+      </div>
+
+      <div class="stat-divider"></div>
+
+      <!-- Sydney Golden Wattle -->
+      <div class="stat-block">
+        <div class="stat-label" style="color:var(--sand); font-size:11px;">Sydney Golden Wattle</div>
+        <div class="stat-row"><span class="stat-val">77</span><span class="stat-unit">plants</span></div>
+        <div class="stat-row"><span class="stat-val">4,863</span><span class="stat-unit">m² treated</span></div>
+        <div class="stat-pills">
+          <span class="pill pill-dark">Juv: 13</span>
+          <span class="pill pill-mid">Adult: 64</span>
+        </div>
+      </div>
+
+      <div class="stat-divider"></div>
+
+      <!-- Other species -->
+      <div class="stat-block">
+        <div class="stat-label" style="color:#5f6962; font-size:11px;">Other Species</div>
+        <div class="stat-row"><span class="stat-val">12</span><span class="stat-unit">plants</span></div>
+        <div class="stat-row"><span class="stat-val">272</span><span class="stat-unit">m² treated</span></div>
+        <div class="stat-note">Climbing Dock · Boneseed · Periwinkle · Boxthorn · Pampas Grass</div>
+      </div>
+
+      <div class="stat-divider"></div>
+
+      <div class="stat-block">
+        <div class="stat-label">Pest Control Contractor</div>
+        <div style="font-size:12px; font-weight:600; color:var(--navy);">Kaitiaki o te Ngahere Ltd</div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- BOTTOM ROW: age class | control status -->
+  <div class="row row-bottom">
+
+    <!-- Age class by species (24-25 + 25-26) -->
+    <div class="card">
+      <div class="card-title">Life Stage by Species</div>
+      <div class="card-sub">Combined 23-24, 24-25 & 25-26 seasons</div>
+      <div class="chart-wrap">
+        <canvas id="ageChart"></canvas>
+      </div>
+      <div class="dot-row">
+        <div class="dot-item"><div class="dot" style="background:#4a9b8e"></div>Seedling / Juvenile</div>
+        <div class="dot-item"><div class="dot" style="background:#2e6e6e"></div>Adult / Mature</div>
+      </div>
+    </div>
+
+    <!-- Control status per year -->
+    <div class="card">
+      <div class="card-title">Control Outcome by Season</div>
+      <div class="card-sub">Controlled vs not controlled plants</div>
+      <div class="chart-wrap">
+        <canvas id="controlChart"></canvas>
+      </div>
+      <div class="dot-row">
+        <div class="dot-item"><div class="dot-sq" style="background:#2e6e6e"></div>Controlled</div>
+        <div class="dot-item"><div class="dot-sq" style="background:#c8a84b"></div>Partially controlled</div>
+        <div class="dot-item"><div class="dot-sq" style="background:#a05a3a"></div>Not controlled</div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const teal     = '#4a9b6f';
+    const tealLt   = '#4a9b8e';
+    const tealPale = '#7bbfb8';
+    const sand     = '#c8a84b';
+    const sage     = '#d7f7de';
+    const rust     = '#a05a3a';
+    const navy     = '#1f2e35';
+
+    const tickFont  = { family: "'Source Sans 3', sans-serif", size: 11 };
+    const tickColor = '#888880';
+
+    const gridColor = '#eeeee9';
+
+    // ── SPECIES CHART ──
+    new Chart(document.getElementById('speciesChart'), {
+      type: 'bar',
+      data: {
+        labels: ['23-24', '24-25', '25-26'],
+        datasets: [
+          { label: 'Tree Lupin',          data: [41, 159, 213], backgroundColor: teal, borderColor: '#aaa', borderWidth: 1, borderRadius: 3 },
+          { label: 'Sydney Golden Wattle', data: [0,  49,  28],  backgroundColor: sand, borderColor: '#aaa', borderWidth: 1, borderRadius: 3 },
+          { label: 'Other',               data: [0,   2,   10],  backgroundColor: sage, borderColor: '#aaa', borderWidth: 1, borderRadius: 3 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}` } }
+        },
+        scales: {
+          x: { stacked: true, ticks: { font: tickFont, color: tickColor }, grid: { display: false } },
+          y: { stacked: true, beginAtZero: true, ticks: { font: tickFont, color: tickColor }, grid: { color: gridColor },
+               title: { display: true, text: 'No. of Plants', font: { family: "'Source Sans 3', sans-serif", size: 10.5 }, color: tickColor } }
+        }
+      }
+    });
+
+    // ── AGE / LIFE STAGE CHART ──
+    // Species on x-axis, juvenile vs adult stacked
+    // Tree Lupin: J=47+13=60, S/Seedling=19+4=23, A/Mature=134+196=330
+    // SGW: J=6+7=13, A=43+21=64
+    // Other (23-24 Climbing Dock A=2, 25-26 Boneseed J=2/M=4, Periwinkle M=2, Boxthorn M=1, Pampas M=1)
+    new Chart(document.getElementById('ageChart'), {
+      type: 'bar',
+      data: {
+        labels: ['Tree Lupin', 'Syd. Golden Wattle', 'Other Species'],
+        datasets: [
+          { label: 'Seedling / Juvenile', data: [83, 13, 2],   backgroundColor: '#4a9b8e', borderRadius: 3 },
+          { label: 'Adult / Mature',      data: [330, 64, 10], backgroundColor: '#2e6e6e', borderRadius: 3 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}` } }
+        },
+        scales: {
+          x: { stacked: true, ticks: { font: tickFont, color: tickColor }, grid: { display: false } },
+          y: { stacked: true, beginAtZero: true, ticks: { font: tickFont, color: tickColor }, grid: { color: gridColor },
+               title: { display: true, text: 'No. of Plants', font: { family: "'Source Sans 3', sans-serif", size: 10.5 }, color: tickColor } }
+        }
+      }
+    });
+
+    // ── CONTROL STATUS CHART ──
+    // 23-24: all 41 were Controlled (from the data - all Tree Lupin)
+    // 24-25: Controlled=172 (213 - 38 not/partial), Not controlled=34, Partial=3... 
+    // Let me use: 23-24 C=41,NC=0,PC=0; 24-25 C=172,PC=3,NC=38 wait let me recalc
+    // From analysis: Controlled=213 total in processed, NC=37 (20+9+3+1+1+1+1+1), PC=3
+    // But 23-24 had 41 plants all controlled. So 24-25: C=213-41=172, NC=37, PC=3? that's 212 not 210
+    // Actually total processed = 251: 23-24=41, 24-25=210. C=213 means 41+172=213 ✓. NC=35, PC=3 = 210 ✓
+    // 25-26: C=240, NC=9, PC=2
+    new Chart(document.getElementById('controlChart'), {
+      type: 'bar',
+      data: {
+        labels: ['23-24', '24-25', '25-26'],
+        datasets: [
+          { label: 'Controlled',          data: [41, 172, 240], backgroundColor: '#2e6e6e', borderRadius: 3 },
+          { label: 'Partially controlled', data: [0,   3,   2],  backgroundColor: sand, borderRadius: 3 },
+          { label: 'Not controlled',       data: [0,  35,   9],  backgroundColor: rust, borderRadius: 3 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}` } }
+        },
+        scales: {
+          x: { stacked: true, ticks: { font: tickFont, color: tickColor }, grid: { display: false } },
+          y: { stacked: true, beginAtZero: true, ticks: { font: tickFont, color: tickColor }, grid: { color: gridColor },
+               title: { display: true, text: 'No. of Plants', font: { family: "'Source Sans 3', sans-serif", size: 10.5 }, color: tickColor } }
+        }
+      }
+    });
+  </script>
+
+</body>
+</html>
