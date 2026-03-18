@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>REG OMB Age Class Data – 2024–25</title>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;500;600;700&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy:    #1f2e35;
+      --bg:      #f4f0ef;
+      --surface: #ffffff;
+      --border:  #ddddd8;
+      --muted:   #5a5a52;
+      --caption: #888880;
+      --green:   #3a6b3a;
+    }
+
+    html, body { width: 879px; height: 866px; overflow: hidden; }
+
+    body {
+      font-family: 'Source Sans 3', sans-serif;
+      background: var(--bg);
+      color: var(--navy);
+      padding: 14px 16px;
+      display: grid;
+      grid-template-rows: 42px 290px 1fr;
+      gap: 10px;
+    }
+
+    .page-title {
+      font-family: 'Source Serif 4', serif;
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: var(--navy);
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--green);
+      align-self: end;
+    }
+
+    .top-row {
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      gap: 10px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      overflow: hidden;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--navy);
+      flex-shrink: 0;
+    }
+
+    .card-sub {
+      font-size: 11.5px;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+
+    .chart-wrap {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .dot-legend { display: flex; flex-direction: column; gap: 5px; flex-shrink: 0; }
+    .dot-row    { display: flex; gap: 16px; flex-shrink: 0; }
+    .dot-item   { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+    .dot        { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+    .note {
+      font-size: 11px;
+      color: var(--caption);
+      font-style: italic;
+      flex-shrink: 0;
+    }
+
+    /* MAP LEGEND */
+    .ml-section  { font-size: 12px; font-weight: 700; color: var(--navy); margin-top: 3px; }
+    .ml-group    { font-size: 11.5px; font-weight: 600; color: var(--muted); margin-top: 4px; margin-bottom: 3px; }
+    .ml-item     { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); padding-left: 2px; margin-bottom: 4px; }
+    .ml-divider  { height: 1px; background: var(--border); margin: 3px 0; }
+  </style>
+</head>
+<body>
+
+  <div class="page-title">Rangitīkei Environment Group</div>
+
+  <div class="top-row">
+
+    <!-- PIE -->
+    <div class="card" style="flex-direction: row; gap: 16px; align-items: center; justify-content: center;">
+      <div style="width: 220px; height: 220px; flex-shrink: 0;">
+        <canvas id="pieChart"></canvas>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:10px; flex-shrink:0; min-width:200px;">
+        <div class="card-title" style="font-size:16px;">Total OMB by Age Class</div>
+        <div class="card-sub" style="font-size:13px;">All 12 sites combined</div>
+        <div class="dot-legend">
+          <div class="dot-item"><div class="dot" style="background:#4a9b6f"></div>Seedling (S) &lt;1yr</div>
+          <div class="dot-item"><div class="dot" style="background:#2e6e6e"></div>Mature (M) 3–10yr</div>
+          <div class="dot-item"><div class="dot" style="background:#1f2e35"></div>Old Mature (OM) 10+yr</div>
+        </div>
+        <div class="note">S ≈ 1,995 · M ≈ 887 · OM ≈ 150</div>
+      </div>
+    </div>
+
+    <!-- MAP LEGEND -->
+    <div class="card">
+      <div class="card-title">Map Legend</div>
+      <div class="ml-section">Biodiversity Targeted Rates Contractor Data</div>
+      <div class="ml-group">REG Points</div>
+      <div class="ml-item">
+        <svg width="15" height="15" viewBox="0 0 15 15"><circle cx="7.5" cy="7.5" r="5.5" fill="none" stroke="#555" stroke-width="1.5"/></svg>
+        Old man's beard
+      </div>
+      <div class="ml-group">REG Tracks</div>
+      <div class="ml-item">
+        <svg width="26" height="8" viewBox="0 0 26 8"><line x1="0" y1="4" x2="26" y2="4" stroke="#1a1a1a" stroke-width="2.5"/></svg>
+        Track
+      </div>
+      <div class="ml-divider"></div>
+      <div class="ml-section">Targeted Rates Projects</div>
+      <div class="ml-group">Rangitīkei Environment Group (REG)</div>
+      <div class="ml-item">
+        <svg width="18" height="18" viewBox="0 0 18 18"><rect width="18" height="18" fill="#00e64d" opacity="0.85"/></svg>
+        REG site boundary
+      </div>
+    </div>
+
+  </div>
+
+  <!-- STACKED BAR -->
+  <div class="card">
+    <div class="card-title">OMB Age Class by Reserve</div>
+    <div class="card-sub">Stacked estimated counts per site, 2024–25</div>
+    <div class="chart-wrap">
+      <canvas id="stackedChart"></canvas>
+    </div>
+    <div class="dot-row">
+      <div class="dot-item"><div class="dot" style="background:#4a9b6f"></div>Seedling (S)</div>
+      <div class="dot-item"><div class="dot" style="background:#2e6e6e"></div>Mature (M)</div>
+      <div class="dot-item"><div class="dot" style="background:#1f2e35"></div>Old Mature (OM)</div>
+    </div>
+  </div>
+
+  <script>
+    const sCol  = '#4a9b6f';
+    const mCol  = '#2e6e6e';
+    const omCol = '#1f2e35';
+
+    const sites = [
+      'Memorial Park','Boshers Bush','Papakai Reserve','Mount Stewart',
+      'Spooners Hill','Lairds Bush','S. Mangahoe','S. Puriri/Outer',
+      'McPhersons','Pryces Rahui','Greystoke','Tutaenui'
+    ];
+
+    const seedling  = [150, 150, 150, 150,   0,   0, 150, 175, 1000,  20,  75,  0];
+    const mature    = [ 50, 150, 150, 150,  75,   5,   5, 100,  150,  25,  25,  2];
+    const oldMature = [  0,   5,   5,   5,  15,   0,   0,  20,  100,   0,   0,  0];
+
+    const tickFont  = { family: "'Source Sans 3', sans-serif", size: 11.5 };
+    const tickColor = '#888880';
+
+    new Chart(document.getElementById('pieChart'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Seedling (S)', 'Mature (M)', 'Old Mature (OM)'],
+        datasets: [{ data: [1995, 887, 150], backgroundColor: [sCol, mCol, omCol], borderColor: '#fff', borderWidth: 3, hoverOffset: 5 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ~${ctx.parsed.toLocaleString()} (${Math.round(ctx.parsed/3032*100)}%)` } }
+        }
+      }
+    });
+
+    new Chart(document.getElementById('stackedChart'), {
+      type: 'bar',
+      data: {
+        labels: sites,
+        datasets: [
+          { label: 'Seedling (S)',    data: seedling,  backgroundColor: sCol  },
+          { label: 'Mature (M)',      data: mature,    backgroundColor: mCol  },
+          { label: 'Old Mature (OM)', data: oldMature, backgroundColor: omCol }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ~${ctx.parsed.y}` } }
+        },
+        scales: {
+          x: { stacked: true, ticks: { font: tickFont, color: tickColor, maxRotation: 35 }, grid: { display: false } },
+          y: { stacked: true, beginAtZero: true, ticks: { font: tickFont, color: tickColor }, grid: { color: '#eeeee9' },
+               title: { display: true, text: 'Est. count', font: { family: "'Source Sans 3', sans-serif", size: 11 }, color: tickColor } }
+        }
+      }
+    });
+  </script>
+
+</body>
+</html>
