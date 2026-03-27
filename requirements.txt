@@ -1,0 +1,7 @@
+pandas
+numpy
+arcgis
+
+# arcpy is required but is not pip-installable.
+# It is included with ArcGIS Pro. Run this script from within the
+# ArcGIS Pro Python environment (arcgispro-py3).
