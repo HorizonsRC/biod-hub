@@ -26,8 +26,7 @@ biod-hub/
 ├── Pressure_Management_Data_Join.py             # Main data processing script
 ├── config.py                                    # Local paths — gitignored, not committed
 ├── config.example.py                            # Template for config.py
-├── requirements.txt
-└── Data_Requirements.md                         # Data quality rules for the input spreadsheet
+└── requirements.txt
 ```
 
 HTML files are served via GitHub Pages at `https://HorizonsRC.github.io/biod-hub/`.
@@ -68,6 +67,3 @@ Each script run writes a timestamped log file to `logs/pressure-management/YYYY-
 
 Future scripts will write to their own subfolder under `logs/`.
 
-### Data input requirements
-
-See `Data_Requirements.md` for data quality rules that must be met before running the script.
