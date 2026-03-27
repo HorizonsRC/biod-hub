@@ -1,7 +1,9 @@
 config.py
+Data_Requirements.md
 Data/
 Outputs/
 Charts/
+logs/
 __pycache__/
 *.pyc
 *.pyo

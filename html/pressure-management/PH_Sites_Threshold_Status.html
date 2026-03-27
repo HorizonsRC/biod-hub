@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sites Above/Below Threshold by District &amp; Ecosystem</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'DM Sans',sans-serif;background:#f0f2f5;padding:24px}
+    .wrap{background:#fff;border-radius:10px;padding:24px;box-shadow:0 1px 6px rgba(0,0,0,.12);position:relative}
+    .hd{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:16px}
+    .title{font-size:1rem;font-weight:600;color:#1a1a2e;line-height:1.4}
+    .filter-btn{background:#273747;color:#fff;border:none;border-radius:6px;padding:7px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:0.78rem;font-family:inherit;white-space:nowrap;flex-shrink:0}
+    .filter-btn:hover{background:#3a4f63}
+    .panel{display:none;position:absolute;right:24px;top:64px;background:#fff;border-radius:8px;box-shadow:0 4px 24px rgba(0,0,0,.18);z-index:100;min-width:280px;overflow:hidden}
+    .panel.open{display:block}
+    .panel-hd{background:#273747;color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
+    .panel-hd span{font-weight:600;font-size:0.9rem}
+    .panel-close{background:none;border:none;color:#fff;cursor:pointer;font-size:1.1rem;line-height:1;opacity:.8}
+    .panel-close:hover{opacity:1}
+    .panel-body{padding:16px}
+    .fg{margin-bottom:14px}
+    .fg:last-child{margin-bottom:0}
+    .fl{font-size:0.78rem;color:#555;font-weight:500;margin-bottom:6px}
+    select{width:100%;border:1px solid #ddd;border-radius:6px;padding:8px 28px 8px 10px;font-size:0.85rem;color:#1a1a2e;font-family:inherit;appearance:none;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 10px center;cursor:pointer}
+    select:focus{outline:none;border-color:#273747}
+    .updated{color:#aaa;font-size:.72em;margin-top:14px;text-align:right}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hd">
+    <div class="title">No. of Sites Above/Below Threshold by District &amp; Ecosystem Type</div>
+    <button class="filter-btn" onclick="togglePanel()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+      Filter
+    </button>
+  </div>
+
+  <div class="panel" id="panel">
+    <div class="panel-hd">
+      <span>Filter</span>
+      <button class="panel-close" onclick="togglePanel()">&#x2715;</button>
+    </div>
+    <div class="panel-body">
+      <div class="fg">
+        <div class="fl">Financial Year is</div>
+        <select id="fySelect" onchange="updateChart()"></select>
+      </div>
+      <div class="fg">
+        <div class="fl">District is</div>
+        <select id="regionSelect" onchange="updateChart()"></select>
+      </div>
+    </div>
+  </div>
+
+  <canvas id="chart"></canvas>
+  <p class="updated">Generated: 2026-03-27 16:45</p>
+</div>
+<script>
+  const rawData = [{"Region_Ecosystem":"C Horo","Region":"Horo","Ecosystem":"C","Financial_Year":"24-25","Threshold_Status":"Above","Count":0},{"Region_Ecosystem":"C Horo","Region":"Horo","Ecosystem":"C","Financial_Year":"24-25","Threshold_Status":"Below","Count":2},{"Region_Ecosystem":"F Horo","Region":"Horo","Ecosystem":"F","Financial_Year":"24-25","Threshold_Status":"Above","Count":5},{"Region_Ecosystem":"F Horo","Region":"Horo","Ecosystem":"F","Financial_Year":"24-25","Threshold_Status":"Below","Count":5},{"Region_Ecosystem":"W Horo","Region":"Horo","Ecosystem":"W","Financial_Year":"24-25","Threshold_Status":"Above","Count":4},{"Region_Ecosystem":"W Horo","Region":"Horo","Ecosystem":"W","Financial_Year":"24-25","Threshold_Status":"Below","Count":4},{"Region_Ecosystem":"F Man","Region":"Man","Ecosystem":"F","Financial_Year":"24-25","Threshold_Status":"Above","Count":6},{"Region_Ecosystem":"F Man","Region":"Man","Ecosystem":"F","Financial_Year":"24-25","Threshold_Status":"Below","Count":10},{"Region_Ecosystem":"F Man","Region":"Man","Ecosystem":"F","Financial_Year":"25-26","Threshold_Status":"Above","Count":12},{"Region_Ecosystem":"F Man","Region":"Man","Ecosystem":"F","Financial_Year":"25-26","Threshold_Status":"Below","Count":2},{"Region_Ecosystem":"W Man","Region":"Man","Ecosystem":"W","Financial_Year":"24-25","Threshold_Status":"Above","Count":1},{"Region_Ecosystem":"W Man","Region":"Man","Ecosystem":"W","Financial_Year":"24-25","Threshold_Status":"Below","Count":0},{"Region_Ecosystem":"F Palm","Region":"Palm","Ecosystem":"F","Financial_Year":"24-25","Threshold_Status":"Above","Count":2},{"Region_Ecosystem":"F Palm","Region":"Palm","Ecosystem":"F","Financial_Year":"24-25","Threshold_Status":"Below","Count":1},{"Region_Ecosystem":"F Rang","Region":"Rang","Ecosystem":"F","Financial_Year":"24-25","Threshold_Status":"Above","Count":4},{"Region_Ecosystem":"F Rang","Region":"Rang","Ecosystem":"F","Financial_Year":"24-25","Threshold_Status":"Below","Count":11},{"Region_Ecosystem":"F Rang","Region":"Rang","Ecosystem":"F","Financial_Year":"25-26","Threshold_Status":"Above","Count":2},{"Region_Ecosystem":"F Rang","Region":"Rang","Ecosystem":"F","Financial_Year":"25-26","Threshold_Status":"Below","Count":2},{"Region_Ecosystem":"W Rang","Region":"Rang","Ecosystem":"W","Financial_Year":"24-25","Threshold_Status":"Above","Count":1},{"Region_Ecosystem":"W Rang","Region":"Rang","Ecosystem":"W","Financial_Year":"24-25","Threshold_Status":"Below","Count":4},{"Region_Ecosystem":"W Rang","Region":"Rang","Ecosystem":"W","Financial_Year":"25-26","Threshold_Status":"Above","Count":2},{"Region_Ecosystem":"W Rang","Region":"Rang","Ecosystem":"W","Financial_Year":"25-26","Threshold_Status":"Below","Count":0},{"Region_Ecosystem":"F Rua","Region":"Rua","Ecosystem":"F","Financial_Year":"24-25","Threshold_Status":"Above","Count":2},{"Region_Ecosystem":"F Rua","Region":"Rua","Ecosystem":"F","Financial_Year":"24-25","Threshold_Status":"Below","Count":1},{"Region_Ecosystem":"F Rua","Region":"Rua","Ecosystem":"F","Financial_Year":"25-26","Threshold_Status":"Above","Count":2},{"Region_Ecosystem":"F Rua","Region":"Rua","Ecosystem":"F","Financial_Year":"25-26","Threshold_Status":"Below","Count":0},{"Region_Ecosystem":"W Rua","Region":"Rua","Ecosystem":"W","Financial_Year":"24-25","Threshold_Status":"Above","Count":3},{"Region_Ecosystem":"W Rua","Region":"Rua","Ecosystem":"W","Financial_Year":"24-25","Threshold_Status":"Below","Count":0},{"Region_Ecosystem":"W Rua","Region":"Rua","Ecosystem":"W","Financial_Year":"25-26","Threshold_Status":"Above","Count":3},{"Region_Ecosystem":"W Rua","Region":"Rua","Ecosystem":"W","Financial_Year":"25-26","Threshold_Status":"Below","Count":0},{"Region_Ecosystem":"F Tara","Region":"Tara","Ecosystem":"F","Financial_Year":"24-25","Threshold_Status":"Above","Count":4},{"Region_Ecosystem":"F Tara","Region":"Tara","Ecosystem":"F","Financial_Year":"24-25","Threshold_Status":"Below","Count":13},{"Region_Ecosystem":"W Tara","Region":"Tara","Ecosystem":"W","Financial_Year":"24-25","Threshold_Status":"Above","Count":6},{"Region_Ecosystem":"W Tara","Region":"Tara","Ecosystem":"W","Financial_Year":"24-25","Threshold_Status":"Below","Count":3},{"Region_Ecosystem":"F Whan","Region":"Whan","Ecosystem":"F","Financial_Year":"24-25","Threshold_Status":"Above","Count":2},{"Region_Ecosystem":"F Whan","Region":"Whan","Ecosystem":"F","Financial_Year":"24-25","Threshold_Status":"Below","Count":0},{"Region_Ecosystem":"F Whan","Region":"Whan","Ecosystem":"F","Financial_Year":"25-26","Threshold_Status":"Above","Count":1},{"Region_Ecosystem":"F Whan","Region":"Whan","Ecosystem":"F","Financial_Year":"25-26","Threshold_Status":"Below","Count":0},{"Region_Ecosystem":"W Whan","Region":"Whan","Ecosystem":"W","Financial_Year":"24-25","Threshold_Status":"Above","Count":2},{"Region_Ecosystem":"W Whan","Region":"Whan","Ecosystem":"W","Financial_Year":"24-25","Threshold_Status":"Below","Count":0},{"Region_Ecosystem":"W Whan","Region":"Whan","Ecosystem":"W","Financial_Year":"25-26","Threshold_Status":"Above","Count":2},{"Region_Ecosystem":"W Whan","Region":"Whan","Ecosystem":"W","Financial_Year":"25-26","Threshold_Status":"Below","Count":0}];
+  const fys     = [...new Set(rawData.map(d => d.Financial_Year))].sort();
+  const regions = [...new Set(rawData.map(d => d.Region))].sort();
+
+  const fySelect     = document.getElementById('fySelect');
+  const regionSelect = document.getElementById('regionSelect');
+
+  // Populate FY dropdown — default to latest FY
+  fys.forEach(fy => {
+    const o = document.createElement('option');
+    o.value = fy; o.textContent = fy;
+    fySelect.appendChild(o);
+  });
+  fySelect.value = fys[fys.length - 1];
+
+  // Populate Region dropdown
+  [{ v: 'All Regions', t: 'All Regions' }, ...regions.map(r => ({ v: r, t: r }))].forEach(({ v, t }) => {
+    const o = document.createElement('option');
+    o.value = v; o.textContent = t;
+    regionSelect.appendChild(o);
+  });
+
+  function getChartData() {
+    const fy     = fySelect.value;
+    const region = regionSelect.value;
+
+    let rows = rawData.filter(d => String(d.Financial_Year) === String(fy));
+    if (region !== 'All Regions') rows = rows.filter(d => d.Region === region);
+
+    const labels = [...new Set(rows.map(d => d.Region_Ecosystem))].sort();
+
+    const datasets = ['Below', 'Above'].map(status => ({
+      label: status + ' Threshold',
+      data: labels.map(re => {
+        const match = rows.find(d => d.Region_Ecosystem === re && d.Threshold_Status === status);
+        return match ? match.Count : 0;
+      }),
+      backgroundColor: status === 'Above' ? '#43A047' : '#1565C0',
+      stack: 'threshold',
+      borderRadius: 3
+    }));
+
+    return { labels, datasets };
+  }
+
+  const { labels: initLabels, datasets: initDatasets } = getChartData();
+
+  const chart = new Chart(document.getElementById('chart'), {
+    type: 'bar',
+    data: { labels: initLabels, datasets: initDatasets },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { family: "'DM Sans', sans-serif" }, padding: 16 } },
+        title:  { display: false }
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false },
+             ticks: { font: { family: "'DM Sans', sans-serif" }, maxRotation: 45 } },
+        y: { stacked: true, beginAtZero: true,
+             grid: { color: '#e8e8e8', borderDash: [4, 4] },
+             ticks: { font: { family: "'DM Sans', sans-serif" }, precision: 0 } }
+      }
+    }
+  });
+
+  function updateChart() {
+    const { labels, datasets } = getChartData();
+    chart.data.labels   = labels;
+    chart.data.datasets = datasets;
+    chart.update();
+  }
+
+  function togglePanel() { document.getElementById('panel').classList.toggle('open'); }
+</script>
+</body>
+</html>

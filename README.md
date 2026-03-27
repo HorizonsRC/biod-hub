@@ -62,6 +62,12 @@ pip install arcgis pandas numpy
 
 3. Ensure you are signed in to ArcGIS Pro with your portal credentials before running
 
+### Logging
+
+Each script run writes a timestamped log file to `logs/pressure-management/YYYY-MM-DD_HH-MM-SS.log`. Output is written to both the log file and the console. The `logs/` folder is gitignored.
+
+Future scripts will write to their own subfolder under `logs/`.
+
 ### Data input requirements
 
 See `Data_Requirements.md` for data quality rules that must be met before running the script.
