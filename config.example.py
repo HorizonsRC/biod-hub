@@ -6,7 +6,8 @@ CSV_PATH = r"C:\path\to\your\Data\Pressure Management Reporting System Data 2025
 # Output file geodatabase
 OUTPUT_GDB = r"\\your-server\your-share\PH_Pressure_Management\PH_Pressure_Management.gdb"
 
-# Network directory for CSV outputs (pressure by ecosystem, threshold status)
+# Network directory for CSV outputs — read by both scripts
+# (PH_Pressure_by_Ecosystem.csv, PH_Sites_Threshold_Status.csv, PH_Pressure_Scores_Overview.csv)
 NETWORK_DIR = r"\\your-server\your-share\PH_Pressure_Management"
 
 # Local path for district summary CSV

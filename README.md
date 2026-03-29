@@ -49,8 +49,7 @@ HTML files are served via GitHub Pages at `https://HorizonsRC.github.io/biod-hub
 
 - Updated features to the `PH_Pressure_Management` AGOL feature service
 - A local file geodatabase with the feature class and related table
-- Three HTML chart files written to `html/pressure-management/`
-- Summary CSVs to the network
+- Summary CSVs to the network (consumed by `PM_Dashboard_Export.py`)
 
 ### Setup
 
