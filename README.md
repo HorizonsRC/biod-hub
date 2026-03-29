@@ -13,6 +13,7 @@ biod-hub/
 │   │   ├── PH_Pressure_Scores_Overview.html     # Chart — loads dashboard_data.json at runtime
 │   │   ├── PH_Pressure_by_Ecosystem.html        # Chart — loads dashboard_data.json at runtime
 │   │   ├── PH_Sites_Threshold_Status.html       # Chart — loads dashboard_data.json at runtime
+│   │   ├── PH_Pressure_Scores_by_District.html  # Chart — loads dashboard_data.json at runtime
 │   │   ├── PH_Sites_YoY_Threshold.html          # Chart — loads dashboard_data.json at runtime
 │   │   └── dashboard_data.json                  # Auto-updated by PM_Dashboard_Export.py
 │   ├── kkt/
