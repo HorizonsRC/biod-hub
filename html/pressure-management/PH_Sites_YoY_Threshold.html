@@ -15,7 +15,7 @@
     .title{font-size:1rem;font-weight:600;color:#1a1a2e;line-height:1.4}
     .filter-btn{background:#273747;color:#fff;border:none;border-radius:6px;padding:7px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:0.78rem;font-family:inherit;white-space:nowrap;flex-shrink:0}
     .filter-btn:hover{background:#3a4f63}
-    .panel{display:none;position:absolute;right:24px;top:64px;background:#fff;border-radius:8px;box-shadow:0 4px 24px rgba(0,0,0,.18);z-index:100;min-width:260px;overflow:hidden}
+    .panel{display:none;position:absolute;right:24px;top:64px;background:#fff;border-radius:8px;box-shadow:0 4px 24px rgba(0,0,0,.18);z-index:100;min-width:240px;overflow:hidden}
     .panel.open{display:block}
     .panel-hd{background:#273747;color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
     .panel-hd span{font-weight:600;font-size:0.9rem}
@@ -33,7 +33,7 @@
 <body>
 <div class="wrap">
   <div class="hd">
-    <div class="title">No. of Sites Above/Below Threshold by District &amp; Ecosystem Year on Year</div>
+    <div class="title">Change in sites above/below pressure management threshold between financial years by ecosystem type and district</div>
     <button class="filter-btn" onclick="togglePanel()">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
       Filter
@@ -56,22 +56,25 @@
   <div class="chart-wrap"><canvas id="chart"></canvas></div>
   <p class="updated" id="updated"></p>
 </div>
-
 <script>
   let rawData = [];
   let chart;
   let combos = [];
 
+  const ECO_ORDER = ['C', 'W', 'F'];
+  const ecoColors = { C: '#F9A825', W: '#1565C0', F: '#2E7D32' };
+  const ecoLabels = { C: 'Coastal', W: 'Wetland', F: 'Forest' };
+
   const regionSelect = document.getElementById('regionSelect');
 
-  // Custom plugin: draws district group labels and dashed separator lines
-  const districtGroupPlugin = {
-    id: 'districtGroups',
+  // Plugin: district separators + district labels + FY labels on bars
+  const groupPlugin = {
+    id: 'groupLabels',
     afterDraw(chart) {
       const { ctx, scales: { x, y } } = chart;
       if (!combos.length) return;
 
-      // Find district boundaries (first and last index per district)
+      // District boundaries
       const boundaries = {};
       combos.forEach((c, i) => {
         if (!boundaries[c.region]) boundaries[c.region] = { start: i, end: i };
@@ -79,35 +82,56 @@
       });
 
       ctx.save();
-      const labelY = y.bottom + 62;
 
+      // District separators and labels
       Object.entries(boundaries).forEach(([region, { start, end }]) => {
-        // Dashed vertical separator before each district (except the first)
         if (start > 0) {
           const sepX = (x.getPixelForValue(start - 1) + x.getPixelForValue(start)) / 2;
           ctx.setLineDash([4, 4]);
-          ctx.strokeStyle = '#bbb';
+          ctx.strokeStyle = '#ccc';
           ctx.lineWidth = 1;
           ctx.beginPath();
-          ctx.moveTo(sepX, y.top);
-          ctx.lineTo(sepX, y.bottom + 52);
+          ctx.moveTo(sepX, chart.chartArea.top);
+          ctx.lineTo(sepX, chart.chartArea.bottom + 42);
           ctx.stroke();
         }
-
-        // District label centred over its bars
         const midX = (x.getPixelForValue(start) + x.getPixelForValue(end)) / 2;
         ctx.setLineDash([]);
         ctx.fillStyle = '#333';
         ctx.font = "600 11px 'DM Sans', sans-serif";
         ctx.textAlign = 'center';
-        ctx.fillText(region, midX, labelY);
+        ctx.fillText(region, midX, chart.chartArea.bottom + 40);
+      });
+
+      // FY label inside each bar (rotated)
+      combos.forEach((c, i) => {
+        const [neg, pos] = chart.data.datasets[0].data[i];
+        const barHeight  = Math.abs(y.getPixelForValue(pos) - y.getPixelForValue(neg));
+        if (barHeight < 14) return; // too small to label
+        const xPos  = x.getPixelForValue(i);
+        // Place label in the larger half of the bar
+        const abovePx = Math.abs(y.getPixelForValue(pos)  - y.getPixelForValue(0));
+        const belowPx = Math.abs(y.getPixelForValue(neg)  - y.getPixelForValue(0));
+        const useAbove = abovePx >= belowPx;
+        const yMid = useAbove
+          ? (y.getPixelForValue(0) + y.getPixelForValue(pos))  / 2
+          : (y.getPixelForValue(0) + y.getPixelForValue(neg)) / 2;
+        const label = String(c.fy).replace('-', '/');
+        ctx.save();
+        ctx.translate(xPos, yMid);
+        ctx.rotate(-Math.PI / 2);
+        ctx.font = "500 9px 'DM Sans', sans-serif";
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.fillText(label, 0, 3);
+        ctx.restore();
       });
 
       ctx.restore();
     }
   };
 
-  Chart.register(districtGroupPlugin);
+  Chart.register(groupPlugin);
 
   fetch('./dashboard_data.json')
     .then(r => r.json())
@@ -116,110 +140,129 @@
       document.getElementById('updated').textContent = 'Generated: ' + data.generated_at;
 
       const regions = [...new Set(rawData.map(d => d.Region))].sort();
+      [{ v: 'All Districts', t: 'All Districts' }, ...regions.map(r => ({ v: r, t: r }))]
+        .forEach(({ v, t }) => {
+          const o = document.createElement('option');
+          o.value = v; o.textContent = t;
+          regionSelect.appendChild(o);
+        });
 
-      [{ v: 'All Districts', t: 'All Districts' }, ...regions.map(r => ({ v: r, t: r }))].forEach(({ v, t }) => {
-        const o = document.createElement('option');
-        o.value = v; o.textContent = t;
-        regionSelect.appendChild(o);
-      });
+      const { barData, colors, tickLabels } = buildChartData();
 
-      const { labels, datasets } = buildChart();
       chart = new Chart(document.getElementById('chart'), {
         type: 'bar',
-        data: { labels, datasets },
+        data: {
+          labels: tickLabels,
+          datasets: [{
+            data: barData,
+            backgroundColor: colors,
+            borderRadius: 2,
+            borderSkipped: false
+          }]
+        },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          layout: { padding: { bottom: 32 } },
+          layout: { padding: { bottom: 28, top: 12 } },
           plugins: {
-            legend: { position: 'top', align: 'end', labels: { font: { family: "'DM Sans', sans-serif" }, padding: 16 } },
-            title: { display: false }
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                title: items => {
+                  const i = items[0].dataIndex;
+                  return `${combos[i].region} — ${ecoLabels[combos[i].eco] || combos[i].eco} — ${combos[i].fy}`;
+                },
+                label: items => {
+                  const [neg, pos] = items.raw;
+                  return [
+                    `Above threshold: ${pos}`,
+                    `Below threshold: ${Math.abs(neg)}`,
+                    `Total sites: ${pos + Math.abs(neg)}`
+                  ];
+                }
+              }
+            }
           },
           scales: {
             x: {
-              stacked: true,
               grid: { display: false },
-              ticks: {
-                font: { family: "'DM Sans', sans-serif", size: 10 },
-                maxRotation: 0,
-                autoSkip: false
-              }
+              ticks: { display: false }
             },
             y: {
-              stacked: true,
-              beginAtZero: true,
-              title: { display: true, text: 'Number of Sites', font: { family: "'DM Sans', sans-serif", size: 11 } },
-              grid: { color: '#e8e8e8', borderDash: [4, 4] },
+              beginAtZero: false,
+              title: {
+                display: true,
+                text: 'Number of sites scoring above or below pressure management threshold',
+                font: { family: "'DM Sans', sans-serif", size: 12 }
+              },
+              grid: { color: ctx => ctx.tick.value === 0 ? '#333' : '#e8e8e8' },
               ticks: { font: { family: "'DM Sans', sans-serif" }, precision: 0 }
             }
           }
         }
       });
+
+      drawLegend();
     })
     .catch(() => {
       document.querySelector('.chart-wrap').innerHTML =
         '<p style="padding:20px;color:#c00">Failed to load dashboard data.</p>';
     });
 
-  function buildChart() {
+  function buildChartData() {
     const region = regionSelect.value;
-    let rows = region === 'All Districts' ? rawData : rawData.filter(d => d.Region === region);
+    const rows   = region === 'All Districts' ? rawData : rawData.filter(d => d.Region === region);
 
-    // Build sorted unique (Region, Ecosystem, FY) combinations
-    const seen = new Set();
-    const sorted = [...rows].sort((a, b) => {
-      if (a.Region   !== b.Region)   return a.Region.localeCompare(b.Region);
-      if (a.Ecosystem !== b.Ecosystem) return a.Ecosystem.localeCompare(b.Ecosystem);
-      return String(a.Financial_Year).localeCompare(String(b.Financial_Year));
-    });
-
+    // Build sorted combos: Region → Ecosystem (C,W,F order) → FY
+    const regions = [...new Set(rows.map(d => d.Region))].sort();
     combos = [];
-    sorted.forEach(d => {
-      const key = `${d.Region}|${d.Ecosystem}|${d.Financial_Year}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        combos.push({ region: d.Region, ecosystem: d.Ecosystem, fy: String(d.Financial_Year) });
-      }
+    regions.forEach(reg => {
+      ECO_ORDER.forEach(eco => {
+        const fys = [...new Set(
+          rows.filter(d => d.Region === reg && d.Ecosystem === eco).map(d => d.Financial_Year)
+        )].sort();
+        fys.forEach(fy => combos.push({ region: reg, eco, fy: String(fy) }));
+      });
     });
 
-    // Two-line x-axis labels: FY on top, Ecosystem below
-    const labels = combos.map(c => [c.fy, c.ecosystem]);
+    const barData    = [];
+    const colors     = [];
+    const tickLabels = [];
 
-    function getCount(region, ecosystem, fy, status) {
-      const match = rows.find(d =>
-        d.Region === region &&
-        d.Ecosystem === ecosystem &&
-        String(d.Financial_Year) === fy &&
-        d.Threshold_Status === status
-      );
-      return match ? match.Count : 0;
-    }
+    combos.forEach(({ region: reg, eco, fy }) => {
+      const aboveRow = rows.find(d => d.Region === reg && d.Ecosystem === eco &&
+                                      String(d.Financial_Year) === fy && d.Threshold_Status === 'Above');
+      const belowRow = rows.find(d => d.Region === reg && d.Ecosystem === eco &&
+                                      String(d.Financial_Year) === fy && d.Threshold_Status === 'Below');
+      const above = aboveRow ? aboveRow.Count : 0;
+      const below = belowRow ? belowRow.Count : 0;
+      barData.push([-below, above]);
+      colors.push(ecoColors[eco] || '#888');
+      tickLabels.push(String(fy).replace('-', '/'));
+    });
 
-    const datasets = [
-      {
-        label: 'Above Threshold',
-        data: combos.map(c => getCount(c.region, c.ecosystem, c.fy, 'Above')),
-        backgroundColor: '#43A047',
-        stack: 'threshold',
-        borderRadius: 2
-      },
-      {
-        label: 'Below Threshold',
-        data: combos.map(c => getCount(c.region, c.ecosystem, c.fy, 'Below')),
-        backgroundColor: '#1565C0',
-        stack: 'threshold',
-        borderRadius: 2
-      }
-    ];
+    return { barData, colors, tickLabels };
+  }
 
-    return { labels, datasets };
+  function drawLegend() {
+    const legendHtml = ECO_ORDER.map(eco =>
+      `<span style="display:inline-flex;align-items:center;gap:5px;margin-right:16px;font-size:0.78rem;color:#555">
+        <span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:${ecoColors[eco]}"></span>
+        ${ecoLabels[eco]}
+      </span>`
+    ).join('');
+    const el = document.createElement('div');
+    el.style.cssText = 'text-align:center;padding:4px 0 2px';
+    el.innerHTML = legendHtml;
+    document.querySelector('.wrap').appendChild(el);
   }
 
   function updateChart() {
     if (!chart) return;
-    const { labels, datasets } = buildChart();
-    chart.data.labels   = labels;
-    chart.data.datasets = datasets;
+    const { barData, colors, tickLabels } = buildChartData();
+    chart.data.labels                      = tickLabels;
+    chart.data.datasets[0].data            = barData;
+    chart.data.datasets[0].backgroundColor = colors;
     chart.update();
   }
 
