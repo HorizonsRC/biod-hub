@@ -712,8 +712,10 @@ def write_scores_overview_chart_html(filepath, df, generated_at):
   <script src="%%ANNOTATION%%"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'DM Sans',sans-serif;background:#f0f2f5;padding:24px}
-    .wrap{background:#fff;border-radius:10px;padding:24px;box-shadow:0 1px 6px rgba(0,0,0,.12);position:relative}
+    html,body{height:100%;overflow:hidden}
+    body{font-family:'DM Sans',sans-serif;background:#fff}
+    .wrap{background:#fff;padding:16px 20px 8px;position:relative;height:100%;display:flex;flex-direction:column}
+    .chart-wrap{flex:1;min-height:0;position:relative}
     .hd{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:16px}
     .title{font-size:1rem;font-weight:600;color:#1a1a2e;line-height:1.4}
     .filter-btn{background:#273747;color:#fff;border:none;border-radius:6px;padding:7px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:0.78rem;font-family:inherit;white-space:nowrap;flex-shrink:0}
@@ -760,7 +762,7 @@ def write_scores_overview_chart_html(filepath, df, generated_at):
     </div>
   </div>
 
-  <canvas id="chart"></canvas>
+  <div class="chart-wrap"><canvas id="chart"></canvas></div>
   <p class="updated">Generated: %%GENERATED_AT%%</p>
 </div>
 <script>
@@ -820,6 +822,7 @@ def write_scores_overview_chart_html(filepath, df, generated_at):
     data: { labels: initLabels, datasets: initDatasets },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
         legend: { position: 'bottom', labels: { font: { family: "'DM Sans', sans-serif" }, padding: 16 } },
         title:  { display: false },
