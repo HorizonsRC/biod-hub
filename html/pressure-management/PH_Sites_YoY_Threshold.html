@@ -79,7 +79,7 @@
       });
 
       ctx.save();
-      const labelY = y.bottom + 46;
+      const labelY = y.bottom + 62;
 
       Object.entries(boundaries).forEach(([region, { start, end }]) => {
         // Dashed vertical separator before each district (except the first)
@@ -90,7 +90,7 @@
           ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.moveTo(sepX, y.top);
-          ctx.lineTo(sepX, y.bottom + 36);
+          ctx.lineTo(sepX, y.bottom + 52);
           ctx.stroke();
         }
 
@@ -130,7 +130,7 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          layout: { padding: { bottom: 28 } },
+          layout: { padding: { bottom: 50 } },
           plugins: {
             legend: { position: 'bottom', labels: { font: { family: "'DM Sans', sans-serif" }, padding: 16 } },
             title: { display: false }
