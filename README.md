@@ -10,9 +10,10 @@ biod-hub/
 │   ├── index.html                               # Main hub landing page
 │   ├── pressure-management/
 │   │   ├── pressure-management-dashboard.html   # Scoring criteria reference
-│   │   ├── PH_Pressure_Scores_Overview.html     # Generated chart
-│   │   ├── PH_Pressure_by_Ecosystem.html        # Generated chart
-│   │   └── PH_Sites_Threshold_Status.html       # Generated chart
+│   │   ├── PH_Pressure_Scores_Overview.html     # Chart — loads dashboard_data.json at runtime
+│   │   ├── PH_Pressure_by_Ecosystem.html        # Chart — loads dashboard_data.json at runtime
+│   │   ├── PH_Sites_Threshold_Status.html       # Chart — loads dashboard_data.json at runtime
+│   │   └── dashboard_data.json                  # Auto-updated by PM_Dashboard_Export.py
 │   ├── kkt/
 │   │   └── KKT-dashboard.html
 │   ├── targeted-rates/
@@ -23,7 +24,8 @@ biod-hub/
 │   │   ├── icon-sites.html
 │   │   └── bushy-park.html
 │   └── totara-reserve/                          # Placeholder for future content
-├── Pressure_Management_Data_Join.py             # Main data processing script
+├── Pressure_Management_Data_Join.py             # Main data pipeline
+├── PM_Dashboard_Export.py                       # Builds dashboard_data.json and pushes to GitHub
 ├── config.py                                    # Local paths — gitignored, not committed
 ├── config.example.py                            # Template for config.py
 └── requirements.txt
@@ -61,9 +63,18 @@ pip install arcgis pandas numpy
 
 3. Ensure you are signed in to ArcGIS Pro with your portal credentials before running
 
+### Scripts
+
+| Script | Purpose |
+|---|---|
+| `Pressure_Management_Data_Join.py` | Reads the SharePoint CSV, joins to the spatial layer, updates AGOL, writes the GDB and network CSVs |
+| `PM_Dashboard_Export.py` | Reads the network CSVs, builds `dashboard_data.json`, commits and pushes it to GitHub Pages |
+
+Run `Pressure_Management_Data_Join.py` first, then `PM_Dashboard_Export.py`. The HTML chart files are static — they fetch `dashboard_data.json` at runtime from GitHub Pages and require no regeneration.
+
 ### Logging
 
-Each script run writes a timestamped log file to `logs/pressure-management/YYYY-MM-DD_HH-MM-SS.log`. Output is written to both the log file and the console. The `logs/` folder is gitignored.
+Each script run writes a timestamped log file to `logs/pressure-management/`. Output is written to both the log file and the console. The `logs/` folder is gitignored.
 
 Future scripts will write to their own subfolder under `logs/`.
 

@@ -7,8 +7,10 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'DM Sans',sans-serif;background:#f0f2f5;padding:24px}
-    .wrap{background:#fff;border-radius:10px;padding:24px;box-shadow:0 1px 6px rgba(0,0,0,.12);position:relative}
+    html,body{height:100%;overflow:hidden}
+    body{font-family:'DM Sans',sans-serif;background:#fff}
+    .wrap{background:#fff;padding:16px 20px 8px;position:relative;height:100%;display:flex;flex-direction:column}
+    .chart-wrap{flex:1;min-height:0;position:relative}
     .hd{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:16px}
     .title{font-size:1rem;font-weight:600;color:#1a1a2e;line-height:1.4}
     .filter-btn{background:#273747;color:#fff;border:none;border-radius:6px;padding:7px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:0.78rem;font-family:inherit;white-space:nowrap;flex-shrink:0}
@@ -25,7 +27,7 @@
     .fl{font-size:0.78rem;color:#555;font-weight:500;margin-bottom:6px}
     select{width:100%;border:1px solid #ddd;border-radius:6px;padding:8px 28px 8px 10px;font-size:0.85rem;color:#1a1a2e;font-family:inherit;appearance:none;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 10px center;cursor:pointer}
     select:focus{outline:none;border-color:#273747}
-    .updated{color:#aaa;font-size:.72em;margin-top:14px;text-align:right}
+    .updated{color:#aaa;font-size:.72em;margin-top:4px;text-align:right}
   </style>
 </head>
 <body>
@@ -55,41 +57,70 @@
     </div>
   </div>
 
-  <canvas id="chart"></canvas>
-  <p class="updated">Generated: 2026-03-30 09:54</p>
+  <div class="chart-wrap"><canvas id="chart"></canvas></div>
+  <p class="updated" id="updated"></p>
 </div>
 <script>
-  const rawData = [{"Region_Ecosystem":"C Horo","Region":"Horo","Ecosystem":"C","Financial_Year":"24-25","Threshold_Status":"Above","Count":0},{"Region_Ecosystem":"C Horo","Region":"Horo","Ecosystem":"C","Financial_Year":"24-25","Threshold_Status":"Below","Count":2},{"Region_Ecosystem":"F Horo","Region":"Horo","Ecosystem":"F","Financial_Year":"24-25","Threshold_Status":"Above","Count":5},{"Region_Ecosystem":"F Horo","Region":"Horo","Ecosystem":"F","Financial_Year":"24-25","Threshold_Status":"Below","Count":5},{"Region_Ecosystem":"W Horo","Region":"Horo","Ecosystem":"W","Financial_Year":"24-25","Threshold_Status":"Above","Count":4},{"Region_Ecosystem":"W Horo","Region":"Horo","Ecosystem":"W","Financial_Year":"24-25","Threshold_Status":"Below","Count":4},{"Region_Ecosystem":"F Man","Region":"Man","Ecosystem":"F","Financial_Year":"24-25","Threshold_Status":"Above","Count":6},{"Region_Ecosystem":"F Man","Region":"Man","Ecosystem":"F","Financial_Year":"24-25","Threshold_Status":"Below","Count":10},{"Region_Ecosystem":"F Man","Region":"Man","Ecosystem":"F","Financial_Year":"25-26","Threshold_Status":"Above","Count":12},{"Region_Ecosystem":"F Man","Region":"Man","Ecosystem":"F","Financial_Year":"25-26","Threshold_Status":"Below","Count":2},{"Region_Ecosystem":"W Man","Region":"Man","Ecosystem":"W","Financial_Year":"24-25","Threshold_Status":"Above","Count":1},{"Region_Ecosystem":"W Man","Region":"Man","Ecosystem":"W","Financial_Year":"24-25","Threshold_Status":"Below","Count":0},{"Region_Ecosystem":"F Palm","Region":"Palm","Ecosystem":"F","Financial_Year":"24-25","Threshold_Status":"Above","Count":2},{"Region_Ecosystem":"F Palm","Region":"Palm","Ecosystem":"F","Financial_Year":"24-25","Threshold_Status":"Below","Count":1},{"Region_Ecosystem":"F Rang","Region":"Rang","Ecosystem":"F","Financial_Year":"24-25","Threshold_Status":"Above","Count":4},{"Region_Ecosystem":"F Rang","Region":"Rang","Ecosystem":"F","Financial_Year":"24-25","Threshold_Status":"Below","Count":11},{"Region_Ecosystem":"F Rang","Region":"Rang","Ecosystem":"F","Financial_Year":"25-26","Threshold_Status":"Above","Count":2},{"Region_Ecosystem":"F Rang","Region":"Rang","Ecosystem":"F","Financial_Year":"25-26","Threshold_Status":"Below","Count":2},{"Region_Ecosystem":"W Rang","Region":"Rang","Ecosystem":"W","Financial_Year":"24-25","Threshold_Status":"Above","Count":1},{"Region_Ecosystem":"W Rang","Region":"Rang","Ecosystem":"W","Financial_Year":"24-25","Threshold_Status":"Below","Count":4},{"Region_Ecosystem":"W Rang","Region":"Rang","Ecosystem":"W","Financial_Year":"25-26","Threshold_Status":"Above","Count":2},{"Region_Ecosystem":"W Rang","Region":"Rang","Ecosystem":"W","Financial_Year":"25-26","Threshold_Status":"Below","Count":0},{"Region_Ecosystem":"F Rua","Region":"Rua","Ecosystem":"F","Financial_Year":"24-25","Threshold_Status":"Above","Count":2},{"Region_Ecosystem":"F Rua","Region":"Rua","Ecosystem":"F","Financial_Year":"24-25","Threshold_Status":"Below","Count":1},{"Region_Ecosystem":"F Rua","Region":"Rua","Ecosystem":"F","Financial_Year":"25-26","Threshold_Status":"Above","Count":2},{"Region_Ecosystem":"F Rua","Region":"Rua","Ecosystem":"F","Financial_Year":"25-26","Threshold_Status":"Below","Count":0},{"Region_Ecosystem":"W Rua","Region":"Rua","Ecosystem":"W","Financial_Year":"24-25","Threshold_Status":"Above","Count":3},{"Region_Ecosystem":"W Rua","Region":"Rua","Ecosystem":"W","Financial_Year":"24-25","Threshold_Status":"Below","Count":0},{"Region_Ecosystem":"W Rua","Region":"Rua","Ecosystem":"W","Financial_Year":"25-26","Threshold_Status":"Above","Count":3},{"Region_Ecosystem":"W Rua","Region":"Rua","Ecosystem":"W","Financial_Year":"25-26","Threshold_Status":"Below","Count":0},{"Region_Ecosystem":"F Tara","Region":"Tara","Ecosystem":"F","Financial_Year":"24-25","Threshold_Status":"Above","Count":4},{"Region_Ecosystem":"F Tara","Region":"Tara","Ecosystem":"F","Financial_Year":"24-25","Threshold_Status":"Below","Count":13},{"Region_Ecosystem":"W Tara","Region":"Tara","Ecosystem":"W","Financial_Year":"24-25","Threshold_Status":"Above","Count":6},{"Region_Ecosystem":"W Tara","Region":"Tara","Ecosystem":"W","Financial_Year":"24-25","Threshold_Status":"Below","Count":3},{"Region_Ecosystem":"F Whan","Region":"Whan","Ecosystem":"F","Financial_Year":"24-25","Threshold_Status":"Above","Count":2},{"Region_Ecosystem":"F Whan","Region":"Whan","Ecosystem":"F","Financial_Year":"24-25","Threshold_Status":"Below","Count":0},{"Region_Ecosystem":"F Whan","Region":"Whan","Ecosystem":"F","Financial_Year":"25-26","Threshold_Status":"Above","Count":1},{"Region_Ecosystem":"F Whan","Region":"Whan","Ecosystem":"F","Financial_Year":"25-26","Threshold_Status":"Below","Count":0},{"Region_Ecosystem":"W Whan","Region":"Whan","Ecosystem":"W","Financial_Year":"24-25","Threshold_Status":"Above","Count":2},{"Region_Ecosystem":"W Whan","Region":"Whan","Ecosystem":"W","Financial_Year":"24-25","Threshold_Status":"Below","Count":0},{"Region_Ecosystem":"W Whan","Region":"Whan","Ecosystem":"W","Financial_Year":"25-26","Threshold_Status":"Above","Count":2},{"Region_Ecosystem":"W Whan","Region":"Whan","Ecosystem":"W","Financial_Year":"25-26","Threshold_Status":"Below","Count":0}];
-  const fys     = [...new Set(rawData.map(d => d.Financial_Year))].sort();
-  const regions = [...new Set(rawData.map(d => d.Region))].sort();
+  let rawData = [];
+  let chart;
 
   const fySelect     = document.getElementById('fySelect');
   const regionSelect = document.getElementById('regionSelect');
 
-  // Populate FY dropdown — default to latest FY
-  fys.forEach(fy => {
-    const o = document.createElement('option');
-    o.value = fy; o.textContent = fy;
-    fySelect.appendChild(o);
-  });
-  fySelect.value = fys[fys.length - 1];
+  fetch('./dashboard_data.json')
+    .then(r => r.json())
+    .then(data => {
+      rawData = data.threshold_status;
+      document.getElementById('updated').textContent = 'Generated: ' + data.generated_at;
 
-  // Populate Region dropdown
-  [{ v: 'All Regions', t: 'All Regions' }, ...regions.map(r => ({ v: r, t: r }))].forEach(({ v, t }) => {
-    const o = document.createElement('option');
-    o.value = v; o.textContent = t;
-    regionSelect.appendChild(o);
-  });
+      const fys     = [...new Set(rawData.map(d => d.Financial_Year))].sort();
+      const regions = [...new Set(rawData.map(d => d.Region))].sort();
+
+      fys.forEach(fy => {
+        const o = document.createElement('option');
+        o.value = fy; o.textContent = fy;
+        fySelect.appendChild(o);
+      });
+      fySelect.value = fys[fys.length - 1];
+
+      [{ v: 'All Regions', t: 'All Regions' }, ...regions.map(r => ({ v: r, t: r }))].forEach(({ v, t }) => {
+        const o = document.createElement('option');
+        o.value = v; o.textContent = t;
+        regionSelect.appendChild(o);
+      });
+
+      const { labels, datasets } = getChartData();
+      chart = new Chart(document.getElementById('chart'), {
+        type: 'bar',
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { font: { family: "'DM Sans', sans-serif" }, padding: 16 } },
+            title: { display: false }
+          },
+          scales: {
+            x: { stacked: true, grid: { display: false },
+                 ticks: { font: { family: "'DM Sans', sans-serif" }, maxRotation: 45 } },
+            y: { stacked: true, beginAtZero: true,
+                 grid: { color: '#e8e8e8', borderDash: [4, 4] },
+                 ticks: { font: { family: "'DM Sans', sans-serif" }, precision: 0 } }
+          }
+        }
+      });
+    })
+    .catch(() => {
+      document.querySelector('.chart-wrap').innerHTML =
+        '<p style="padding:20px;color:#c00">Failed to load dashboard data.</p>';
+    });
 
   function getChartData() {
     const fy     = fySelect.value;
     const region = regionSelect.value;
-
     let rows = rawData.filter(d => String(d.Financial_Year) === String(fy));
     if (region !== 'All Regions') rows = rows.filter(d => d.Region === region);
-
     const labels = [...new Set(rows.map(d => d.Region_Ecosystem))].sort();
-
     const datasets = ['Below', 'Above'].map(status => ({
       label: status + ' Threshold',
       data: labels.map(re => {
@@ -100,32 +131,11 @@
       stack: 'threshold',
       borderRadius: 3
     }));
-
     return { labels, datasets };
   }
 
-  const { labels: initLabels, datasets: initDatasets } = getChartData();
-
-  const chart = new Chart(document.getElementById('chart'), {
-    type: 'bar',
-    data: { labels: initLabels, datasets: initDatasets },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { position: 'bottom', labels: { font: { family: "'DM Sans', sans-serif" }, padding: 16 } },
-        title:  { display: false }
-      },
-      scales: {
-        x: { stacked: true, grid: { display: false },
-             ticks: { font: { family: "'DM Sans', sans-serif" }, maxRotation: 45 } },
-        y: { stacked: true, beginAtZero: true,
-             grid: { color: '#e8e8e8', borderDash: [4, 4] },
-             ticks: { font: { family: "'DM Sans', sans-serif" }, precision: 0 } }
-      }
-    }
-  });
-
   function updateChart() {
+    if (!chart) return;
     const { labels, datasets } = getChartData();
     chart.data.labels   = labels;
     chart.data.datasets = datasets;
