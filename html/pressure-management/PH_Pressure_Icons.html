@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Management Pressures</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;overflow:hidden}
+    body{font-family:'DM Sans',sans-serif;background:#fff}
+    .wrap{height:100%;display:flex;flex-direction:column;padding:10px 10px 8px;background:#fff}
+    h2{font-size:.78rem;font-weight:600;color:#1a1a2e;text-transform:uppercase;letter-spacing:.07em;text-align:center;margin-bottom:8px;flex-shrink:0}
+    .grid{flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(3,1fr);gap:6px;min-height:0}
+    .card{background:#f5f6f7;border-radius:8px;display:flex;flex-direction:column;align-items:center;padding:6px 6px 0;position:relative;overflow:hidden}
+    .card-svg{flex:1;width:100%;min-height:0;display:flex;align-items:center;justify-content:center}
+    .card-svg svg{width:100%;height:100%}
+    .lbl{font-size:.64rem;font-weight:600;color:#444;text-align:center;line-height:1.2;padding:3px 0 7px;flex-shrink:0}
+    .bar{height:3px;width:100%;border-radius:0 0 8px 8px;position:absolute;bottom:0;left:0}
+    .ung .bar{background:#2166AC}
+    .rab .bar{background:#F4D03F}
+    .pos .bar{background:#4DAC26}
+    .pre .bar{background:#762A83}
+    .pes .bar{background:#E66101}
+    .fra .bar{background:#A6611A}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h2>Management Pressures</h2>
+  <div class="grid">
+
+    <!-- ── Ungulates (Deer) ── -->
+    <div class="card ung">
+      <div class="card-svg">
+        <svg viewBox="0 0 100 92" fill="#273747" xmlns="http://www.w3.org/2000/svg">
+          <!-- antlers -->
+          <g stroke="#273747" stroke-linecap="round" stroke-linejoin="round" fill="none">
+            <polyline points="68,35 66,21 62,13" stroke-width="2.8"/>
+            <polyline points="66,21 62,18" stroke-width="2.2"/>
+            <polyline points="66,21 70,16" stroke-width="2.2"/>
+            <polyline points="77,33 79,19 83,11" stroke-width="2.8"/>
+            <polyline points="79,19 82,16" stroke-width="2.2"/>
+            <polyline points="79,19 76,15" stroke-width="2.2"/>
+          </g>
+          <!-- ear -->
+          <ellipse cx="65" cy="37" rx="5" ry="7" transform="rotate(25 65 37)"/>
+          <!-- head -->
+          <ellipse cx="74" cy="44" rx="12" ry="10" transform="rotate(-12 74 44)"/>
+          <!-- snout bump -->
+          <ellipse cx="84" cy="50" rx="5" ry="4" transform="rotate(-12 84 50)"/>
+          <!-- eye -->
+          <circle cx="79" cy="40" r="2" fill="#f5f6f7"/>
+          <!-- neck -->
+          <path d="M66 50 Q72 39 74 48 Q70 56 66 50Z"/>
+          <!-- body -->
+          <ellipse cx="46" cy="65" rx="25" ry="15"/>
+          <!-- rump -->
+          <circle cx="23" cy="62" r="10"/>
+          <!-- tail -->
+          <ellipse cx="14" cy="57" rx="4" ry="6" transform="rotate(-20 14 57)"/>
+          <!-- legs -->
+          <rect x="55" y="77" width="6" height="15" rx="3"/>
+          <rect x="65" y="77" width="6" height="13" rx="3"/>
+          <rect x="33" y="77" width="6" height="15" rx="3"/>
+          <rect x="43" y="77" width="6" height="13" rx="3"/>
+        </svg>
+      </div>
+      <div class="lbl">Ungulates</div>
+      <div class="bar"></div>
+    </div>
+
+    <!-- ── Rabbits / Hares ── -->
+    <div class="card rab">
+      <div class="card-svg">
+        <svg viewBox="0 0 80 96" fill="#273747" xmlns="http://www.w3.org/2000/svg">
+          <!-- ears -->
+          <ellipse cx="40" cy="22" rx="7" ry="20" transform="rotate(-12 40 22)"/>
+          <ellipse cx="56" cy="20" rx="7" ry="20" transform="rotate(12 56 20)"/>
+          <!-- head -->
+          <circle cx="52" cy="50" r="15"/>
+          <!-- body -->
+          <ellipse cx="38" cy="75" rx="24" ry="17"/>
+          <!-- tail -->
+          <circle cx="14" cy="76" r="7"/>
+          <!-- front paw -->
+          <ellipse cx="57" cy="85" rx="11" ry="5"/>
+          <!-- eye -->
+          <circle cx="60" cy="44" r="2.5" fill="#f5f6f7"/>
+          <!-- nose -->
+          <circle cx="66" cy="54" r="2" fill="#f5f6f7"/>
+        </svg>
+      </div>
+      <div class="lbl">Rabbits / Hares</div>
+      <div class="bar"></div>
+    </div>
+
+    <!-- ── Possum Browse ── -->
+    <div class="card pos">
+      <div class="card-svg">
+        <svg viewBox="0 0 100 88" fill="#273747" xmlns="http://www.w3.org/2000/svg">
+          <!-- tail (draw behind body) -->
+          <path d="M26 70 Q10 74 8 60 Q6 46 20 44 Q32 43 34 58"
+                stroke="#273747" stroke-width="8" stroke-linecap="round" fill="none"/>
+          <!-- body -->
+          <ellipse cx="56" cy="63" rx="27" ry="17"/>
+          <!-- head -->
+          <ellipse cx="79" cy="44" rx="14" ry="13"/>
+          <!-- left ear -->
+          <ellipse cx="68" cy="29" rx="8" ry="11" transform="rotate(-20 68 29)"/>
+          <!-- right ear -->
+          <ellipse cx="84" cy="27" rx="8" ry="11" transform="rotate(20 84 27)"/>
+          <!-- pointed snout -->
+          <path d="M88 47 Q97 50 94 56 Q87 54 88 47Z"/>
+          <!-- eye -->
+          <circle cx="84" cy="42" r="3" fill="#f5f6f7"/>
+          <!-- paws -->
+          <ellipse cx="66" cy="78" rx="10" ry="4"/>
+          <ellipse cx="46" cy="78" rx="10" ry="4"/>
+        </svg>
+      </div>
+      <div class="lbl">Possum Browse</div>
+      <div class="bar"></div>
+    </div>
+
+    <!-- ── Predation (Stoat) ── -->
+    <div class="card pre">
+      <div class="card-svg">
+        <svg viewBox="0 0 118 80" fill="#273747" xmlns="http://www.w3.org/2000/svg">
+          <!-- tail from left rear of body, curves up, black tip -->
+          <path d="M26 48 Q12 52 8 42 Q4 30 16 28"
+                stroke="#273747" stroke-width="7" stroke-linecap="round" fill="none"/>
+          <ellipse cx="16" cy="26" rx="7" ry="5" transform="rotate(-25 16 26)"/>
+          <!-- body — long and low -->
+          <ellipse cx="62" cy="46" rx="36" ry="12"/>
+          <!-- neck -->
+          <ellipse cx="92" cy="38" rx="8" ry="11"/>
+          <!-- head -->
+          <circle cx="102" cy="32" r="12"/>
+          <!-- snout -->
+          <ellipse cx="113" cy="37" rx="6" ry="5"/>
+          <!-- ear -->
+          <circle cx="97" cy="22" r="6"/>
+          <!-- eye -->
+          <circle cx="107" cy="28" r="2.5" fill="#f5f6f7"/>
+          <!-- nose -->
+          <circle cx="118" cy="37" r="2" fill="#f5f6f7"/>
+          <!-- legs -->
+          <rect x="78" y="56" width="7" height="14" rx="3"/>
+          <rect x="88" y="56" width="7" height="12" rx="3"/>
+          <rect x="46" y="56" width="7" height="14" rx="3"/>
+          <rect x="56" y="56" width="7" height="12" rx="3"/>
+        </svg>
+      </div>
+      <div class="lbl">Predation</div>
+      <div class="bar"></div>
+    </div>
+
+    <!-- ── Pest Plants (Old Man's Beard) ── -->
+    <div class="card pes">
+      <div class="card-svg">
+        <svg viewBox="0 0 80 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- main climbing stem -->
+          <path d="M40 92 Q36 76 40 60 Q44 44 37 28 Q33 16 37 6"
+                stroke="#273747" stroke-width="3" stroke-linecap="round"/>
+          <!-- branch right upper -->
+          <path d="M38 34 Q52 28 60 20" stroke="#273747" stroke-width="2" stroke-linecap="round"/>
+          <!-- branch left upper -->
+          <path d="M38 22 Q25 16 14 12" stroke="#273747" stroke-width="2" stroke-linecap="round"/>
+          <!-- branch right mid -->
+          <path d="M40 56 Q55 48 64 40" stroke="#273747" stroke-width="2.5" stroke-linecap="round"/>
+          <!-- branch left mid -->
+          <path d="M40 68 Q26 62 16 56" stroke="#273747" stroke-width="2.5" stroke-linecap="round"/>
+
+          <!-- fluffy seed cluster — right mid branch tip -->
+          <circle cx="64" cy="40" r="9"  fill="#273747"/>
+          <circle cx="71" cy="34" r="5"  fill="#273747"/>
+          <circle cx="70" cy="46" r="5"  fill="#273747"/>
+          <circle cx="59" cy="33" r="4"  fill="#273747"/>
+
+          <!-- fluffy seed cluster — left mid branch tip -->
+          <circle cx="16" cy="56" r="8"  fill="#273747"/>
+          <circle cx="9"  cy="52" r="5"  fill="#273747"/>
+          <circle cx="9"  cy="61" r="4"  fill="#273747"/>
+          <circle cx="18" cy="63" r="4"  fill="#273747"/>
+
+          <!-- fluffy seed cluster — right upper tip -->
+          <circle cx="60" cy="20" r="8"  fill="#273747"/>
+          <circle cx="67" cy="15" r="5"  fill="#273747"/>
+          <circle cx="66" cy="26" r="4"  fill="#273747"/>
+
+          <!-- fluffy seed cluster — left upper tip -->
+          <circle cx="14" cy="12" r="7"  fill="#273747"/>
+          <circle cx="8"  cy="8"  r="4"  fill="#273747"/>
+          <circle cx="8"  cy="17" r="4"  fill="#273747"/>
+
+          <!-- fluffy seed cluster — top of main stem -->
+          <circle cx="37" cy="6"  r="6"  fill="#273747"/>
+          <circle cx="43" cy="2"  r="4"  fill="#273747"/>
+
+          <!-- a couple of simple leaves on the main stem -->
+          <path d="M40 58 Q51 52 47 43 Q38 49 40 58Z" fill="#273747"/>
+          <path d="M40 74 Q29 68 31 59 Q40 63 40 74Z" fill="#273747"/>
+          <path d="M39 40 Q29 34 31 26 Q40 30 39 40Z" fill="#273747"/>
+        </svg>
+      </div>
+      <div class="lbl">Pest Plants</div>
+      <div class="bar"></div>
+    </div>
+
+    <!-- ── Habitat Fragmentation (Pōhutukawa silhouette) ── -->
+    <div class="card fra">
+      <div class="card-svg">
+        <svg viewBox="0 0 80 90" fill="#273747" xmlns="http://www.w3.org/2000/svg">
+          <!-- root flare & trunk -->
+          <path d="M36 88 L36 64 L44 64 L44 88Z"/>
+          <path d="M36 80 Q24 78 16 85" stroke="#273747" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <path d="M44 80 Q56 78 64 85" stroke="#273747" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <!-- wide spreading lower branches -->
+          <path d="M36 68 Q18 60 6 66" stroke="#273747" stroke-width="7" fill="none" stroke-linecap="round"/>
+          <path d="M44 68 Q62 60 74 66" stroke="#273747" stroke-width="7" fill="none" stroke-linecap="round"/>
+          <!-- canopy — overlapping ellipses for a broad irregular crown -->
+          <ellipse cx="40" cy="50" rx="30" ry="18"/>
+          <ellipse cx="20" cy="46" rx="18" ry="14"/>
+          <ellipse cx="60" cy="46" rx="18" ry="14"/>
+          <ellipse cx="40" cy="36" rx="24" ry="18"/>
+          <!-- upper crown bumps -->
+          <circle cx="28" cy="26" r="10"/>
+          <circle cx="40" cy="22" r="12"/>
+          <circle cx="52" cy="26" r="10"/>
+        </svg>
+      </div>
+      <div class="lbl">Habitat Fragmentation</div>
+      <div class="bar"></div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>
