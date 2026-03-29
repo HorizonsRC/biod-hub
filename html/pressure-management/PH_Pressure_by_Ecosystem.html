@@ -5,6 +5,7 @@
   <title>Average Pressure by Ecosystem Type</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     html,body{height:100%;overflow:hidden}
@@ -84,7 +85,10 @@
       const fys     = [...new Set(rawData.map(d => d.Financial_Year))].sort();
       const regions = [...new Set(rawData.filter(d => d.Region !== 'All Regions').map(d => d.Region))].sort();
       pressureTypes = [...new Set(rawData.map(d => d.Pressure_Type))].sort();
-      ecosystems    = [...new Set(rawData.map(d => d.Ecosystem))].sort();
+      // Fixed order: Coastal, Wetland, Forest
+      const ecoOrder = ['C', 'W', 'F', 'Coastal', 'Wetland', 'Forest'];
+      const allEcos  = [...new Set(rawData.map(d => d.Ecosystem))];
+      ecosystems     = ecoOrder.filter(e => allEcos.includes(e));
 
       fys.forEach(fy => {
         const o = document.createElement('option');
@@ -107,12 +111,23 @@
           maintainAspectRatio: false,
           plugins: {
             legend: { position: 'bottom', labels: { font: { family: "'DM Sans', sans-serif" }, padding: 16 } },
-            title: { display: false }
+            title: { display: false },
+            annotation: {
+              annotations: {
+                threshold: {
+                  type: 'line', yMin: 55, yMax: 55,
+                  borderColor: 'red', borderWidth: 2, borderDash: [6, 4],
+                  label: { display: true, content: 'Pressure Management Threshold', position: 'end',
+                           backgroundColor: 'red', color: '#fff', font: { size: 11 } }
+                }
+              }
+            }
           },
           scales: {
             x: { grid: { display: false },
                  ticks: { font: { family: "'DM Sans', sans-serif" } } },
             y: { min: 0, max: 100,
+                 title: { display: true, text: 'Average Pressure Score', font: { family: "'DM Sans', sans-serif", size: 11 } },
                  grid: { color: '#e8e8e8', borderDash: [4, 4] },
                  ticks: { font: { family: "'DM Sans', sans-serif" } } }
           }
