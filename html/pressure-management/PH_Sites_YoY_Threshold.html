@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sites Threshold Year on Year</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;overflow:hidden}
+    body{font-family:'DM Sans',sans-serif;background:#fff}
+    .wrap{background:#fff;padding:16px 20px 8px;position:relative;height:100%;display:flex;flex-direction:column}
+    .chart-wrap{flex:1;min-height:0;position:relative}
+    .hd{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:16px}
+    .title{font-size:1rem;font-weight:600;color:#1a1a2e;line-height:1.4}
+    .filter-btn{background:#273747;color:#fff;border:none;border-radius:6px;padding:7px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:0.78rem;font-family:inherit;white-space:nowrap;flex-shrink:0}
+    .filter-btn:hover{background:#3a4f63}
+    .panel{display:none;position:absolute;right:24px;top:64px;background:#fff;border-radius:8px;box-shadow:0 4px 24px rgba(0,0,0,.18);z-index:100;min-width:260px;overflow:hidden}
+    .panel.open{display:block}
+    .panel-hd{background:#273747;color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
+    .panel-hd span{font-weight:600;font-size:0.9rem}
+    .panel-close{background:none;border:none;color:#fff;cursor:pointer;font-size:1.1rem;line-height:1;opacity:.8}
+    .panel-close:hover{opacity:1}
+    .panel-body{padding:16px}
+    .fg{margin-bottom:14px}
+    .fg:last-child{margin-bottom:0}
+    .fl{font-size:0.78rem;color:#555;font-weight:500;margin-bottom:6px}
+    select{width:100%;border:1px solid #ddd;border-radius:6px;padding:8px 28px 8px 10px;font-size:0.85rem;color:#1a1a2e;font-family:inherit;appearance:none;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 10px center;cursor:pointer}
+    select:focus{outline:none;border-color:#273747}
+    .updated{color:#aaa;font-size:.72em;margin-top:4px;text-align:right}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hd">
+    <div class="title">No. of Sites Above/Below Threshold by District &amp; Ecosystem Year on Year</div>
+    <button class="filter-btn" onclick="togglePanel()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+      Filter
+    </button>
+  </div>
+
+  <div class="panel" id="panel">
+    <div class="panel-hd">
+      <span>Filter</span>
+      <button class="panel-close" onclick="togglePanel()">&#x2715;</button>
+    </div>
+    <div class="panel-body">
+      <div class="fg">
+        <div class="fl">District is</div>
+        <select id="regionSelect" onchange="updateChart()"></select>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-wrap"><canvas id="chart"></canvas></div>
+  <p class="updated" id="updated"></p>
+</div>
+
+<script>
+  let rawData = [];
+  let chart;
+  let combos = [];
+
+  const regionSelect = document.getElementById('regionSelect');
+
+  // Custom plugin: draws district group labels and dashed separator lines
+  const districtGroupPlugin = {
+    id: 'districtGroups',
+    afterDraw(chart) {
+      const { ctx, scales: { x, y } } = chart;
+      if (!combos.length) return;
+
+      // Find district boundaries (first and last index per district)
+      const boundaries = {};
+      combos.forEach((c, i) => {
+        if (!boundaries[c.region]) boundaries[c.region] = { start: i, end: i };
+        boundaries[c.region].end = i;
+      });
+
+      ctx.save();
+      const labelY = y.bottom + 46;
+
+      Object.entries(boundaries).forEach(([region, { start, end }]) => {
+        // Dashed vertical separator before each district (except the first)
+        if (start > 0) {
+          const sepX = (x.getPixelForValue(start - 1) + x.getPixelForValue(start)) / 2;
+          ctx.setLineDash([4, 4]);
+          ctx.strokeStyle = '#bbb';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(sepX, y.top);
+          ctx.lineTo(sepX, y.bottom + 36);
+          ctx.stroke();
+        }
+
+        // District label centred over its bars
+        const midX = (x.getPixelForValue(start) + x.getPixelForValue(end)) / 2;
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#333';
+        ctx.font = "600 11px 'DM Sans', sans-serif";
+        ctx.textAlign = 'center';
+        ctx.fillText(region, midX, labelY);
+      });
+
+      ctx.restore();
+    }
+  };
+
+  Chart.register(districtGroupPlugin);
+
+  fetch('./dashboard_data.json')
+    .then(r => r.json())
+    .then(data => {
+      rawData = data.threshold_status;
+      document.getElementById('updated').textContent = 'Generated: ' + data.generated_at;
+
+      const regions = [...new Set(rawData.map(d => d.Region))].sort();
+
+      [{ v: 'All Districts', t: 'All Districts' }, ...regions.map(r => ({ v: r, t: r }))].forEach(({ v, t }) => {
+        const o = document.createElement('option');
+        o.value = v; o.textContent = t;
+        regionSelect.appendChild(o);
+      });
+
+      const { labels, datasets } = buildChart();
+      chart = new Chart(document.getElementById('chart'), {
+        type: 'bar',
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          layout: { padding: { bottom: 28 } },
+          plugins: {
+            legend: { position: 'bottom', labels: { font: { family: "'DM Sans', sans-serif" }, padding: 16 } },
+            title: { display: false }
+          },
+          scales: {
+            x: {
+              stacked: true,
+              grid: { display: false },
+              ticks: {
+                font: { family: "'DM Sans', sans-serif", size: 10 },
+                maxRotation: 0,
+                autoSkip: false
+              }
+            },
+            y: {
+              stacked: true,
+              beginAtZero: true,
+              title: { display: true, text: 'Number of Sites', font: { family: "'DM Sans', sans-serif", size: 11 } },
+              grid: { color: '#e8e8e8', borderDash: [4, 4] },
+              ticks: { font: { family: "'DM Sans', sans-serif" }, precision: 0 }
+            }
+          }
+        }
+      });
+    })
+    .catch(() => {
+      document.querySelector('.chart-wrap').innerHTML =
+        '<p style="padding:20px;color:#c00">Failed to load dashboard data.</p>';
+    });
+
+  function buildChart() {
+    const region = regionSelect.value;
+    let rows = region === 'All Districts' ? rawData : rawData.filter(d => d.Region === region);
+
+    // Build sorted unique (Region, Ecosystem, FY) combinations
+    const seen = new Set();
+    const sorted = [...rows].sort((a, b) => {
+      if (a.Region   !== b.Region)   return a.Region.localeCompare(b.Region);
+      if (a.Ecosystem !== b.Ecosystem) return a.Ecosystem.localeCompare(b.Ecosystem);
+      return String(a.Financial_Year).localeCompare(String(b.Financial_Year));
+    });
+
+    combos = [];
+    sorted.forEach(d => {
+      const key = `${d.Region}|${d.Ecosystem}|${d.Financial_Year}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        combos.push({ region: d.Region, ecosystem: d.Ecosystem, fy: String(d.Financial_Year) });
+      }
+    });
+
+    // Two-line x-axis labels: FY on top, Ecosystem below
+    const labels = combos.map(c => [c.fy, c.ecosystem]);
+
+    function getCount(region, ecosystem, fy, status) {
+      const match = rows.find(d =>
+        d.Region === region &&
+        d.Ecosystem === ecosystem &&
+        String(d.Financial_Year) === fy &&
+        d.Threshold_Status === status
+      );
+      return match ? match.Count : 0;
+    }
+
+    const datasets = [
+      {
+        label: 'Above Threshold',
+        data: combos.map(c => getCount(c.region, c.ecosystem, c.fy, 'Above')),
+        backgroundColor: '#43A047',
+        stack: 'threshold',
+        borderRadius: 2
+      },
+      {
+        label: 'Below Threshold',
+        data: combos.map(c => getCount(c.region, c.ecosystem, c.fy, 'Below')),
+        backgroundColor: '#1565C0',
+        stack: 'threshold',
+        borderRadius: 2
+      }
+    ];
+
+    return { labels, datasets };
+  }
+
+  function updateChart() {
+    if (!chart) return;
+    const { labels, datasets } = buildChart();
+    chart.data.labels   = labels;
+    chart.data.datasets = datasets;
+    chart.update();
+  }
+
+  function togglePanel() { document.getElementById('panel').classList.toggle('open'); }
+</script>
+</body>
+</html>
