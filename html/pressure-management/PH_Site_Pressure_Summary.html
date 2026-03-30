@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Site Pressure Summary</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: #ffffff;
+      padding: 8px 10px;
+    }
+
+    .heading {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #273747;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 7px;
+      border-bottom: 2px solid #273747;
+      padding-bottom: 4px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 7px;
+      border-radius: 5px;
+      background: #f4f0ef;
+    }
+
+    .label {
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: #273747;
+    }
+
+    .score {
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 1px 7px;
+      border-radius: 10px;
+      min-width: 34px;
+      text-align: center;
+    }
+
+    .s0   { background: #fde8e8; color: #9b1c1c; }
+    .s25  { background: #fef0e6; color: #c05621; }
+    .s50  { background: #fff9e6; color: #b5860d; }
+    .s75  { background: #f0faf4; color: #3d8b5e; }
+    .s100 { background: #d8f3dc; color: #2d6a4f; }
+    .s-   { background: #eeeeee; color: #888888; }
+  </style>
+</head>
+<body>
+  <div class="heading">Pressure Scores</div>
+  <div class="grid" id="grid"></div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+
+    const pressures = [
+      { label: 'Ungulates',     key: 'ung'  },
+      { label: 'Pest Plants',   key: 'pp'   },
+      { label: 'Possum Browse', key: 'pb'   },
+      { label: 'Predation',     key: 'pred' },
+      { label: 'Rabbits/Hares', key: 'rab'  },
+      { label: 'Fragmentation', key: 'frag' },
+    ];
+
+    function scoreClass(val) {
+      const n = parseInt(val, 10);
+      if (isNaN(n)) return 's-';
+      if (n >= 100) return 's100';
+      if (n >= 75)  return 's75';
+      if (n >= 50)  return 's50';
+      if (n >= 25)  return 's25';
+      return 's0';
+    }
+
+    const grid = document.getElementById('grid');
+
+    pressures.forEach(({ label, key }) => {
+      const val = params.get(key) ?? '—';
+      const display = val === '—' ? '—' : val;
+      const cls = scoreClass(val);
+
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.innerHTML = `
+        <span class="label">${label}</span>
+        <span class="score ${cls}">${display}</span>
+      `;
+      grid.appendChild(row);
+    });
+  </script>
+</body>
+</html>
