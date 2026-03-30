@@ -50,6 +50,11 @@ log.info(f"  Scores rows    : {len(scores_df)}")
 log.info(f"  Ecosystem rows : {len(ecosystem_df)}")
 log.info(f"  Threshold rows : {len(threshold_df)}")
 
+# Replace NaN with None so json.dump writes null (valid JSON) instead of NaN (invalid)
+scores_df    = scores_df.where(scores_df.notna(), None)
+ecosystem_df = ecosystem_df.where(ecosystem_df.notna(), None)
+threshold_df = threshold_df.where(threshold_df.notna(), None)
+
 # ============================================================
 # BUILD dashboard_data.json
 # ============================================================
