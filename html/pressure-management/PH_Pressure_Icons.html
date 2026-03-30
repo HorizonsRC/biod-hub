@@ -13,14 +13,15 @@
       height:100%;
       display:grid;
       grid-template-columns:1fr 1fr;
-      grid-template-rows:repeat(3,1fr);
+      grid-template-rows:repeat(4,1fr);
       gap:3px;
       background:#1a1a2e;
       padding:3px;
     }
 
-    /* deer spans full top row */
-    .card:first-child{
+    /* deer spans full top row, fragmentation spans full bottom row */
+    .card:first-child,
+    .card:last-child{
       grid-column:1 / -1;
     }
 
@@ -130,6 +131,15 @@
     <div class="label">
       <div class="accent" style="background:#E66101"></div>
       <div class="label-text">Pest Plants</div>
+    </div>
+  </div>
+
+  <!-- Habitat Fragmentation — native bush, spans full width -->
+  <div class="card">
+    <img src="images/960px-Power_Lines-1310514,_Wainuiomata,_Wellington,_New_Zealand.jpg" alt="Native bush fragmentation" style="object-position:center 30%">
+    <div class="label">
+      <div class="accent" style="background:#A6611A"></div>
+      <div class="label-text">Habitat Fragmentation</div>
     </div>
   </div>
 
