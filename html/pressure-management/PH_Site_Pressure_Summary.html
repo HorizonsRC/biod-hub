@@ -60,22 +60,30 @@
     .s75  { background: #f0faf4; color: #3d8b5e; }
     .s100 { background: #d8f3dc; color: #2d6a4f; }
     .s-   { background: #eeeeee; color: #888888; }
+
+    .error {
+      font-size: 0.75rem;
+      color: #888;
+      padding: 8px 0;
+    }
   </style>
 </head>
 <body>
   <div class="heading">Pressure Scores</div>
-  <div class="grid" id="grid"></div>
+  <div id="content"></div>
 
   <script>
-    const params = new URLSearchParams(window.location.search);
+    const params  = new URLSearchParams(window.location.search);
+    const siteId  = params.get('site');
+    const content = document.getElementById('content');
 
     const pressures = [
-      { label: 'Ungulates',     key: 'ung'  },
-      { label: 'Pest Plants',   key: 'pp'   },
-      { label: 'Possum Browse', key: 'pb'   },
-      { label: 'Predation',     key: 'pred' },
-      { label: 'Rabbits/Hares', key: 'rab'  },
-      { label: 'Fragmentation', key: 'frag' },
+      { label: 'Ungulates',     key: 'Raw_Ungulates'    },
+      { label: 'Pest Plants',   key: 'Raw_PestPlants'   },
+      { label: 'Possum Browse', key: 'Raw_PossumBrowse' },
+      { label: 'Predation',     key: 'Raw_Predation'    },
+      { label: 'Rabbits/Hares', key: 'Raw_Rabbits'      },
+      { label: 'Fragmentation', key: 'Raw_Environmental' },
     ];
 
     function scoreClass(val) {
@@ -88,21 +96,42 @@
       return 's0';
     }
 
-    const grid = document.getElementById('grid');
+    function render(site) {
+      const grid = document.createElement('div');
+      grid.className = 'grid';
+      pressures.forEach(({ label, key }) => {
+        const val = site[key] ?? '—';
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.innerHTML = `
+          <span class="label">${label}</span>
+          <span class="score ${scoreClass(val)}">${val}</span>
+        `;
+        grid.appendChild(row);
+      });
+      content.appendChild(grid);
+    }
 
-    pressures.forEach(({ label, key }) => {
-      const val = params.get(key) ?? '—';
-      const display = val === '—' ? '—' : val;
-      const cls = scoreClass(val);
-
-      const row = document.createElement('div');
-      row.className = 'row';
-      row.innerHTML = `
-        <span class="label">${label}</span>
-        <span class="score ${cls}">${display}</span>
-      `;
-      grid.appendChild(row);
-    });
+    if (!siteId) {
+      content.innerHTML = '<div class="error">No site selected.</div>';
+    } else {
+      fetch('https://HorizonsRC.github.io/biod-hub/html/pressure-management/dashboard_data.json')
+        .then(r => r.json())
+        .then(data => {
+          const scores = data.scores_overview;
+          // Get latest FY entry for this site
+          const matches = scores.filter(s => s.SiteID === siteId);
+          if (!matches.length) {
+            content.innerHTML = '<div class="error">No scores found for this site.</div>';
+            return;
+          }
+          const latest = matches.sort((a, b) => b.FY.localeCompare(a.FY))[0];
+          render(latest);
+        })
+        .catch(() => {
+          content.innerHTML = '<div class="error">Could not load scores.</div>';
+        });
+    }
   </script>
 </body>
 </html>

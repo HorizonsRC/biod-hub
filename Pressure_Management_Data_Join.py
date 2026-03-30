@@ -284,6 +284,8 @@ threshold_by_region.to_csv(threshold_csv, index=False)
 log.info(f"Saved: {threshold_csv}")
 
 scores_overview_cols = ['SiteID', 'FY', 'Region',
+                        'Raw_Ungulates', 'Raw_PestPlants', 'Raw_PossumBrowse',
+                        'Raw_Predation', 'Raw_Environmental', 'Raw_Rabbits',
                         'Weighted_Ungulates', 'Weighted_PestPlants', 'Weighted_PossumBrowse',
                         'Weighted_Predation', 'Weighted_Environmental', 'Weighted_Rabbits']
 scores_csv = os.path.join(NETWORK_DIR, "PH_Pressure_Scores_Overview.csv")
