@@ -142,7 +142,6 @@
           },
           scales: {
             x: { stacked: true, grid: { display: false },
-                 barPercentage: 1.0, categoryPercentage: 1.0,
                  ticks: { font: { family: "'DM Sans', sans-serif", size: 9 }, maxRotation: 90, autoSkip: false } },
             y: { stacked: true, min: 0, max: 100,
                  title: { display: true, text: 'Combined Pressure Score', font: { family: "'DM Sans', sans-serif", size: 11 } },
@@ -168,8 +167,11 @@
       label,
       data: rows.map(d => Math.round((d[col] || 0) * 100) / 100),
       backgroundColor: color,
-      borderColor: 'rgba(0,0,0,0.55)',
-      borderWidth: 1,
+      borderColor: 'rgba(0,0,0,0.6)',
+      borderWidth: 2,
+      borderSkipped: false,
+      barPercentage: 1.0,
+      categoryPercentage: 1.0,
       stack: 'pressure'
     }));
     return { labels, datasets, rows };
