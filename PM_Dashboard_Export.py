@@ -50,22 +50,18 @@ log.info(f"  Scores rows    : {len(scores_df)}")
 log.info(f"  Ecosystem rows : {len(ecosystem_df)}")
 log.info(f"  Threshold rows : {len(threshold_df)}")
 
-# Replace NaN with None so json.dump writes null (valid JSON) instead of NaN (invalid)
-scores_df    = scores_df.where(scores_df.notna(), None)
-ecosystem_df = ecosystem_df.where(ecosystem_df.notna(), None)
-threshold_df = threshold_df.where(threshold_df.notna(), None)
-
 # ============================================================
 # BUILD dashboard_data.json
 # ============================================================
 
 generated_at = dt.now().strftime('%d %B %Y %H:%M')
 
+# Use pandas to_json to safely serialise NaN as null, then parse back to Python objects
 payload = {
-    "generated_at":        generated_at,
-    "scores_overview":     scores_df.to_dict(orient='records'),
-    "pressure_by_ecosystem": ecosystem_df.to_dict(orient='records'),
-    "threshold_status":    threshold_df.to_dict(orient='records'),
+    "generated_at":          generated_at,
+    "scores_overview":       json.loads(scores_df.to_json(orient='records')),
+    "pressure_by_ecosystem": json.loads(ecosystem_df.to_json(orient='records')),
+    "threshold_status":      json.loads(threshold_df.to_json(orient='records')),
 }
 
 JSON_OUT = os.path.join(SCRIPT_DIR, "html", "pressure-management", "dashboard_data.json")

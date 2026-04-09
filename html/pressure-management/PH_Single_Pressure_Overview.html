@@ -2,10 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Pressure Management Scores Overview</title>
+  <title>Single Pressure Management at All Sites</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     html,body{height:100%;overflow:hidden}
@@ -29,18 +28,12 @@
     select{width:100%;border:1px solid #ddd;border-radius:6px;padding:8px 28px 8px 10px;font-size:0.85rem;color:#1a1a2e;font-family:inherit;appearance:none;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 10px center;cursor:pointer}
     select:focus{outline:none;border-color:#273747}
     .updated{color:#aaa;font-size:.62em;position:absolute;bottom:4px;right:8px;margin:0}
-    .counters{display:flex;gap:10px;margin-bottom:10px}
-    .counter{background:#f8f9fa;border-radius:7px;padding:6px 14px;display:flex;align-items:center;gap:10px;flex:1}
-    .counter.above{border-left:4px solid #27ae60}
-    .counter.below{border-left:4px solid #c0392b}
-    .counter-count{font-size:1.3rem;font-weight:700;color:#1a1a2e;min-width:28px}
-    .counter-label{font-size:0.72rem;color:#555;line-height:1.3}
   </style>
 </head>
 <body>
 <div class="wrap">
   <div class="hd">
-    <div class="title">Pressure management all sites in Priority Habitats Programme</div>
+    <div class="title">Single pressure management all sites in Priority Habitats Programme</div>
     <button class="filter-btn" onclick="togglePanel()">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
       Filter
@@ -54,6 +47,10 @@
     </div>
     <div class="panel-body">
       <div class="fg">
+        <div class="fl">Pressure type is</div>
+        <select id="pressureSelect" onchange="updateChart()"></select>
+      </div>
+      <div class="fg">
         <div class="fl">Financial Year is</div>
         <select id="fySelect" onchange="updateChart()"></select>
       </div>
@@ -61,17 +58,6 @@
         <div class="fl">District is</div>
         <select id="regionSelect" onchange="updateChart()"></select>
       </div>
-    </div>
-  </div>
-
-  <div class="counters">
-    <div class="counter above">
-      <div class="counter-count" id="aboveCount">—</div>
-      <div class="counter-label">Sites above pressure management threshold</div>
-    </div>
-    <div class="counter below">
-      <div class="counter-count" id="belowCount">—</div>
-      <div class="counter-label">Sites below pressure management threshold</div>
     </div>
   </div>
 
@@ -83,23 +69,29 @@
   let chart;
 
   const pressureDefs = [
-    { label: 'Ungulates',      col: 'Weighted_Ungulates',     color: '#2166AC' },
-    { label: 'Pest Plants',    col: 'Weighted_PestPlants',    color: '#E66101' },
-    { label: 'Possum Browse',  col: 'Weighted_PossumBrowse',  color: '#4DAC26' },
-    { label: 'Predation',      col: 'Weighted_Predation',     color: '#762A83' },
-    { label: 'Fragmentation',  col: 'Weighted_Environmental', color: '#A6611A' },
-    { label: 'Rabbits/Hares',  col: 'Weighted_Rabbits',       color: '#F4D03F' },
+    { label: 'Ungulates',      col: 'Raw_Ungulates',     color: '#2166AC' },
+    { label: 'Pest Plants',    col: 'Raw_PestPlants',    color: '#E66101' },
+    { label: 'Possum Browse',  col: 'Raw_PossumBrowse',  color: '#4DAC26' },
+    { label: 'Predation',      col: 'Raw_Predation',     color: '#762A83' },
+    { label: 'Fragmentation',  col: 'Raw_Environmental', color: '#A6611A' },
+    { label: 'Rabbits/Hares',  col: 'Raw_Rabbits',       color: '#F4D03F' },
   ];
 
-  const scoreColumns = pressureDefs.map(p => p.col);
-  const fySelect     = document.getElementById('fySelect');
-  const regionSelect = document.getElementById('regionSelect');
+  const pressureSelect = document.getElementById('pressureSelect');
+  const fySelect       = document.getElementById('fySelect');
+  const regionSelect   = document.getElementById('regionSelect');
 
   fetch('./dashboard_data.json')
     .then(r => r.json())
     .then(data => {
       rawData = data.scores_overview;
       document.getElementById('updated').textContent = 'Generated: ' + data.generated_at;
+
+      pressureDefs.forEach(p => {
+        const o = document.createElement('option');
+        o.value = p.col; o.textContent = p.label;
+        pressureSelect.appendChild(o);
+      });
 
       const fys     = [...new Set(rawData.map(d => d.FY))].sort();
       const regions = [...new Set(rawData.map(d => d.Region).filter(r => r))].sort();
@@ -117,37 +109,40 @@
         regionSelect.appendChild(o);
       });
 
-      const { labels, datasets, rows } = getChartData();
-      updateCounters(rows);
+      const { labels, data: chartData, color } = getChartData();
 
       chart = new Chart(document.getElementById('chart'), {
         type: 'bar',
-        data: { labels, datasets },
+        data: {
+          labels,
+          datasets: [{
+            label: pressureDefs[0].label,
+            data: chartData,
+            backgroundColor: color,
+            borderColor: 'rgba(0,0,0,0.55)',
+            borderWidth: 1,
+          }]
+        },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { position: 'bottom', labels: { font: { family: "'DM Sans', sans-serif" }, padding: 16 } },
+            legend: { display: false },
             title: { display: false },
-            annotation: {
-              annotations: {
-                threshold: {
-                  type: 'line', yMin: 55, yMax: 55,
-                  borderColor: 'red', borderWidth: 2, borderDash: [6, 4],
-                  label: { display: true, content: 'Pressure Management Threshold', position: 'end',
-                           backgroundColor: 'red', color: '#fff', font: { size: 11 } }
-                }
-              }
-            }
           },
           scales: {
-            x: { stacked: true, grid: { display: false },
-                 barPercentage: 1.0, categoryPercentage: 1.0,
-                 ticks: { font: { family: "'DM Sans', sans-serif", size: 9 }, maxRotation: 90, autoSkip: false } },
-            y: { stacked: true, min: 0, max: 100,
-                 title: { display: true, text: 'Combined Pressure Score', font: { family: "'DM Sans', sans-serif", size: 11 } },
-                 grid: { color: '#e8e8e8', borderDash: [4, 4] },
-                 ticks: { font: { family: "'DM Sans', sans-serif" } } }
+            x: {
+              grid: { display: false },
+              barPercentage: 1.0,
+              categoryPercentage: 1.0,
+              ticks: { font: { family: "'DM Sans', sans-serif", size: 9 }, maxRotation: 90, autoSkip: false }
+            },
+            y: {
+              min: 0, max: 100,
+              title: { display: true, text: 'Pressure Score (0–100)', font: { family: "'DM Sans', sans-serif", size: 11 } },
+              grid: { color: '#e8e8e8', borderDash: [4, 4] },
+              ticks: { font: { family: "'DM Sans', sans-serif" } }
+            }
           }
         }
       });
@@ -158,41 +153,31 @@
     });
 
   function getChartData() {
+    const col    = pressureSelect.value;
     const fy     = fySelect.value;
     const region = regionSelect.value;
+    const def    = pressureDefs.find(p => p.col === col);
+
     let rows = rawData.filter(d => String(d.FY) === String(fy));
     if (region !== 'All Regions') rows = rows.filter(d => d.Region === region);
     rows = rows.slice().sort((a, b) => String(a.SiteID).localeCompare(String(b.SiteID)));
-    const labels   = rows.map(d => d.SiteID);
-    const datasets = pressureDefs.map(({ label, col, color }) => ({
-      label,
-      data: rows.map(d => Math.round((d[col] || 0) * 100) / 100),
-      backgroundColor: color,
-      borderColor: 'rgba(0,0,0,0.55)',
-      borderWidth: 1,
-      stack: 'pressure'
-    }));
-    return { labels, datasets, rows };
-  }
 
-  function updateCounters(rows) {
-    const THRESHOLD = 55;
-    let above = 0, below = 0;
-    rows.forEach(d => {
-      const total = scoreColumns.reduce((sum, col) => sum + (d[col] || 0), 0);
-      total >= THRESHOLD ? above++ : below++;
-    });
-    document.getElementById('aboveCount').textContent = above;
-    document.getElementById('belowCount').textContent = below;
+    return {
+      labels: rows.map(d => d.SiteID),
+      data:   rows.map(d => Math.round((d[col] || 0) * 100) / 100),
+      color:  def ? def.color : '#273747',
+      label:  def ? def.label : col,
+    };
   }
 
   function updateChart() {
     if (!chart) return;
-    const { labels, datasets, rows } = getChartData();
-    chart.data.labels   = labels;
-    chart.data.datasets = datasets;
+    const { labels, data, color, label } = getChartData();
+    chart.data.labels = labels;
+    chart.data.datasets[0].data  = data;
+    chart.data.datasets[0].backgroundColor = color;
+    chart.data.datasets[0].label = label;
     chart.update();
-    updateCounters(rows);
   }
 
   function togglePanel() { document.getElementById('panel').classList.toggle('open'); }
