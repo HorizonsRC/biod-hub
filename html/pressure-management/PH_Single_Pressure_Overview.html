@@ -9,7 +9,10 @@
     *{box-sizing:border-box;margin:0;padding:0}
     html,body{height:100%;overflow:hidden}
     body{font-family:'DM Sans',sans-serif;background:#fff}
-    .wrap{background:#fff;padding:16px 20px 8px;position:relative;height:100%;display:flex;flex-direction:column}
+    .wrap{background:#fff;padding:16px 20px 24px;position:relative;height:100%;display:flex;flex-direction:column}
+    .pressure-indicator{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+    .pressure-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+    .pressure-label{font-size:0.8rem;font-weight:500;color:#1a1a2e}
     .chart-wrap{flex:1;min-height:0;position:relative}
     .hd{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;gap:16px}
     .title{font-size:1rem;font-weight:600;color:#1a1a2e;line-height:1.4}
@@ -33,7 +36,7 @@
 <body>
 <div class="wrap">
   <div class="hd">
-    <div class="title">Single pressure management all sites in Priority Habitats Programme</div>
+    <div class="title">Single Pressure Management at All Sites</div>
     <button class="filter-btn" onclick="togglePanel()">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
       Filter
@@ -61,6 +64,10 @@
     </div>
   </div>
 
+  <div class="pressure-indicator">
+    <div class="pressure-dot" id="pressureDot"></div>
+    <div class="pressure-label">Showing: <span id="pressureName"></span></div>
+  </div>
   <div class="chart-wrap"><canvas id="chart"></canvas></div>
   <p class="updated" id="updated"></p>
 </div>
@@ -110,6 +117,7 @@
       });
 
       const { labels, data: chartData, color } = getChartData();
+      updateIndicator();
 
       chart = new Chart(document.getElementById('chart'), {
         type: 'bar',
@@ -170,6 +178,13 @@
     };
   }
 
+  function updateIndicator() {
+    const def = pressureDefs.find(p => p.col === pressureSelect.value);
+    if (!def) return;
+    document.getElementById('pressureDot').style.backgroundColor = def.color;
+    document.getElementById('pressureName').textContent = def.label;
+  }
+
   function updateChart() {
     if (!chart) return;
     const { labels, data, color, label } = getChartData();
@@ -178,6 +193,7 @@
     chart.data.datasets[0].backgroundColor = color;
     chart.data.datasets[0].label = label;
     chart.update();
+    updateIndicator();
   }
 
   function togglePanel() { document.getElementById('panel').classList.toggle('open'); }
