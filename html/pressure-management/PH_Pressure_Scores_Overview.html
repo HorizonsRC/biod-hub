@@ -167,13 +167,9 @@
       label,
       data: rows.map(d => Math.round((d[col] || 0) * 100) / 100),
       backgroundColor: color,
-      borderColor: 'rgba(0,0,0,0.6)',
-      borderWidth: i === pressureDefs.length - 1
-        ? { top: 2, bottom: 0, left: 2, right: 2 }
-        : { top: 0, bottom: 0, left: 2, right: 2 },
-      borderSkipped: false,
-      barPercentage: 0.85,
-      categoryPercentage: 0.9,
+      borderWidth: 0,
+      barPercentage: 0.95,
+      categoryPercentage: 0.98,
       stack: 'pressure'
     }));
     return { labels, datasets, rows };
