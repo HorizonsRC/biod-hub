@@ -168,7 +168,7 @@
       data: rows.map(d => Math.round((d[col] || 0) * 100) / 100),
       backgroundColor: color,
       borderColor: 'rgba(0,0,0,0.6)',
-      borderWidth: 2,
+      borderWidth: { top: 0, bottom: 0, left: 2, right: 2 },
       borderSkipped: false,
       barPercentage: 1.0,
       categoryPercentage: 1.0,
