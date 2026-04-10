@@ -121,6 +121,16 @@
         ctx.fillText(total, xPos, yPos);
       });
 
+      // Zero line drawn on top of bars
+      const zeroY = y.getPixelForValue(0);
+      ctx.setLineDash([]);
+      ctx.strokeStyle = '#222';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(chart.chartArea.left, zeroY);
+      ctx.lineTo(chart.chartArea.right, zeroY);
+      ctx.stroke();
+
       ctx.restore();
     }
   };
@@ -194,11 +204,7 @@
                 text: 'Number of sites scoring above or below pressure management threshold',
                 font: { family: "'DM Sans', sans-serif", size: 12 }
               },
-              grid: {
-                z: 1,
-                color: ctx => ctx.tick.value === 0 ? '#222' : '#e8e8e8',
-                lineWidth: ctx => ctx.tick.value === 0 ? 2.5 : 1,
-              },
+              grid: { color: '#e8e8e8' },
               ticks: { font: { family: "'DM Sans', sans-serif" }, precision: 0 }
             }
           }
