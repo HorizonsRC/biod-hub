@@ -74,47 +74,51 @@
       const { ctx, scales: { x, y } } = chart;
       if (!combos.length) return;
 
-      // District boundaries
+      // District boundaries (skipping spacers)
       const boundaries = {};
       combos.forEach((c, i) => {
+        if (c.spacer) return;
         if (!boundaries[c.region]) boundaries[c.region] = { start: i, end: i };
         boundaries[c.region].end = i;
       });
 
       ctx.save();
 
-      // District separators and labels
+      // Separator lines at spacer positions
+      combos.forEach((c, i) => {
+        if (!c.spacer) return;
+        const sepX = x.getPixelForValue(i);
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = '#888';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(sepX, chart.chartArea.top);
+        ctx.lineTo(sepX, chart.chartArea.bottom + 42);
+        ctx.stroke();
+      });
+
+      // District labels
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#1a1a2e';
+      ctx.font = "600 13px 'DM Sans', sans-serif";
+      ctx.textAlign = 'center';
       Object.entries(boundaries).forEach(([region, { start, end }]) => {
-        if (start > 0) {
-          const sepX = (x.getPixelForValue(start - 1) + x.getPixelForValue(start)) / 2;
-          ctx.setLineDash([4, 4]);
-          ctx.strokeStyle = '#ccc';
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(sepX, chart.chartArea.top);
-          ctx.lineTo(sepX, chart.chartArea.bottom + 42);
-          ctx.stroke();
-        }
         const midX = (x.getPixelForValue(start) + x.getPixelForValue(end)) / 2;
-        ctx.setLineDash([]);
-        ctx.fillStyle = '#333';
-        ctx.font = "600 11px 'DM Sans', sans-serif";
-        ctx.textAlign = 'center';
         ctx.fillText(region, midX, chart.chartArea.bottom + 40);
       });
 
-      // FY label inside each bar (rotated)
+      // FY label inside each bar (rotated), skipping spacers
       combos.forEach((c, i) => {
+        if (c.spacer) return;
         const [neg, pos] = chart.data.datasets[0].data[i];
         const barHeight  = Math.abs(y.getPixelForValue(pos) - y.getPixelForValue(neg));
-        if (barHeight < 14) return; // too small to label
-        const xPos  = x.getPixelForValue(i);
-        // Place label in the larger half of the bar
-        const abovePx = Math.abs(y.getPixelForValue(pos)  - y.getPixelForValue(0));
-        const belowPx = Math.abs(y.getPixelForValue(neg)  - y.getPixelForValue(0));
+        if (barHeight < 14) return;
+        const xPos    = x.getPixelForValue(i);
+        const abovePx = Math.abs(y.getPixelForValue(pos) - y.getPixelForValue(0));
+        const belowPx = Math.abs(y.getPixelForValue(neg) - y.getPixelForValue(0));
         const useAbove = abovePx >= belowPx;
         const yMid = useAbove
-          ? (y.getPixelForValue(0) + y.getPixelForValue(pos))  / 2
+          ? (y.getPixelForValue(0) + y.getPixelForValue(pos)) / 2
           : (y.getPixelForValue(0) + y.getPixelForValue(neg)) / 2;
         const label = String(c.fy).replace('-', '/');
         ctx.save();
@@ -126,6 +130,16 @@
         ctx.fillText(label, 0, 3);
         ctx.restore();
       });
+
+      // Zero line drawn on top of bars
+      const zeroY = y.getPixelForValue(0);
+      ctx.setLineDash([]);
+      ctx.strokeStyle = '#222';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(chart.chartArea.left, zeroY);
+      ctx.lineTo(chart.chartArea.right, zeroY);
+      ctx.stroke();
 
       ctx.restore();
     }
@@ -157,7 +171,9 @@
             data: barData,
             backgroundColor: colors,
             borderRadius: 2,
-            borderSkipped: false
+            borderSkipped: false,
+            barPercentage: 1.0,
+            categoryPercentage: 1.0
           }]
         },
         options: {
@@ -170,6 +186,7 @@
               callbacks: {
                 title: items => {
                   const i = items[0].dataIndex;
+                  if (combos[i].spacer) return '';
                   return `${combos[i].region} — ${ecoLabels[combos[i].eco] || combos[i].eco} — ${combos[i].fy}`;
                 },
                 label: items => {
@@ -195,7 +212,7 @@
                 text: 'Number of sites scoring above or below pressure management threshold',
                 font: { family: "'DM Sans', sans-serif", size: 12 }
               },
-              grid: { color: ctx => ctx.tick.value === 0 ? '#333' : '#e8e8e8' },
+              grid: { color: '#e8e8e8' },
               ticks: { font: { family: "'DM Sans', sans-serif" }, precision: 0 }
             }
           }
@@ -213,32 +230,38 @@
     const region = regionSelect.value;
     const rows   = region === 'All Districts' ? rawData : rawData.filter(d => d.Region === region);
 
-    // Build sorted combos: Region → Ecosystem (C,W,F order) → FY
     const regions = [...new Set(rows.map(d => d.Region))].sort();
     combos = [];
-    regions.forEach(reg => {
-      ECO_ORDER.forEach(eco => {
-        const fys = [...new Set(
-          rows.filter(d => d.Region === reg && d.Ecosystem === eco).map(d => d.Financial_Year)
-        )].sort();
-        fys.forEach(fy => combos.push({ region: reg, eco, fy: String(fy) }));
-      });
-    });
-
     const barData    = [];
     const colors     = [];
     const tickLabels = [];
 
-    combos.forEach(({ region: reg, eco, fy }) => {
-      const aboveRow = rows.find(d => d.Region === reg && d.Ecosystem === eco &&
-                                      String(d.Financial_Year) === fy && d.Threshold_Status === 'Above');
-      const belowRow = rows.find(d => d.Region === reg && d.Ecosystem === eco &&
-                                      String(d.Financial_Year) === fy && d.Threshold_Status === 'Below');
-      const above = aboveRow ? aboveRow.Count : 0;
-      const below = belowRow ? belowRow.Count : 0;
-      barData.push([-below, above]);
-      colors.push(ecoColors[eco] || '#888');
-      tickLabels.push(String(fy).replace('-', '/'));
+    regions.forEach((reg, regionIdx) => {
+      ECO_ORDER.forEach(eco => {
+        const fys = [...new Set(
+          rows.filter(d => d.Region === reg && d.Ecosystem === eco).map(d => d.Financial_Year)
+        )].sort();
+        fys.forEach(fy => {
+          combos.push({ region: reg, eco, fy: String(fy) });
+          const aboveRow = rows.find(d => d.Region === reg && d.Ecosystem === eco &&
+                                          String(d.Financial_Year) === String(fy) && d.Threshold_Status === 'Above');
+          const belowRow = rows.find(d => d.Region === reg && d.Ecosystem === eco &&
+                                          String(d.Financial_Year) === String(fy) && d.Threshold_Status === 'Below');
+          const above = aboveRow ? aboveRow.Count : 0;
+          const below = belowRow ? belowRow.Count : 0;
+          barData.push([-below, above]);
+          colors.push(ecoColors[eco] || '#888');
+          tickLabels.push(String(fy).replace('-', '/'));
+        });
+      });
+
+      // Spacer between districts (not after the last one)
+      if (regionIdx < regions.length - 1) {
+        combos.push({ spacer: true });
+        barData.push([0, 0]);
+        colors.push('rgba(0,0,0,0)');
+        tickLabels.push('');
+      }
     });
 
     return { barData, colors, tickLabels };
