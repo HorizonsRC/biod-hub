@@ -73,6 +73,12 @@
     'Wetland': '#1565C0', 'W': '#1565C0'
   };
 
+  const ecoLabels = {
+    'C': 'Coastal', 'Coastal': 'Coastal',
+    'W': 'Wetland', 'Wetland': 'Wetland',
+    'F': 'Forest',  'Forest':  'Forest'
+  };
+
   const fySelect     = document.getElementById('fySelect');
   const regionSelect = document.getElementById('regionSelect');
 
@@ -127,7 +133,7 @@
             x: { grid: { display: false },
                  ticks: { font: { family: "'DM Sans', sans-serif" } } },
             y: { min: 0, max: 100,
-                 title: { display: true, text: 'Average Pressure Score', font: { family: "'DM Sans', sans-serif", size: 11 } },
+                 title: { display: true, text: 'Average Pressure Management Score', font: { family: "'DM Sans', sans-serif", size: 11 } },
                  grid: { color: '#e8e8e8', borderDash: [4, 4] },
                  ticks: { font: { family: "'DM Sans', sans-serif" } } }
           }
@@ -151,7 +157,7 @@
     const region = regionSelect.value;
     const rows   = rawData.filter(d => d.Region === region && String(d.Financial_Year) === String(fy));
     return ecosystems.map(eco => ({
-      label: eco,
+      label: ecoLabels[eco] || eco,
       data: pressureTypes.map(pt => {
         const vals = rows.filter(d => d.Ecosystem === eco && d.Pressure_Type === pt).map(d => d.Average_Score);
         const v = median(vals);
