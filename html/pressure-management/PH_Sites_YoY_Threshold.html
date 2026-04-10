@@ -131,14 +131,14 @@
             : (y.getPixelForValue(0) + y.getPixelForValue(neg)) / 2;
           ctx.translate(xPos, yMid);
           ctx.rotate(-Math.PI / 2);
-          ctx.font = "500 9px 'DM Sans', sans-serif";
+          ctx.font = "500 11px 'DM Sans', sans-serif";
           ctx.fillStyle = '#fff';
         } else {
           // Too small — draw just outside bar tip, dark
           const yOut = useAbove ? barTopPx - 20 : barBotPx + 20;
           ctx.translate(xPos, yOut);
           ctx.rotate(-Math.PI / 2);
-          ctx.font = "700 8px 'DM Sans', sans-serif";
+          ctx.font = "700 10px 'DM Sans', sans-serif";
           ctx.fillStyle = '#000';
         }
         ctx.textAlign = 'center';
