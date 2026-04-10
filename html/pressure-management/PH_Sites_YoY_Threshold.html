@@ -107,25 +107,37 @@
         ctx.fillText(region, midX, chart.chartArea.bottom + 40);
       });
 
-      // FY label inside each bar (rotated), skipping spacers
+      // FY label on each bar (rotated), skipping spacers
       combos.forEach((c, i) => {
         if (c.spacer) return;
         const [neg, pos] = chart.data.datasets[0].data[i];
-        const barHeight  = Math.abs(y.getPixelForValue(pos) - y.getPixelForValue(neg));
-        if (barHeight < 14) return;
+        const barTopPx  = y.getPixelForValue(pos);
+        const barBotPx  = y.getPixelForValue(neg);
+        const barHeight = Math.abs(barTopPx - barBotPx);
+        if (barHeight === 0) return;
         const xPos    = x.getPixelForValue(i);
         const abovePx = Math.abs(y.getPixelForValue(pos) - y.getPixelForValue(0));
         const belowPx = Math.abs(y.getPixelForValue(neg) - y.getPixelForValue(0));
         const useAbove = abovePx >= belowPx;
-        const yMid = useAbove
-          ? (y.getPixelForValue(0) + y.getPixelForValue(pos)) / 2
-          : (y.getPixelForValue(0) + y.getPixelForValue(neg)) / 2;
         const label = String(c.fy).replace('-', '/');
         ctx.save();
-        ctx.translate(xPos, yMid);
-        ctx.rotate(-Math.PI / 2);
-        ctx.font = "500 9px 'DM Sans', sans-serif";
-        ctx.fillStyle = '#fff';
+        if (barHeight >= 20) {
+          // Enough room — draw inside bar, white
+          const yMid = useAbove
+            ? (y.getPixelForValue(0) + y.getPixelForValue(pos)) / 2
+            : (y.getPixelForValue(0) + y.getPixelForValue(neg)) / 2;
+          ctx.translate(xPos, yMid);
+          ctx.rotate(-Math.PI / 2);
+          ctx.font = "500 9px 'DM Sans', sans-serif";
+          ctx.fillStyle = '#fff';
+        } else {
+          // Too small — draw just outside bar tip, dark
+          const yOut = useAbove ? barTopPx - 20 : barBotPx + 20;
+          ctx.translate(xPos, yOut);
+          ctx.rotate(-Math.PI / 2);
+          ctx.font = "500 8px 'DM Sans', sans-serif";
+          ctx.fillStyle = '#444';
+        }
         ctx.textAlign = 'center';
         ctx.fillText(label, 0, 3);
         ctx.restore();
@@ -172,7 +184,7 @@
             backgroundColor: colors,
             borderRadius: 2,
             borderSkipped: false,
-            barPercentage: 0.7,
+            barPercentage: 0.9,
             categoryPercentage: 0.85
           }]
         },
