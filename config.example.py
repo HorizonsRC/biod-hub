@@ -12,3 +12,8 @@ NETWORK_DIR = r"\\your-server\your-share\PH_Pressure_Management"
 
 # Local path for district summary CSV
 OUTPUT_SUMMARY_CSV = r"C:\path\to\your\Outputs\PH_Pressure_Summary_by_District.csv"
+
+# ── Icon Sites ────────────────────────────────────────────────────────────────
+
+# Output directory for per-site summary CSVs (created automatically if absent)
+ICON_SITES_OUTPUT_DIR = r"C:\path\to\your\Outputs\icon-sites"

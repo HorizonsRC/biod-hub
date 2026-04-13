@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Te Apiti – Manawatu Gorge</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green:    #2d6a4f;
+    --green2:   #4a9b6f;
+    --green-lt: #eaf3ee;
+    --green-md: #d0e8da;
+    --teal:     #1a6b7c;
+    --teal2:    #2d9bb2;
+    --teal-lt:  #e0f0f4;
+    --teal-md:  #b0d9e4;
+    --gold:     #c8a84b;
+    --gold-lt:  #f6f0e4;
+    --navy:     #1f2e35;
+    --bg:       #f4f0ef;
+    --surface:  #ffffff;
+    --border:   #ddddd8;
+    --muted:    #5a5a52;
+    --label:    #8a8a82;
+  }
+
+  html, body {
+    width: 969px;
+    height: 870px;
+    overflow: hidden;
+    background: var(--bg);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--navy);
+  }
+
+  /* ── MASTER LAYOUT ─────────────────────────── */
+  .wrapper {
+    display: grid;
+    grid-template-rows: 70px 1fr 1fr;
+    height: 870px;
+    width: 969px;
+    padding: 0 12px 12px;
+    background: var(--bg);
+  }
+
+  /* ── TITLE STRIP ───────────────────────────── */
+  .title-strip {
+    background: var(--bg);
+    border-bottom: 2px solid var(--teal);
+    display: flex;
+    align-items: flex-end;
+    padding: 0 4px 10px;
+    gap: 12px;
+  }
+  .title-strip h1 {
+    font-family: 'Source Serif 4', serif;
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--navy);
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+  .title-strip .fy-badge {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--teal);
+    background: var(--teal-lt);
+    border: 1px solid var(--teal-md);
+    border-radius: 3px;
+    padding: 3px 8px;
+    align-self: center;
+    margin-bottom: 2px;
+  }
+
+  /* ── TOP ROW ──────────────────────────────── */
+  .row-top {
+    display: grid;
+    grid-template-columns: 215px 1fr 285px;
+    gap: 10px;
+    padding: 10px 0 5px;
+    min-height: 0;
+  }
+
+  /* ── BOTTOM ROW ─────────────────────────────── */
+  .row-bottom {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    padding: 5px 0 0;
+    min-height: 0;
+  }
+
+  /* ── PANELS ──────────────────────────────────── */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .panel-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--teal);
+    flex-shrink: 0;
+  }
+  .panel-title.green { color: var(--green); }
+
+  .panel-sub {
+    font-size: 10px;
+    color: var(--label);
+    margin-top: -4px;
+    flex-shrink: 0;
+  }
+  .chart-wrap {
+    flex: 1;
+    position: relative;
+    min-height: 0;
+  }
+
+  /* ── STAT PANEL ──────────────────────────────── */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: repeat(3, 1fr);
+    gap: 5px;
+    flex: 1;
+  }
+  .stat-box {
+    background: var(--teal-lt);
+    border: 1px solid var(--teal-md);
+    border-radius: 4px;
+    padding: 8px 10px 6px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .stat-box.green-box {
+    background: var(--green-lt);
+    border-color: var(--green-md);
+  }
+  .stat-box .s-val {
+    font-family: 'Source Serif 4', serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--teal);
+    line-height: 1;
+  }
+  .stat-box.green-box .s-val { color: var(--green); }
+  .stat-box .s-val.sm { font-size: 17px; }
+  .stat-box .s-key {
+    font-size: 9.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+    margin-top: 5px;
+    line-height: 1.3;
+  }
+
+  /* ── SUMMARY PANEL ───────────────────────────── */
+  .summary-section { margin-bottom: 6px; }
+  .summary-section:last-child { margin-bottom: 0; }
+
+  .sum-heading {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--teal);
+    border-bottom: 1px solid var(--teal-md);
+    padding-bottom: 2px;
+    margin-bottom: 4px;
+  }
+  .sum-heading.green { color: var(--green); border-color: var(--green-md); }
+  .sum-heading.gold  { color: var(--gold);  border-color: #e8d9b5; }
+  .sum-heading.navy  { color: var(--navy);  border-color: var(--border); }
+
+  .sum-hero {
+    font-family: 'Source Serif 4', serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--navy);
+    line-height: 1;
+  }
+  .sum-unit { font-size: 12px; color: var(--muted); font-weight: 400; }
+  .sum-detail {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.45;
+    margin-top: 2px;
+  }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+  .pill {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 3px;
+    background: var(--teal-lt);
+    color: var(--teal);
+    border: 1px solid var(--teal-md);
+  }
+  .pill.green { background: var(--green-lt); color: var(--green); border-color: var(--green-md); }
+  .pill.gold  { background: var(--gold-lt);  color: #8a6820; border-color: #e8d9b5; }
+  .pill.navy  { background: #e9ecee; color: var(--navy); border-color: #c8cdd0; }
+
+  .contractor-row {
+    margin-top: 4px;
+    padding-top: 5px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .contractor-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--label);
+    margin-bottom: 2px;
+  }
+  .contractor-val {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--navy);
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- TITLE -->
+  <div class="title-strip">
+    <h1>Te Apiti – Manawatu Gorge</h1>
+    <span class="fy-badge" id="fy-badge">2023–24</span>
+  </div>
+
+  <!-- TOP ROW -->
+  <div class="row-top">
+
+    <!-- Left: Stats at a glance -->
+    <div class="panel">
+      <div class="panel-title">Programme at a Glance</div>
+      <div class="panel-sub" id="fy-sub">2023–24 Financial Year</div>
+      <div class="stat-grid">
+        <div class="stat-box">
+          <div class="s-val sm" id="val-km">–</div>
+          <div class="s-key">Track km Covered</div>
+        </div>
+        <div class="stat-box">
+          <div class="s-val" id="val-visits">–</div>
+          <div class="s-key">Contractor Visits</div>
+        </div>
+        <div class="stat-box green-box">
+          <div class="s-val green" id="val-records">–</div>
+          <div class="s-key">Weed Locations Recorded</div>
+        </div>
+        <div class="stat-box green-box">
+          <div class="s-val green" id="val-rpmp">–</div>
+          <div class="s-key">RPMP Species Locations</div>
+        </div>
+        <div class="stat-box">
+          <div class="s-val" id="val-species">–</div>
+          <div class="s-key">Weed Species Targeted</div>
+        </div>
+        <div class="stat-box green-box">
+          <div class="s-val green" id="val-adults">–</div>
+          <div class="s-key">Adult Plants Controlled</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Middle: Weed species composition -->
+    <div class="panel">
+      <div class="panel-title">Weed Species Composition</div>
+      <div class="panel-sub">Pest plant records by species</div>
+      <div class="chart-wrap">
+        <canvas id="speciesChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Right: Activity summary -->
+    <div class="panel">
+      <div class="panel-title">Activity Summary</div>
+
+      <div class="summary-section">
+        <div class="sum-heading">Pest Plant Control</div>
+        <div><span class="sum-hero" id="val-rpmp-pct">–</span> <span class="sum-unit">% RPMP species locations</span></div>
+        <div class="sum-detail">Old man's beard and banana passionfruit are the primary RPMP targets throughout the gorge corridor. Control carried out year-round across all track networks.</div>
+        <div class="pill-row">
+          <span class="pill" id="pill-km">– km tracked</span>
+          <span class="pill" id="pill-visits">– visits</span>
+        </div>
+      </div>
+
+      <div class="summary-section">
+        <div class="sum-heading green">Key Species</div>
+        <div class="sum-detail">Old man's beard · Banana passionfruit · Japanese honeysuckle · Pine · Acacia</div>
+        <div class="pill-row">
+          <span class="pill green" id="pill-species">– species</span>
+          <span class="pill green" id="pill-records">– records</span>
+        </div>
+      </div>
+
+      <div class="summary-section">
+        <div class="sum-heading navy">Plant Life Stage</div>
+        <div class="sum-detail">Proportion of adult, juvenile and seedling plants recorded across the gorge, indicating ongoing regeneration pressure.</div>
+        <div class="pill-row">
+          <span class="pill navy" id="pill-adults">– adult</span>
+          <span class="pill navy" id="pill-juveniles">– juvenile</span>
+          <span class="pill navy" id="pill-seedlings">– seedling</span>
+        </div>
+      </div>
+
+      <div class="contractor-row">
+        <div class="contractor-label">Contractor</div>
+        <div class="contractor-val" id="val-contractor">–</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM ROW -->
+  <div class="row-bottom">
+
+    <div class="panel">
+      <div class="panel-title">Track Coverage by Month</div>
+      <div class="panel-sub">km of gorge tracks covered per month</div>
+      <div class="chart-wrap">
+        <canvas id="trackChart"></canvas>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title green">Top Weed Species</div>
+      <div class="panel-sub">Weed locations recorded by species</div>
+      <div class="chart-wrap">
+        <canvas id="topSpeciesChart"></canvas>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Plant Life Stage Breakdown</div>
+      <div class="panel-sub">Age class of recorded weed plants</div>
+      <div class="chart-wrap">
+        <canvas id="ageChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+Chart.defaults.color = '#5a5a52';
+
+const teal    = '#1a6b7c';
+const teal2   = '#2d9bb2';
+const tealLt  = '#6dbdcd';
+const green   = '#2d6a4f';
+const green2  = '#4a9b6f';
+const greenLt = '#8dc9a6';
+const gold    = '#c8a84b';
+const goldLt  = '#e8d9b5';
+const border  = '#ddddd8';
+
+/* ─────────────────────────────────────────────────────────────────
+   DATA — auto-updated by Icon_Sites_Data_Export.py
+   Source: BioD Contractor Data feature layer (Palm05 / Manawatū Gorge)
+   ───────────────────────────────────────────────────────────────── */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-14 09:35 */
+const DATA = {
+  "fy": "23-24",
+  "site": "Te Apiti \u2013 Manawatu Gorge",
+  "generated": "2026-04-14T09:35:46.593005",
+  "stats": {
+    "km": null,
+    "visits": 55,
+    "records": 1026,
+    "rpmp": null,
+    "species": 8,
+    "adults": null
+  },
+  "speciesComp": {
+    "labels": [
+      "Old man's beard",
+      "Banana passionfruit",
+      "Japanese honeysuckle",
+      "Pine",
+      "Null",
+      "Other"
+    ],
+    "data": [
+      804,
+      137,
+      71,
+      6,
+      5,
+      3
+    ]
+  },
+  "trackByMonth": {
+    "labels": [
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun"
+    ],
+    "data": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "ageClass": {
+    "labels": [
+      "Adult",
+      "Juvenile",
+      "Seedling",
+      "Undefined"
+    ],
+    "data": [
+      0,
+      0,
+      0,
+      1026
+    ]
+  },
+  "summary": {
+    "rpmpPct": null,
+    "kmTotal": null,
+    "visits": 55,
+    "speciesCount": 8,
+    "records": 1026,
+    "adults": null,
+    "juveniles": null,
+    "seedlings": null,
+    "contractor": "Kahikatea Contracting"
+  },
+  "allYears": [
+    {
+      "site": "Palm05",
+      "fy": "20-21",
+      "records": 1457,
+      "km": null,
+      "visits": 47,
+      "species": 6,
+      "rpmp": null,
+      "rpmp_pct": null,
+      "adults": 0,
+      "juveniles": 0,
+      "seedlings": 0
+    },
+    {
+      "site": "Palm05",
+      "fy": "21-22",
+      "records": 1036,
+      "km": null,
+      "visits": 56,
+      "species": 9,
+      "rpmp": null,
+      "rpmp_pct": null,
+      "adults": 0,
+      "juveniles": 0,
+      "seedlings": 0
+    },
+    {
+      "site": "Palm05",
+      "fy": "22-23",
+      "records": 1198,
+      "km": null,
+      "visits": 50,
+      "species": 8,
+      "rpmp": null,
+      "rpmp_pct": null,
+      "adults": 0,
+      "juveniles": 0,
+      "seedlings": 0
+    },
+    {
+      "site": "Palm05",
+      "fy": "23-24",
+      "records": 1026,
+      "km": null,
+      "visits": 55,
+      "species": 8,
+      "rpmp": null,
+      "rpmp_pct": null,
+      "adults": 0,
+      "juveniles": 0,
+      "seedlings": 0
+    }
+  ]
+};
+/* ICON_SITE_DATA_END */
+
+/* ─────────────────────────────────────────────────────────────────
+   Populate stat boxes and pills (shows '–' when null)
+   ───────────────────────────────────────────────────────────────── */
+function fmt(v, suffix, decimals) {
+  if (v == null) return '–';
+  const n = decimals != null ? v.toFixed(decimals) : v.toLocaleString();
+  return suffix ? n + ' ' + suffix : n;
+}
+
+// Update FY badge and subtitle
+if (DATA.fy) {
+  const fyLabel = DATA.fy.replace('-', '–');
+  document.getElementById('fy-badge').textContent = fyLabel;
+  document.getElementById('fy-sub').textContent   = fyLabel + ' Financial Year';
+}
+
+document.getElementById('val-km').textContent      = fmt(DATA.stats.km, 'km', 1);
+document.getElementById('val-visits').textContent  = fmt(DATA.stats.visits);
+document.getElementById('val-records').textContent = fmt(DATA.stats.records);
+document.getElementById('val-rpmp').textContent    = fmt(DATA.stats.rpmp);
+document.getElementById('val-species').textContent = fmt(DATA.stats.species);
+document.getElementById('val-adults').textContent  = fmt(DATA.stats.adults);
+
+document.getElementById('val-rpmp-pct').textContent = fmt(DATA.summary.rpmpPct, '%', 0);
+document.getElementById('val-contractor').textContent = DATA.summary.contractor || '–';
+
+document.getElementById('pill-km').textContent        = fmt(DATA.summary.kmTotal, 'km tracked', 1);
+document.getElementById('pill-visits').textContent    = fmt(DATA.summary.visits, 'visits');
+document.getElementById('pill-species').textContent   = fmt(DATA.summary.speciesCount, 'species');
+document.getElementById('pill-records').textContent   = fmt(DATA.summary.records, 'records');
+document.getElementById('pill-adults').textContent    = fmt(DATA.summary.adults, 'adult');
+document.getElementById('pill-juveniles').textContent = fmt(DATA.summary.juveniles, 'juvenile');
+document.getElementById('pill-seedlings').textContent = fmt(DATA.summary.seedlings, 'seedling');
+
+/* Helper — replace nulls with 0 for charting */
+const toArr = arr => (arr || []).map(v => v ?? 0);
+
+/* ── WEED SPECIES COMPOSITION (top panel middle) ── */
+new Chart(document.getElementById('speciesChart'), {
+  type: 'bar',
+  data: {
+    labels: DATA.speciesComp.labels,
+    datasets: [{
+      label: 'Records',
+      data: toArr(DATA.speciesComp.data),
+      backgroundColor: [teal, green, teal2, gold, green2, tealLt],
+      borderRadius: 3,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.x.toLocaleString()} records` } }
+    },
+    scales: {
+      x: {
+        grid: { color: border },
+        ticks: { font: { size: 10 } },
+        title: { display: true, text: 'Weed locations', font: { size: 10 }, color: '#8a8a82' }
+      },
+      y: { grid: { display: false }, ticks: { font: { size: 10.5 } } }
+    }
+  }
+});
+
+/* ── TRACK COVERAGE BY MONTH ── */
+new Chart(document.getElementById('trackChart'), {
+  type: 'bar',
+  data: {
+    labels: DATA.trackByMonth.labels,
+    datasets: [{
+      label: 'km covered',
+      data: toArr(DATA.trackByMonth.data),
+      backgroundColor: teal,
+      borderRadius: 3,
+    }]
+  },
+  options: {
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y.toFixed(1)} km` } }
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+      y: {
+        grid: { color: border },
+        ticks: { font: { size: 10 } },
+        title: { display: true, text: 'km', font: { size: 10 }, color: '#8a8a82' }
+      }
+    }
+  }
+});
+
+/* ── TOP WEED SPECIES (bottom middle) ── */
+new Chart(document.getElementById('topSpeciesChart'), {
+  type: 'bar',
+  data: {
+    labels: DATA.speciesComp.labels,
+    datasets: [{
+      label: 'Records',
+      data: toArr(DATA.speciesComp.data),
+      backgroundColor: [teal, green, teal2, gold, green2, tealLt],
+      borderRadius: 3,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.x.toLocaleString()} records` } }
+    },
+    scales: {
+      x: {
+        grid: { color: border },
+        ticks: { font: { size: 10 } },
+        title: { display: true, text: 'Records', font: { size: 10 }, color: '#8a8a82' }
+      },
+      y: { grid: { display: false }, ticks: { font: { size: 10.5 } } }
+    }
+  }
+});
+
+/* ── AGE CLASS BREAKDOWN ── */
+new Chart(document.getElementById('ageChart'), {
+  type: 'bar',
+  data: {
+    labels: DATA.ageClass.labels,
+    datasets: [{
+      label: 'Records',
+      data: toArr(DATA.ageClass.data),
+      backgroundColor: [teal, teal2, tealLt, '#c8cdd0'],
+      borderRadius: 3,
+    }]
+  },
+  options: {
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y.toLocaleString()} plants` } }
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 10.5 } } },
+      y: {
+        grid: { color: border },
+        ticks: { font: { size: 10 } },
+        title: { display: true, text: 'Records', font: { size: 10 }, color: '#8a8a82' }
+      }
+    }
+  }
+});
+</script>
+</body>
+</html>
