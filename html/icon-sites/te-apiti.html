@@ -344,10 +344,10 @@
     </div>
 
     <div class="panel">
-      <div class="panel-title green">Top Weed Species</div>
-      <div class="panel-sub">Weed locations recorded by species</div>
+      <div class="panel-title">Programme Trends by Year</div>
+      <div class="panel-sub">Weed locations recorded — RPMP vs non-RPMP species</div>
       <div class="chart-wrap">
-        <canvas id="topSpeciesChart"></canvas>
+        <canvas id="trendsChart"></canvas>
       </div>
     </div>
 
@@ -381,11 +381,11 @@ const border  = '#ddddd8';
    DATA — auto-updated by Icon_Sites_Data_Export.py
    Source: BioD Contractor Data feature layer (Palm05 / Manawatū Gorge)
    ───────────────────────────────────────────────────────────────── */
-/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-14 13:47 */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-14 13:54 */
 const DATA = {
   "fy": "23-24",
   "site": "Te Apiti \u2013 Manawatu Gorge",
-  "generated": "2026-04-14T13:47:42.546246",
+  "generated": "2026-04-14T13:54:15.240964",
   "stats": {
     "km": 897.4,
     "visits": 55,
@@ -633,32 +633,53 @@ new Chart(document.getElementById('trackChart'), {
   }
 });
 
-/* ── TOP WEED SPECIES (bottom middle) ── */
-new Chart(document.getElementById('topSpeciesChart'), {
+/* ── PROGRAMME TRENDS BY YEAR (bottom middle) ── */
+const _ay = DATA.allYears || [];
+const _fyLabels  = _ay.map(r => r.fy);
+const _rpmpData  = _ay.map(r => r.rpmp  || 0);
+const _otherData = _ay.map(r => Math.max(0, (r.records || 0) - (r.rpmp || 0)));
+new Chart(document.getElementById('trendsChart'), {
   type: 'bar',
   data: {
-    labels: DATA.speciesComp.labels,
-    datasets: [{
-      label: 'Records',
-      data: toArr(DATA.speciesComp.data),
-      backgroundColor: [teal, green, teal2, gold, green2, tealLt],
-      borderRadius: 3,
-    }]
+    labels: _fyLabels,
+    datasets: [
+      {
+        label: 'RPMP species',
+        data: _rpmpData,
+        backgroundColor: teal,
+        borderRadius: 2,
+        stack: 'records',
+      },
+      {
+        label: 'Other species',
+        data: _otherData,
+        backgroundColor: tealLt,
+        borderRadius: 2,
+        stack: 'records',
+      }
+    ]
   },
   options: {
-    indexAxis: 'y',
     maintainAspectRatio: false,
     plugins: {
-      legend: { display: false },
-      tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.x.toLocaleString()} records` } }
+      legend: { display: true, position: 'bottom', labels: { font: { size: 10 }, boxWidth: 11, padding: 10 } },
+      tooltip: {
+        callbacks: {
+          footer: items => {
+            const total = items.reduce((s, i) => s + i.parsed.y, 0);
+            return `Total: ${total.toLocaleString()} records`;
+          }
+        }
+      }
     },
     scales: {
-      x: {
+      x: { grid: { display: false }, ticks: { font: { size: 10.5 } }, stacked: true },
+      y: {
         grid: { color: border },
+        stacked: true,
         ticks: { font: { size: 10 } },
         title: { display: true, text: 'Records', font: { size: 10 }, color: '#8a8a82' }
-      },
-      y: { grid: { display: false }, ticks: { font: { size: 10.5 } } }
+      }
     }
   }
 });
