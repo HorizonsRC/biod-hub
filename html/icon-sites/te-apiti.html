@@ -341,10 +341,10 @@
   <div class="row-bottom">
 
     <div class="panel">
-      <div class="panel-title">Track Coverage by Month</div>
-      <div class="panel-sub">km of gorge tracks covered per month</div>
+      <div class="panel-title">Pest Animal Catches by Year</div>
+      <div class="panel-sub">Trap inspection records per financial year</div>
       <div class="chart-wrap">
-        <canvas id="trackChart"></canvas>
+        <canvas id="catchesChart"></canvas>
       </div>
     </div>
 
@@ -386,11 +386,11 @@ const border  = '#ddddd8';
    DATA — auto-updated by Icon_Sites_Data_Export.py
    Source: BioD Contractor Data feature layer (Palm05 / Manawatū Gorge)
    ───────────────────────────────────────────────────────────────── */
-/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-14 14:47 */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-14 14:54 */
 const DATA = {
   "fy": "24-25",
   "site": "Te Apiti \u2013 Manawatu Gorge",
-  "generated": "2026-04-14T14:47:32.202983",
+  "generated": "2026-04-14T14:54:10.622762",
   "stats": {
     "km": 1129.9,
     "visits": 26,
@@ -505,8 +505,20 @@ const DATA = {
       ]
     },
     "catchesByFY": {
-      "labels": [],
-      "data": []
+      "labels": [
+        "21-22",
+        "22-23",
+        "23-24",
+        "24-25",
+        "25-26"
+      ],
+      "data": [
+        1553,
+        1307,
+        1430,
+        1571,
+        1697
+      ]
     }
   },
   "allYears": [
@@ -541,7 +553,7 @@ const DATA = {
       "fy": "22-23",
       "records": 1198,
       "km": 1190.6,
-      "visits": 26,
+      "visits": 50,
       "species": 8,
       "rpmp": 1157,
       "rpmp_pct": 97,
@@ -646,15 +658,16 @@ new Chart(document.getElementById('speciesChart'), {
   }
 });
 
-/* ── TRACK COVERAGE BY MONTH ── */
-new Chart(document.getElementById('trackChart'), {
+/* ── PEST ANIMAL CATCHES BY YEAR (bottom left) ── */
+const _cf = (DATA.traps && DATA.traps.catchesByFY) ? DATA.traps.catchesByFY : { labels: [], data: [] };
+new Chart(document.getElementById('catchesChart'), {
   type: 'bar',
   data: {
-    labels: DATA.trackByMonth.labels,
+    labels: _cf.labels,
     datasets: [{
-      label: 'km covered',
-      data: toArr(DATA.trackByMonth.data),
-      backgroundColor: teal,
+      label: 'Inspections',
+      data: toArr(_cf.data),
+      backgroundColor: green,
       borderRadius: 3,
     }]
   },
@@ -662,14 +675,15 @@ new Chart(document.getElementById('trackChart'), {
     maintainAspectRatio: false,
     plugins: {
       legend: { display: false },
-      tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y.toFixed(1)} km` } }
+      tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y.toLocaleString()} inspections` } }
     },
     scales: {
-      x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+      x: { grid: { display: false }, ticks: { font: { size: 10.5 } } },
       y: {
         grid: { color: border },
         ticks: { font: { size: 10 } },
-        title: { display: true, text: 'km', font: { size: 10 }, color: '#8a8a82' }
+        title: { display: true, text: 'Inspections', font: { size: 10 }, color: '#8a8a82' },
+        beginAtZero: true
       }
     }
   }
