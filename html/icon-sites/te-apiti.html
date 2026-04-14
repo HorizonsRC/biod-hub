@@ -265,11 +265,11 @@
         </div>
         <div class="stat-box">
           <div class="s-val sm">4.6%</div>
-          <div class="s-key">RTCI Possums (Oct)</div>
+          <div class="s-key">RTCI Possums – Most Recent</div>
         </div>
         <div class="stat-box">
           <div class="s-val sm">28%</div>
-          <div class="s-key">TTI Rats (Oct)</div>
+          <div class="s-key">TTI Rats – Most Recent</div>
         </div>
         <div class="stat-box green-box">
           <div class="s-val green" id="val-adults">–</div>
@@ -297,7 +297,7 @@
 
       <div class="summary-section">
         <div class="sum-heading">Pest Plant Control</div>
-        <div><span class="sum-hero" id="val-rpmp-pct">–</span> <span class="sum-unit">% RPMP species locations</span></div>
+        <div><span class="sum-hero" id="val-rpmp-pct">–</span> <span class="sum-unit">% of weed locations are RPMP-listed species</span></div>
         <div class="pill-row">
           <span class="pill" id="pill-records">– weed locations</span>
           <span class="pill" id="pill-rpmp">– RPMP locations</span>
@@ -322,7 +322,6 @@
       <div class="summary-section">
         <div class="sum-heading">Predator Control</div>
         <div class="sum-detail">DOC added 54 bait stations in the Southern Scenic Reserve (+7%). Oct monitoring: 4.6% RTCI possums · 28% TTI rats. Dec diphacinone op targeted rats. Cameras detected no mustelids.</div>
-        <div class="pill-row" id="trap-zone-pills"></div>
       </div>
 
       <div class="contractor-row">
@@ -382,11 +381,11 @@ const border  = '#ddddd8';
    DATA — auto-updated by Icon_Sites_Data_Export.py
    Source: BioD Contractor Data feature layer (Palm05 / Manawatū Gorge)
    ───────────────────────────────────────────────────────────────── */
-/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-14 15:57 */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-14 16:15 */
 const DATA = {
   "fy": "24-25",
   "site": "Te Apiti \u2013 Manawatu Gorge",
-  "generated": "2026-04-14T15:57:42.499422",
+  "generated": "2026-04-14T16:15:30.081320",
   "stats": {
     "km": 1129.9,
     "visits": 26,
@@ -841,19 +840,8 @@ new Chart(document.getElementById('trendsChart'), {
   }
 });
 
-/* ── PREDATOR CONTROL — populate summary section ── */
+/* ── TRAP TYPE CHART (bottom middle) ── */
 const _traps = DATA.traps || {};
-if (_traps.byZone && _traps.byZone.labels && _traps.byZone.labels.length) {
-  const container = document.getElementById('trap-zone-pills');
-  _traps.byZone.labels.forEach((zone, i) => {
-    const pill = document.createElement('span');
-    pill.className = 'pill';
-    pill.textContent = `${(_traps.byZone.data[i] || 0).toLocaleString()} – ${zone}`;
-    container.appendChild(pill);
-  });
-}
-
-/* ── TRAP TYPE CHART (bottom right) ── */
 const _ttLabels = (_traps.byType && _traps.byType.labels) ? _traps.byType.labels : [];
 const _ttData   = (_traps.byType && _traps.byType.data)   ? _traps.byType.data   : [];
 const _ttByZone = _traps.byTypeByZone || {};
