@@ -264,20 +264,20 @@
           <div class="s-key">Traps Deployed</div>
         </div>
         <div class="stat-box">
-          <div class="s-val" id="val-visits">–</div>
-          <div class="s-key">Contractor Visits</div>
+          <div class="s-val sm">4.6%</div>
+          <div class="s-key">RTCI Possums (Oct)</div>
         </div>
-        <div class="stat-box green-box">
-          <div class="s-val green" id="val-species">–</div>
-          <div class="s-key">Weed Species Targeted</div>
+        <div class="stat-box">
+          <div class="s-val sm">28%</div>
+          <div class="s-key">TTI Rats (Oct)</div>
         </div>
         <div class="stat-box green-box">
           <div class="s-val green" id="val-adults">–</div>
           <div class="s-key">Adult Plants Controlled</div>
         </div>
         <div class="stat-box green-box">
-          <div class="s-val green" id="val-juveniles-stat">–</div>
-          <div class="s-key">Juvenile Plants Controlled</div>
+          <div class="s-val green" id="val-species">–</div>
+          <div class="s-key">Weed Species Targeted</div>
         </div>
       </div>
     </div>
@@ -308,9 +308,6 @@
       <div class="summary-section">
         <div class="sum-heading green">Key Species</div>
         <div class="sum-detail">Old man's beard · Banana passionfruit · Japanese honeysuckle · Pine · Acacia</div>
-        <div class="pill-row">
-          <span class="pill green" id="pill-species">– species</span>
-        </div>
       </div>
 
       <div class="summary-section">
@@ -385,11 +382,11 @@ const border  = '#ddddd8';
    DATA — auto-updated by Icon_Sites_Data_Export.py
    Source: BioD Contractor Data feature layer (Palm05 / Manawatū Gorge)
    ───────────────────────────────────────────────────────────────── */
-/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-14 15:44 */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-14 15:57 */
 const DATA = {
   "fy": "24-25",
   "site": "Te Apiti \u2013 Manawatu Gorge",
-  "generated": "2026-04-14T15:44:13.050474",
+  "generated": "2026-04-14T15:57:42.499422",
   "stats": {
     "km": 1129.9,
     "visits": 26,
@@ -697,19 +694,16 @@ if (DATA.fy) {
 }
 
 // Stat grid
-document.getElementById('val-trap-stat').textContent    = fmt((DATA.traps || {}).total);
-document.getElementById('val-visits').textContent       = fmt(DATA.stats.visits);
-document.getElementById('val-species').textContent      = fmt(DATA.stats.species);
-document.getElementById('val-adults').textContent       = fmt(DATA.stats.adults);
-document.getElementById('val-juveniles-stat').textContent = fmt(DATA.summary.juveniles);
+document.getElementById('val-trap-stat').textContent = fmt((DATA.traps || {}).total);
+document.getElementById('val-adults').textContent    = fmt(DATA.stats.adults);
+document.getElementById('val-species').textContent   = fmt(DATA.stats.species);
 
 // Activity summary
-document.getElementById('val-rpmp-pct').textContent     = fmt(DATA.summary.rpmpPct, '%', 0);
-document.getElementById('val-contractor').textContent   = DATA.summary.contractor || '–';
-document.getElementById('pill-records').textContent     = fmt(DATA.summary.records, 'weed locations');
-document.getElementById('pill-rpmp').textContent        = fmt(DATA.summary.rpmp, 'RPMP locations');
-document.getElementById('pill-km').textContent          = fmt(DATA.summary.kmTotal, 'km tracked', 1);
-document.getElementById('pill-species').textContent     = fmt(DATA.summary.speciesCount, 'species');
+document.getElementById('val-rpmp-pct').textContent  = fmt(DATA.summary.rpmpPct, '%', 0);
+document.getElementById('val-contractor').textContent = DATA.summary.contractor || '–';
+document.getElementById('pill-records').textContent  = fmt(DATA.summary.records, 'weed locations');
+document.getElementById('pill-rpmp').textContent     = fmt(DATA.summary.rpmp, 'RPMP locations');
+document.getElementById('pill-km').textContent       = fmt(DATA.summary.kmTotal, 'km tracked', 1);
 document.getElementById('pill-adults').textContent    = fmt(DATA.summary.adults, 'adult');
 document.getElementById('pill-juveniles').textContent = fmt(DATA.summary.juveniles, 'juvenile');
 document.getElementById('pill-seedlings').textContent = fmt(DATA.summary.seedlings, 'seedling');
