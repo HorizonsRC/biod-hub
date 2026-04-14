@@ -55,7 +55,7 @@ HTML files are served via GitHub Pages at `https://HorizonsRC.github.io/biod-hub
 
 | Layer | Content |
 |---|---|
-| BioD Contractor Data (item `8a6537788fc246b99547c5833659d828`) | Waypoints (weed locations) and polylines (track coverage) |
+| BioD Contractor Data feature layer (item ID set in `config.py`) | Waypoints (weed locations) and polylines (track coverage) |
 | Animal Pest Control Layer New (FeatureServer) | Trap network features and related inspection/catch records |
 
 ### Per-site outputs
