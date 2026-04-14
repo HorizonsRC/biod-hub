@@ -29,22 +29,30 @@
   }
 
   html, body {
-    width: 953px;
-    height: 806px;
+    width: 100%;
+    height: 100%;
     overflow: hidden;
+    margin: 0;
+    padding: 0;
     background: var(--bg);
     font-family: 'DM Sans', sans-serif;
     color: var(--navy);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
   }
 
   /* ── MASTER LAYOUT ─────────────────────────── */
+  /* Fixed reference canvas — JS scales this to fit any viewport */
   .wrapper {
     display: grid;
     grid-template-rows: 58px 1fr 1fr;
     height: 806px;
     width: 953px;
+    min-width: 953px;
     padding: 0 10px 10px;
     background: var(--bg);
+    transform-origin: top center;
   }
 
   /* ── TITLE STRIP ───────────────────────────── */
@@ -1143,6 +1151,25 @@ new Chart(document.getElementById('trapTypeChart'), {
     }
   }
 });
+
+/* ── SCALE TO FIT VIEWPORT ───────────────────────────────────────────────────
+   Keeps the 953×806 reference canvas and scales it proportionally so the
+   dashboard fills any iframe/screen size without layout changes.           */
+(function scaleToFit() {
+  const BASE_W = 953, BASE_H = 806;
+  const wrapper = document.querySelector('.wrapper');
+  function resize() {
+    const scale = Math.min(
+      window.innerWidth  / BASE_W,
+      window.innerHeight / BASE_H
+    );
+    wrapper.style.transform = `scale(${scale})`;
+    // Keep the scaled wrapper vertically anchored to the top
+    wrapper.style.marginTop = '0';
+  }
+  resize();
+  window.addEventListener('resize', resize);
+})();
 </script>
 </body>
 </html>
