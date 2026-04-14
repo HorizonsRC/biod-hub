@@ -296,9 +296,13 @@
       <div class="panel-title">Activity Summary</div>
 
       <div class="summary-section">
+        <div class="sum-heading">Site Overview</div>
+        <div class="sum-detail">~2,700 ha across the Te Āpiti Scenic Reserves (Northern &amp; Southern), bisected by the Manawatū River between Woodville and Ashhurst.</div>
+      </div>
+
+      <div class="summary-section">
         <div class="sum-heading">Pest Plant Control</div>
         <div><span class="sum-hero" id="val-rpmp-pct">–</span> <span class="sum-unit">% RPMP species locations</span></div>
-        <div class="sum-detail">Old man's beard and banana passionfruit are the primary RPMP targets throughout the gorge corridor. Control carried out year-round across all track networks.</div>
         <div class="pill-row">
           <span class="pill" id="pill-km">– km tracked</span>
           <span class="pill" id="pill-visits">– visits</span>
@@ -326,6 +330,7 @@
       <div class="summary-section">
         <div class="sum-heading">Trap Network</div>
         <div><span class="sum-hero" id="val-trap-total">–</span> <span class="sum-unit">traps deployed</span></div>
+        <div class="sum-detail">DOC added 54 bait stations in the Southern Scenic Reserve (+7%). Oct monitoring: 4.6% RTCI possums · 28% TTI rats. Dec diphacinone op targeted rats. Cameras detected no mustelids.</div>
         <div class="pill-row" id="trap-zone-pills"></div>
       </div>
 
@@ -349,18 +354,18 @@
     </div>
 
     <div class="panel">
-      <div class="panel-title">Weeds Controlled by Year</div>
-      <div class="panel-sub">Records by life stage per financial year</div>
-      <div class="chart-wrap">
-        <canvas id="trendsChart"></canvas>
-      </div>
-    </div>
-
-    <div class="panel">
       <div class="panel-title">Trap Network by Type</div>
       <div class="panel-sub">Number of traps deployed across all zones</div>
       <div class="chart-wrap">
         <canvas id="trapTypeChart"></canvas>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Weeds Controlled by Year</div>
+      <div class="panel-sub">Records by life stage per financial year</div>
+      <div class="chart-wrap">
+        <canvas id="trendsChart"></canvas>
       </div>
     </div>
 
@@ -386,11 +391,11 @@ const border  = '#ddddd8';
    DATA — auto-updated by Icon_Sites_Data_Export.py
    Source: BioD Contractor Data feature layer (Palm05 / Manawatū Gorge)
    ───────────────────────────────────────────────────────────────── */
-/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-14 15:12 */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-14 15:29 */
 const DATA = {
   "fy": "24-25",
   "site": "Te Apiti \u2013 Manawatu Gorge",
-  "generated": "2026-04-14T15:12:33.299217",
+  "generated": "2026-04-14T15:29:34.347018",
   "stats": {
     "km": 1129.9,
     "visits": 26,
@@ -890,7 +895,7 @@ new Chart(document.getElementById('trapTypeChart'), {
             const zones = _ttByZone[ttype] || {};
             const rows  = Object.entries(zones).sort((a, b) => b[1] - a[1]);
             if (!rows.length) return [];
-            return ['', 'By zone:'].concat(
+            return ['', 'By PCO:'].concat(
               rows.map(([z, n]) => `  ${n.toLocaleString()} – ${z}`)
             );
           }
