@@ -316,12 +316,17 @@
 
       <div class="summary-section">
         <div class="sum-heading navy">Plant Life Stage</div>
-        <div class="sum-detail">Proportion of adult, juvenile and seedling plants recorded across the gorge, indicating ongoing regeneration pressure.</div>
         <div class="pill-row">
           <span class="pill navy" id="pill-adults">– adult</span>
           <span class="pill navy" id="pill-juveniles">– juvenile</span>
           <span class="pill navy" id="pill-seedlings">– seedling</span>
         </div>
+      </div>
+
+      <div class="summary-section">
+        <div class="sum-heading">Trap Network</div>
+        <div><span class="sum-hero" id="val-trap-total">–</span> <span class="sum-unit">traps deployed</span></div>
+        <div class="pill-row" id="trap-zone-pills"></div>
       </div>
 
       <div class="contractor-row">
@@ -352,10 +357,10 @@
     </div>
 
     <div class="panel">
-      <div class="panel-title">Plant Life Stage Breakdown</div>
-      <div class="panel-sub">Age class of recorded weed plants</div>
+      <div class="panel-title">Trap Network by Type</div>
+      <div class="panel-sub">Number of traps deployed across all zones</div>
       <div class="chart-wrap">
-        <canvas id="ageChart"></canvas>
+        <canvas id="trapTypeChart"></canvas>
       </div>
     </div>
 
@@ -381,11 +386,11 @@ const border  = '#ddddd8';
    DATA — auto-updated by Icon_Sites_Data_Export.py
    Source: BioD Contractor Data feature layer (Palm05 / Manawatū Gorge)
    ───────────────────────────────────────────────────────────────── */
-/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-14 14:15 */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-14 14:35 */
 const DATA = {
   "fy": "24-25",
   "site": "Te Apiti \u2013 Manawatu Gorge",
-  "generated": "2026-04-14T14:15:23.813065",
+  "generated": "2026-04-14T14:35:07.597096",
   "stats": {
     "km": 1129.9,
     "visits": 26,
@@ -446,14 +451,12 @@ const DATA = {
     "labels": [
       "Adult",
       "Juvenile",
-      "Seedling",
-      "Undefined"
+      "Seedling"
     ],
     "data": [
       642,
       325,
-      18,
-      1
+      18
     ]
   },
   "summary": {
@@ -466,6 +469,45 @@ const DATA = {
     "juveniles": 325,
     "seedlings": 18,
     "contractor": "Kahikatea Contracting"
+  },
+  "traps": {
+    "total": 378,
+    "byType": {
+      "labels": [
+        "DOC200",
+        "A24",
+        "Other",
+        "DOC250",
+        "At220"
+      ],
+      "data": [
+        280,
+        81,
+        10,
+        6,
+        1
+      ]
+    },
+    "byZone": {
+      "labels": [
+        "Bio Te Apiti Buffer South",
+        "Bio Te Apiti Buffer North",
+        "Bio Te Apiti South",
+        "Bio Te Apiti",
+        "Bio Te Apiti Buffer"
+      ],
+      "data": [
+        172,
+        132,
+        64,
+        6,
+        4
+      ]
+    },
+    "catchesByFY": {
+      "labels": [],
+      "data": []
+    }
   },
   "allYears": [
     {
@@ -684,31 +726,48 @@ new Chart(document.getElementById('trendsChart'), {
   }
 });
 
-/* ── AGE CLASS BREAKDOWN ── */
-new Chart(document.getElementById('ageChart'), {
+/* ── TRAP NETWORK — populate summary section ── */
+const _traps = DATA.traps || {};
+document.getElementById('val-trap-total').textContent = fmt(_traps.total);
+if (_traps.byZone && _traps.byZone.labels && _traps.byZone.labels.length) {
+  const container = document.getElementById('trap-zone-pills');
+  _traps.byZone.labels.forEach((zone, i) => {
+    const pill = document.createElement('span');
+    pill.className = 'pill';
+    pill.textContent = `${(_traps.byZone.data[i] || 0).toLocaleString()} – ${zone}`;
+    container.appendChild(pill);
+  });
+}
+
+/* ── TRAP TYPE CHART (bottom right) ── */
+const _ttLabels = (_traps.byType && _traps.byType.labels) ? _traps.byType.labels : [];
+const _ttData   = (_traps.byType && _traps.byType.data)   ? _traps.byType.data   : [];
+const _ttColors = [teal, teal2, tealLt, green, green2, greenLt, gold];
+new Chart(document.getElementById('trapTypeChart'), {
   type: 'bar',
   data: {
-    labels: DATA.ageClass.labels,
+    labels: _ttLabels,
     datasets: [{
-      label: 'Records',
-      data: toArr(DATA.ageClass.data),
-      backgroundColor: [teal, teal2, tealLt, '#c8cdd0'],
+      label: 'Traps',
+      data: _ttData,
+      backgroundColor: _ttColors.slice(0, _ttLabels.length),
       borderRadius: 3,
     }]
   },
   options: {
+    indexAxis: 'y',
     maintainAspectRatio: false,
     plugins: {
       legend: { display: false },
-      tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y.toLocaleString()} plants` } }
+      tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.x.toLocaleString()} traps` } }
     },
     scales: {
-      x: { grid: { display: false }, ticks: { font: { size: 10.5 } } },
-      y: {
+      x: {
         grid: { color: border },
         ticks: { font: { size: 10 } },
-        title: { display: true, text: 'Records', font: { size: 10 }, color: '#8a8a82' }
-      }
+        title: { display: true, text: 'No. of traps', font: { size: 10 }, color: '#8a8a82' }
+      },
+      y: { grid: { display: false }, ticks: { font: { size: 10.5 } } }
     }
   }
 });
