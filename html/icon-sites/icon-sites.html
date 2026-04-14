@@ -25,12 +25,11 @@
   }
 
   html, body {
-    width: 1920px;
-    height: 870px;
-    overflow: hidden;
+    width: 100%; height: 100%; overflow: hidden;
     background: var(--bg);
     font-family: 'DM Sans', sans-serif;
     color: var(--navy);
+    display: flex; align-items: flex-start; justify-content: center;
   }
 
   .grid {
@@ -41,6 +40,7 @@
     padding: 20px 28px;
     height: 870px;
     width: 1920px;
+    transform-origin: top center;
   }
 
   /* base card — accent colour injected via --c / --c-lt / --c-btn per card class */
@@ -248,5 +248,17 @@
   </div>
 
 </div>
+<script>
+  (function scaleToFit() {
+    const BASE_W = 1920, BASE_H = 870;
+    const el = document.querySelector('.grid');
+    function resize() {
+      const scale = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
+      el.style.transform = `scale(${scale})`;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+  })();
+</script>
 </body>
 </html>
