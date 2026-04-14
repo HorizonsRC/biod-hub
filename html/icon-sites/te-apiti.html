@@ -380,13 +380,13 @@ const border  = '#ddddd8';
    DATA — auto-updated by Icon_Sites_Data_Export.py
    Source: BioD Contractor Data feature layer (Palm05 / Manawatū Gorge)
    ───────────────────────────────────────────────────────────────── */
-/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-14 16:47 */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-15 09:52 */
 const DATA = {
   "fy": "24-25",
   "site": "Te Apiti \u2013 Manawatu Gorge",
-  "generated": "2026-04-14T16:47:06.265920",
+  "generated": "2026-04-15T09:52:01.867178",
   "stats": {
-    "km": 1129.9,
+    "km": 1130,
     "visits": 26,
     "records": 986,
     "rpmp": 858,
@@ -409,6 +409,39 @@ const DATA = {
       44,
       8,
       10
+    ],
+    "ageBySpecies": {
+      "Old man's beard": {
+        "A": 498,
+        "J": 285,
+        "S": 0
+      },
+      "Banana Passionfruit": {
+        "A": 44,
+        "J": 15,
+        "S": 16
+      },
+      "Tradescantia": {
+        "A": 66,
+        "J": 0,
+        "S": 0
+      },
+      "Japanese honeysuckle": {
+        "A": 19,
+        "J": 23,
+        "S": 2
+      },
+      "Periwinkle": {
+        "A": 8,
+        "J": 0,
+        "S": 0
+      }
+    },
+    "otherSpecies": [
+      "Ivy",
+      "Artillery Plant",
+      "Licorice Plant",
+      "Peach"
     ]
   },
   "trackByMonth": {
@@ -455,7 +488,7 @@ const DATA = {
   },
   "summary": {
     "rpmpPct": 87,
-    "kmTotal": 1129.9,
+    "kmTotal": 1130,
     "visits": 26,
     "speciesCount": 9,
     "records": 986,
@@ -783,7 +816,7 @@ const DATA = {
       "site": "Palm05",
       "fy": "20-21",
       "records": 1457,
-      "km": 1027.1,
+      "km": 1027,
       "visits": 47,
       "species": 6,
       "rpmp": 1451,
@@ -796,7 +829,7 @@ const DATA = {
       "site": "Palm05",
       "fy": "21-22",
       "records": 1036,
-      "km": 1708.9,
+      "km": 1709,
       "visits": 56,
       "species": 9,
       "rpmp": 1013,
@@ -809,7 +842,7 @@ const DATA = {
       "site": "Palm05",
       "fy": "22-23",
       "records": 1198,
-      "km": 1190.6,
+      "km": 1191,
       "visits": 50,
       "species": 8,
       "rpmp": 1157,
@@ -822,7 +855,7 @@ const DATA = {
       "site": "Palm05",
       "fy": "23-24",
       "records": 1026,
-      "km": 897.4,
+      "km": 897,
       "visits": 55,
       "species": 8,
       "rpmp": 941,
@@ -835,7 +868,7 @@ const DATA = {
       "site": "Palm05",
       "fy": "24-25",
       "records": 986,
-      "km": 1129.9,
+      "km": 1130,
       "visits": 26,
       "species": 9,
       "rpmp": 858,
@@ -873,7 +906,7 @@ document.getElementById('val-species').textContent   = fmt(DATA.stats.species);
 document.getElementById('val-rpmp-pct').textContent  = fmt(DATA.summary.rpmpPct, '%', 0);
 document.getElementById('val-contractor').textContent = DATA.summary.contractor || '–';
 document.getElementById('pill-records').textContent  = fmt(DATA.summary.records, 'weed locations');
-document.getElementById('pill-km').textContent       = fmt(DATA.summary.kmTotal, 'km tracked', 1);
+document.getElementById('pill-km').textContent       = fmt(DATA.summary.kmTotal, 'km tracked', 0);
 
 // Stat grid — trap catches for the current FY
 (function () {
@@ -914,7 +947,26 @@ new Chart(document.getElementById('speciesChart'), {
     maintainAspectRatio: false,
     plugins: {
       legend: { display: false },
-      tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.x.toLocaleString()} records` } }
+      tooltip: {
+        callbacks: {
+          label: ctx => {
+            const sp  = ctx.label;
+            const val = ctx.parsed.x;
+            if (sp === 'Other') {
+              const others = DATA.speciesComp.otherSpecies || [];
+              return [` ${val.toLocaleString()} records`, '', ' Includes:']
+                .concat(others.map(s => `   · ${s}`));
+            }
+            const ages = (DATA.speciesComp.ageBySpecies || {})[sp] || {};
+            return [
+              ` ${val.toLocaleString()} records`,
+              ` Adult: ${(ages.A || 0).toLocaleString()}`,
+              ` Juvenile: ${(ages.J || 0).toLocaleString()}`,
+              ` Seedling: ${(ages.S || 0).toLocaleString()}`,
+            ];
+          }
+        }
+      }
     },
     scales: {
       x: {
