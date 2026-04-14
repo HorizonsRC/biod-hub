@@ -24,13 +24,14 @@
       --rust:      #a05a3a;
     }
 
-    html {
+    html, body {
       width: 100%; height: 100%; overflow: hidden;
       display: flex; align-items: flex-start; justify-content: center;
     }
 
-    body {
-      width: 969px; height: 870px; overflow: hidden;
+    .wrapper {
+      width: 969px; min-width: 969px; height: 870px;
+      overflow: hidden;
       transform-origin: top center;
       font-family: 'Source Sans 3', sans-serif;
       background: var(--bg);
@@ -188,6 +189,7 @@
   </style>
 </head>
 <body>
+<div class="wrapper">
 
   <div class="page-title">Waitārere Beach Community Project</div>
 
@@ -328,7 +330,7 @@
   <script>
     (function scaleToFit() {
       const BASE_W = 969, BASE_H = 870;
-      const el = document.body;
+      const el = document.querySelector('.wrapper');
       function resize() {
         const scale = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
         el.style.transform = `scale(${scale})`;
@@ -436,5 +438,6 @@
     });
   </script>
 
+</div><!-- /.wrapper -->
 </body>
 </html>
