@@ -16,4 +16,18 @@ OUTPUT_SUMMARY_CSV = r"C:\path\to\your\Outputs\PH_Pressure_Summary_by_District.c
 # ── Icon Sites ────────────────────────────────────────────────────────────────
 
 # Output directory for per-site summary CSVs (created automatically if absent)
-ICON_SITES_OUTPUT_DIR = r"C:\path\to\your\Outputs\icon-sites"
+# Recommended: point this to your local Data\ folder (gitignored)
+ICON_SITES_OUTPUT_DIR = r"C:\path\to\your\Data"
+
+# BioD Contractor Data feature layer item ID (waypoints layer 0, polylines layer 1)
+CONTRACTOR_ITEM_ID = "your-contractor-item-id"
+WAYPOINTS_LAYER_ID = 0
+POLYLINES_LAYER_ID = 1
+
+# Animal Pest Control FeatureServer URL (trap features layer 0, inspection table layer 1)
+TRAP_SERVICE_URL = "https://services1.arcgis.com/your-org-id/arcgis/rest/services/your-trap-layer/FeatureServer"
+TRAP_LAYER_ID    = 0
+INSP_TABLE_ID    = 1
+
+# Priority Habitats spatial layer URL (used by Pressure_Management_Data_Join.py)
+FEATURE_SERVICE_URL = "https://services1.arcgis.com/your-org-id/arcgis/rest/services/your-ph-layer/FeatureServer/0"
