@@ -18,9 +18,14 @@
       --green:   #3a6b3a;
     }
 
-    html, body { width: 879px; height: 866px; overflow: hidden; }
+    html {
+      width: 100%; height: 100%; overflow: hidden;
+      display: flex; align-items: flex-start; justify-content: center;
+    }
 
     body {
+      width: 879px; height: 866px; overflow: hidden;
+      transform-origin: top center;
       font-family: 'Source Sans 3', sans-serif;
       background: var(--bg);
       color: var(--navy);
@@ -189,6 +194,17 @@
         }
       }
     });
+
+    (function scaleToFit() {
+      const BASE_W = 879, BASE_H = 866;
+      const el = document.body;
+      function resize() {
+        const scale = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
+        el.style.transform = `scale(${scale})`;
+      }
+      resize();
+      window.addEventListener('resize', resize);
+    })();
 
     new Chart(document.getElementById('stackedChart'), {
       type: 'bar',
