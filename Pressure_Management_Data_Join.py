@@ -25,12 +25,11 @@ import pandas as pd
 import numpy as np
 from arcgis.features import FeatureLayer
 import arcpy
-from config import CSV_PATH, OUTPUT_GDB, NETWORK_DIR, OUTPUT_SUMMARY_CSV
+from config import CSV_PATH, OUTPUT_GDB, NETWORK_DIR, OUTPUT_SUMMARY_CSV, FEATURE_SERVICE_URL
 
 log.info("Libraries imported successfully")
 
-# ArcGIS Server REST Endpoint
-FEATURE_SERVICE_URL = "https://services1.arcgis.com/VuN78wcRdq1Oj69W/arcgis/rest/services/Priority_habitats_with_PCO/FeatureServer/0"
+# FEATURE_SERVICE_URL is read from config.py
 
 OUTPUT_MAIN_FC = "PH_Pressure_Management"
 OUTPUT_RELATED_TABLE = "PH_Pressure_Scores_TimeSeries"

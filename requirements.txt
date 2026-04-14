@@ -2,6 +2,8 @@ pandas
 numpy
 arcgis
 
-# arcpy is required but is not pip-installable.
-# It is included with ArcGIS Pro. Run this script from within the
-# ArcGIS Pro Python environment (arcgispro-py3).
+# arcpy is required by Pressure_Management_Data_Join.py but is not pip-installable.
+# arcgis (ArcGIS API for Python) is used by both PM_Dashboard_Export.py and
+# Icon_Sites_Data_Export.py and is included in the ArcGIS Pro conda environment.
+# Run all scripts from the ArcGIS Pro Python environment, e.g.:
+#   C:\Users\<you>\AppData\Local\ESRI\conda\envs\arcpro-scripts-3-5\python.exe <script>.py
