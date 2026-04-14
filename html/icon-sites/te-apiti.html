@@ -342,15 +342,15 @@
 
     <div class="panel">
       <div class="panel-title">Pest Animal Catches by Year</div>
-      <div class="panel-sub">Trap inspection records per financial year</div>
+      <div class="panel-sub">Catches recorded per species by financial year</div>
       <div class="chart-wrap">
         <canvas id="catchesChart"></canvas>
       </div>
     </div>
 
     <div class="panel">
-      <div class="panel-title">Programme Trends by Year</div>
-      <div class="panel-sub">Weed locations recorded — RPMP vs non-RPMP species</div>
+      <div class="panel-title">Weeds Controlled by Year</div>
+      <div class="panel-sub">Records by life stage per financial year</div>
       <div class="chart-wrap">
         <canvas id="trendsChart"></canvas>
       </div>
@@ -386,11 +386,11 @@ const border  = '#ddddd8';
    DATA — auto-updated by Icon_Sites_Data_Export.py
    Source: BioD Contractor Data feature layer (Palm05 / Manawatū Gorge)
    ───────────────────────────────────────────────────────────────── */
-/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-14 14:54 */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-14 15:12 */
 const DATA = {
   "fy": "24-25",
   "site": "Te Apiti \u2013 Manawatu Gorge",
-  "generated": "2026-04-14T14:54:10.622762",
+  "generated": "2026-04-14T15:12:33.299217",
   "stats": {
     "km": 1129.9,
     "visits": 26,
@@ -504,7 +504,28 @@ const DATA = {
         4
       ]
     },
-    "catchesByFY": {
+    "byTypeByZone": {
+      "A24": {
+        "Bio Te Apiti Buffer South": 81
+      },
+      "At220": {
+        "Bio Te Apiti Buffer": 1
+      },
+      "DOC200": {
+        "Bio Te Apiti Buffer North": 131,
+        "Bio Te Apiti Buffer South": 85,
+        "Bio Te Apiti South": 64
+      },
+      "DOC250": {
+        "Bio Te Apiti Buffer South": 6
+      },
+      "Other": {
+        "Bio Te Apiti": 6,
+        "Bio Te Apiti Buffer": 3,
+        "Bio Te Apiti Buffer North": 1
+      }
+    },
+    "catchesBySpecies": {
       "labels": [
         "21-22",
         "22-23",
@@ -512,13 +533,82 @@ const DATA = {
         "24-25",
         "25-26"
       ],
-      "data": [
-        1553,
-        1307,
-        1430,
-        1571,
-        1697
-      ]
+      "species": [
+        "Cat",
+        "Ferret",
+        "Hedgehog",
+        "Mouse",
+        "Rabbit",
+        "Rat",
+        "Stoat",
+        "Possum",
+        "Weasel"
+      ],
+      "data": {
+        "Cat": [
+          1,
+          1,
+          1,
+          3,
+          0
+        ],
+        "Ferret": [
+          11,
+          1,
+          3,
+          2,
+          0
+        ],
+        "Hedgehog": [
+          90,
+          41,
+          85,
+          77,
+          90
+        ],
+        "Mouse": [
+          2,
+          9,
+          35,
+          61,
+          21
+        ],
+        "Rabbit": [
+          3,
+          8,
+          7,
+          18,
+          3
+        ],
+        "Rat": [
+          187,
+          68,
+          182,
+          144,
+          152
+        ],
+        "Stoat": [
+          31,
+          19,
+          33,
+          33,
+          10
+        ],
+        "Possum": [
+          1,
+          0,
+          3,
+          0,
+          0
+        ],
+        "Weasel": [
+          11,
+          24,
+          34,
+          25,
+          50
+        ]
+      }
     }
   },
   "allYears": [
@@ -658,72 +748,90 @@ new Chart(document.getElementById('speciesChart'), {
   }
 });
 
-/* ── PEST ANIMAL CATCHES BY YEAR (bottom left) ── */
-const _cf = (DATA.traps && DATA.traps.catchesByFY) ? DATA.traps.catchesByFY : { labels: [], data: [] };
+/* ── PEST ANIMAL CATCHES BY YEAR × SPECIES (bottom left) ── */
+const _cs = (DATA.traps && DATA.traps.catchesBySpecies)
+  ? DATA.traps.catchesBySpecies
+  : { labels: [], species: [], data: {} };
+
+const _speciesPalette = {
+  Rat:      '#6b4423',
+  Mouse:    '#b89271',
+  Possum:   '#4a4a4a',
+  Stoat:    '#2d6a4f',
+  Weasel:   '#4a9b6f',
+  Ferret:   '#8dc9a6',
+  Hedgehog: '#c8a84b',
+  Rabbit:   '#e0bb6a',
+  Cat:      '#1a6b7c',
+};
+
+const _csDatasets = (_cs.species || [])
+  .filter(sp => (_cs.data[sp] || []).some(v => v > 0))
+  .map(sp => ({
+    label: sp,
+    data: _cs.data[sp] || [],
+    backgroundColor: _speciesPalette[sp] || teal2,
+    borderRadius: 2,
+    stack: 'catches',
+  }));
+
 new Chart(document.getElementById('catchesChart'), {
   type: 'bar',
-  data: {
-    labels: _cf.labels,
-    datasets: [{
-      label: 'Inspections',
-      data: toArr(_cf.data),
-      backgroundColor: green,
-      borderRadius: 3,
-    }]
-  },
+  data: { labels: _cs.labels, datasets: _csDatasets },
   options: {
     maintainAspectRatio: false,
     plugins: {
-      legend: { display: false },
-      tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y.toLocaleString()} inspections` } }
+      legend: { display: true, position: 'bottom', labels: { font: { size: 9.5 }, boxWidth: 10, padding: 6 } },
+      tooltip: {
+        callbacks: {
+          footer: items => {
+            const total = items.reduce((s, i) => s + i.parsed.y, 0);
+            return `Total: ${total.toLocaleString()} catches`;
+          }
+        }
+      }
     },
     scales: {
-      x: { grid: { display: false }, ticks: { font: { size: 10.5 } } },
+      x: { grid: { display: false }, stacked: true, ticks: { font: { size: 10.5 } } },
       y: {
         grid: { color: border },
+        stacked: true,
+        beginAtZero: true,
         ticks: { font: { size: 10 } },
-        title: { display: true, text: 'Inspections', font: { size: 10 }, color: '#8a8a82' },
-        beginAtZero: true
+        title: { display: true, text: 'Catches', font: { size: 10 }, color: '#8a8a82' }
       }
     }
   }
 });
 
-/* ── PROGRAMME TRENDS BY YEAR (bottom middle) ── */
+/* ── WEEDS CONTROLLED BY YEAR × LIFE STAGE (bottom middle) ── */
 const _ay = DATA.allYears || [];
-const _fyLabels  = _ay.map(r => r.fy);
-const _rpmpData  = _ay.map(r => r.rpmp  || 0);
-const _otherData = _ay.map(r => Math.max(0, (r.records || 0) - (r.rpmp || 0)));
+const _fyLabels   = _ay.map(r => r.fy);
+const _adultsData = _ay.map(r => r.adults    || 0);
+const _juvData    = _ay.map(r => r.juveniles || 0);
+const _seedData   = _ay.map(r => r.seedlings || 0);
+const _speciesFY  = _ay.map(r => r.species   || 0);
 new Chart(document.getElementById('trendsChart'), {
   type: 'bar',
   data: {
     labels: _fyLabels,
     datasets: [
-      {
-        label: 'RPMP species',
-        data: _rpmpData,
-        backgroundColor: teal,
-        borderRadius: 2,
-        stack: 'records',
-      },
-      {
-        label: 'Other species',
-        data: _otherData,
-        backgroundColor: tealLt,
-        borderRadius: 2,
-        stack: 'records',
-      }
+      { label: 'Adult',    data: _adultsData, backgroundColor: teal,   borderRadius: 2, stack: 'stage' },
+      { label: 'Juvenile', data: _juvData,    backgroundColor: teal2,  borderRadius: 2, stack: 'stage' },
+      { label: 'Seedling', data: _seedData,   backgroundColor: tealLt, borderRadius: 2, stack: 'stage' },
     ]
   },
   options: {
     maintainAspectRatio: false,
     plugins: {
-      legend: { display: true, position: 'bottom', labels: { font: { size: 10 }, boxWidth: 11, padding: 10 } },
+      legend: { display: true, position: 'bottom', labels: { font: { size: 10 }, boxWidth: 11, padding: 8 } },
       tooltip: {
         callbacks: {
           footer: items => {
+            const idx = items[0].dataIndex;
             const total = items.reduce((s, i) => s + i.parsed.y, 0);
-            return `Total: ${total.toLocaleString()} records`;
+            const sp = _speciesFY[idx] || 0;
+            return `Total: ${total.toLocaleString()} records\nSpecies targeted: ${sp}`;
           }
         }
       }
@@ -756,6 +864,7 @@ if (_traps.byZone && _traps.byZone.labels && _traps.byZone.labels.length) {
 /* ── TRAP TYPE CHART (bottom right) ── */
 const _ttLabels = (_traps.byType && _traps.byType.labels) ? _traps.byType.labels : [];
 const _ttData   = (_traps.byType && _traps.byType.data)   ? _traps.byType.data   : [];
+const _ttByZone = _traps.byTypeByZone || {};
 const _ttColors = [teal, teal2, tealLt, green, green2, greenLt, gold];
 new Chart(document.getElementById('trapTypeChart'), {
   type: 'bar',
@@ -773,7 +882,20 @@ new Chart(document.getElementById('trapTypeChart'), {
     maintainAspectRatio: false,
     plugins: {
       legend: { display: false },
-      tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.x.toLocaleString()} traps` } }
+      tooltip: {
+        callbacks: {
+          label: ctx => ` ${ctx.parsed.x.toLocaleString()} traps`,
+          afterBody: items => {
+            const ttype = items[0].label;
+            const zones = _ttByZone[ttype] || {};
+            const rows  = Object.entries(zones).sort((a, b) => b[1] - a[1]);
+            if (!rows.length) return [];
+            return ['', 'By zone:'].concat(
+              rows.map(([z, n]) => `  ${n.toLocaleString()} – ${z}`)
+            );
+          }
+        }
+      }
     },
     scales: {
       x: {
