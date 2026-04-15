@@ -29,19 +29,22 @@
     background: var(--bg);
     font-family: 'DM Sans', sans-serif;
     color: var(--navy);
+    display: flex; align-items: flex-start; justify-content: center;
   }
 
   .grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     grid-template-rows: repeat(2, 1fr);
-    gap: clamp(8px, 1.2vw, 20px);
-    padding: clamp(12px, 1.5vw, 24px) clamp(14px, 1.8vw, 28px);
-    height: 100%;
-    width: 100%;
+    gap: 14px;
+    padding: 18px 22px;
+    width: 1280px;
+    min-width: 1280px;
+    height: 750px;
+    transform-origin: top center;
   }
 
-  /* base card — accent colour injected via --c / --c-lt / --c-btn per card class */
+  /* base card — accent colour injected via --c / --c-lt per card class */
   .card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -49,8 +52,8 @@
     border-top: 4px solid var(--c);
     display: flex;
     flex-direction: column;
-    padding: clamp(14px, 1.5vw, 22px) clamp(14px, 1.6vw, 26px) clamp(12px, 1.3vw, 20px);
-    gap: clamp(6px, 0.7vw, 12px);
+    padding: 18px 22px 16px;
+    gap: 10px;
     overflow: hidden;
     opacity: 0;
     transform: translateY(14px);
@@ -75,8 +78,10 @@
   .card-gold  { --c: var(--c-gold);  --c-lt: #f6f0e4; }
   .card-navy  { --c: var(--c-navy);  --c-lt: #e9ecee; }
 
+  .card > div:first-child { flex-shrink: 0; }
+
   .card-label {
-    font-size: clamp(9px, 0.65vw, 10px);
+    font-size: 10px;
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -85,15 +90,13 @@
   }
   .card-title {
     font-family: 'Source Serif 4', serif;
-    font-size: clamp(15px, 1.3vw, 22px);
+    font-size: 20px;
     font-weight: 600;
     color: var(--navy);
     line-height: 1.2;
   }
-  .card > div:first-child { flex-shrink: 0; }
-
   .card-desc {
-    font-size: clamp(11px, 0.85vw, 13px);
+    font-size: 12px;
     line-height: 1.55;
     color: var(--muted);
     font-weight: 300;
@@ -105,18 +108,18 @@
   .card-meta {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: clamp(5px, 0.6vw, 8px);
+    gap: 6px;
     flex-shrink: 0;
   }
   .meta-box {
     border: 1px solid var(--border);
     border-radius: 4px;
-    padding: clamp(5px, 0.55vw, 8px) clamp(7px, 0.65vw, 11px);
+    padding: 7px 10px;
     background: var(--c-lt);
     overflow: hidden;
   }
   .meta-key {
-    font-size: clamp(8px, 0.6vw, 9.5px);
+    font-size: 9px;
     font-weight: 600;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -124,7 +127,7 @@
     margin-bottom: 2px;
   }
   .meta-val {
-    font-size: clamp(10px, 0.85vw, 12.5px);
+    font-size: 11.5px;
     font-weight: 500;
     color: var(--navy);
     line-height: 1.2;
@@ -141,9 +144,9 @@
     color: #fff;
     border: none;
     border-radius: 4px;
-    padding: clamp(7px, 0.7vw, 10px) clamp(12px, 1.2vw, 18px);
+    padding: 8px 16px;
     font-family: 'DM Sans', sans-serif;
-    font-size: clamp(11px, 0.85vw, 13px);
+    font-size: 12px;
     font-weight: 500;
     cursor: pointer;
     text-decoration: none;
@@ -256,5 +259,17 @@
   </div>
 
 </div>
+<script>
+  (function scaleToFit() {
+    const BASE_W = 1280, BASE_H = 750;
+    const el = document.querySelector('.grid');
+    function resize() {
+      const scale = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
+      el.style.transform = `scale(${scale})`;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+  })();
+</script>
 </body>
 </html>
