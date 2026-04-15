@@ -266,22 +266,22 @@
     <!-- Left: Stats at a glance -->
     <div class="panel">
       <div class="panel-title">Programme at a Glance</div>
-      <div class="panel-sub">Oct–Dec 2025 reporting period</div>
+      <div class="panel-sub">2024–25 Financial Year</div>
       <div class="stat-grid">
         <div class="stat-box">
           <div class="s-val sm">180,000+</div>
           <div class="s-key">ha Landscape Area</div>
         </div>
         <div class="stat-box">
-          <div class="s-val">8,625</div>
-          <div class="s-key">Trap Checks (Qtr)</div>
+          <div class="s-val sm">24,950</div>
+          <div class="s-key">Trap Checks (Annual)</div>
         </div>
         <div class="stat-box">
-          <div class="s-val">935</div>
+          <div class="s-val sm">3,711</div>
           <div class="s-key">Pest Animals Dispatched</div>
         </div>
         <div class="stat-box">
-          <div class="s-val">107</div>
+          <div class="s-val">437</div>
           <div class="s-key">Mustelids Caught</div>
         </div>
         <div class="stat-box gold-box">
@@ -328,11 +328,6 @@
         </div>
       </div>
 
-      <div class="summary-section">
-        <div class="sum-heading navy">Governance</div>
-        <div class="sum-detail">DOC, Horizons and iwi hui held 3 Dec 2025. All partners confirmed commitment to the programme. Inter-agency working groups and a project champions group being established in 2025–26 to improve visibility and refresh the project's vision.</div>
-      </div>
-
       <div class="contractor-row">
         <div class="contractor-label">Partners</div>
         <div class="contractor-val">DOC · Horizons · Ernslaw One Ltd · Iwi · Ngā Whenua Rāhui · QEII Trust</div>
@@ -353,10 +348,10 @@
     </div>
 
     <div class="panel">
-      <div class="panel-title">Trap Network Overview</div>
-      <div class="panel-sub">Operational areas and annual budget allocation</div>
+      <div class="panel-title">Trap Catches by Area 2024–25</div>
+      <div class="panel-sub">Aramahoe · Ohorea · Retaruke · Manganui o te Ao</div>
       <div class="chart-wrap">
-        <canvas id="networkChart"></canvas>
+        <canvas id="catchAreaChart"></canvas>
       </div>
     </div>
 
@@ -399,10 +394,10 @@ const border  = '#ddddd8';
    DATA — auto-updated by Icon_Sites_Data_Export.py
    Source: Kia_Wharite_Project.gdb / PCO_Treatment_Area_ExportFeatures
    ───────────────────────────────────────────────────────────────── */
-/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-15 16:27 */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-16 09:58 */
 const DATA = {
   "site": "Kia Wharite",
-  "generated": "2026-04-15T16:27:46.218459",
+  "generated": "2026-04-16T09:58:13.072670",
   "pcoRtci": {
     "labels": [
       "Waimarino Pipipi",
@@ -550,11 +545,7 @@ new Chart(document.getElementById('catchChart'), {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: ctx => {
-              const v = ctx.parsed.x;
-              const status = v < 5 ? 'Below target (<5%)' : v < 10 ? 'Above target (5–10%)' : 'Well above target (≥10%)';
-              return ` ${v}%  —  ${status}`;
-            },
+            label: ctx => ` ${ctx.parsed.x}%`,
             afterLabel: ctx => {
               const yr = years[ctx.dataIndex];
               return yr ? `Latest result: ${yr}` : '';
@@ -575,40 +566,61 @@ new Chart(document.getElementById('catchChart'), {
   });
 })();
 
-/* ── TRAP NETWORK OVERVIEW ── */
-new Chart(document.getElementById('networkChart'), {
+/* ── TRAP CATCHES BY AREA 2024–25 ── */
+// Source: KW_trap_captures_2425.csv
+// Species grouped as: Rats | Mustelids (stoat+weasel+ferret) | Other (hedgehog, cat, mouse, possum, rabbit, bird etc.)
+new Chart(document.getElementById('catchAreaChart'), {
   type: 'bar',
   data: {
-    labels: ['Trap Checks (Oct–Dec)', 'Pest Animals Dispatched', 'Mustelids Caught', 'Cats Caught', 'Contractor Teams'],
-    datasets: [{
-      label: 'Value',
-      data: [8625, 935, 107, 4, 2],
-      backgroundColor: [olive, olive, gold, goldLt, olive2],
-      borderRadius: 3,
-    }]
+    labels: ['Aramahoe', 'Ohorea', 'Retaruke', 'Manganui o te Ao'],
+    datasets: [
+      {
+        label: 'Rats',
+        data: [1101, 237, 1400, 205],
+        backgroundColor: olive,
+        borderRadius: 2,
+      },
+      {
+        label: 'Mustelids',
+        data: [117, 12, 277, 31],
+        backgroundColor: gold,
+        borderRadius: 2,
+      },
+      {
+        label: 'Other',
+        data: [73, 58, 141, 59],
+        backgroundColor: oliveLt,
+        borderRadius: 2,
+      }
+    ]
   },
   options: {
     indexAxis: 'y',
     maintainAspectRatio: false,
     plugins: {
-      legend: { display: false },
+      legend: {
+        display: true,
+        position: 'bottom',
+        labels: { font: { size: 10 }, boxWidth: 10, padding: 10 }
+      },
       tooltip: {
         callbacks: {
-          label: ctx => {
-            const units = ['checks', 'animals', 'mustelids', 'cats', 'teams'];
-            return ` ${ctx.parsed.x.toLocaleString()} ${units[ctx.dataIndex]}`;
+          label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.x.toLocaleString()}`,
+          footer: items => {
+            const total = items.reduce((s, i) => s + i.parsed.x, 0);
+            return `Total: ${total.toLocaleString()}`;
           }
         }
       }
     },
     scales: {
       x: {
-        type: 'logarithmic',
+        stacked: true,
         grid: { color: border },
         ticks: { font: { size: 10 } },
-        title: { display: true, text: 'Value (log scale)', font: { size: 10 }, color: '#8a8a82' }
+        title: { display: true, text: 'No. of catches', font: { size: 10 }, color: '#8a8a82' }
       },
-      y: { grid: { display: false }, ticks: { font: { size: 10.5 } } }
+      y: { stacked: true, grid: { display: false }, ticks: { font: { size: 10.5 } } }
     }
   }
 });
