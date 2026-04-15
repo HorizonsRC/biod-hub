@@ -1159,13 +1159,17 @@ new Chart(document.getElementById('trapTypeChart'), {
   const BASE_W = 953, BASE_H = 806;
   const wrapper = document.querySelector('.wrapper');
   function resize() {
-    const scale = Math.min(
-      window.innerWidth  / BASE_W,
-      window.innerHeight / BASE_H
-    );
+    const scaleW = window.innerWidth  / BASE_W;
+    const scaleH = window.innerHeight / BASE_H;
+    const scale  = Math.min(scaleW, scaleH);
+    // When width is the limiting factor, expand wrapper height to fill
+    // the leftover vertical space so the bottom charts use it
+    if (scaleW <= scaleH) {
+      wrapper.style.height = Math.round(window.innerHeight / scale) + 'px';
+    } else {
+      wrapper.style.height = BASE_H + 'px';
+    }
     wrapper.style.transform = `scale(${scale})`;
-    // Keep the scaled wrapper vertically anchored to the top
-    wrapper.style.marginTop = '0';
   }
   resize();
   window.addEventListener('resize', resize);
