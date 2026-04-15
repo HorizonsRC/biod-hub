@@ -25,23 +25,21 @@
   }
 
   html, body {
-    width: 100%; height: 100%; overflow: hidden;
+    width: 100%; height: 100%;
+    overflow-y: auto; overflow-x: hidden;
     background: var(--bg);
     font-family: 'DM Sans', sans-serif;
     color: var(--navy);
-    display: flex; align-items: flex-start; justify-content: center;
   }
 
   .grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(2, 1fr);
-    gap: 14px;
-    padding: 18px 22px;
-    width: 1280px;
-    min-width: 1280px;
-    height: 750px;
-    transform-origin: top center;
+    grid-template-rows: repeat(2, minmax(300px, 1fr));
+    gap: clamp(8px, 1.2vw, 18px);
+    padding: clamp(12px, 1.5vw, 22px) clamp(14px, 1.8vw, 26px);
+    min-height: 100%;
+    width: 100%;
   }
 
   /* base card — accent colour injected via --c / --c-lt per card class */
@@ -52,8 +50,8 @@
     border-top: 4px solid var(--c);
     display: flex;
     flex-direction: column;
-    padding: 18px 22px 16px;
-    gap: 10px;
+    padding: clamp(14px, 1.4vw, 20px) clamp(14px, 1.5vw, 24px) clamp(12px, 1.2vw, 18px);
+    gap: clamp(6px, 0.7vw, 11px);
     overflow: hidden;
     opacity: 0;
     transform: translateY(14px);
@@ -81,7 +79,7 @@
   .card > div:first-child { flex-shrink: 0; }
 
   .card-label {
-    font-size: 10px;
+    font-size: clamp(9px, 0.65vw, 10px);
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -90,13 +88,13 @@
   }
   .card-title {
     font-family: 'Source Serif 4', serif;
-    font-size: 20px;
+    font-size: clamp(16px, 1.3vw, 22px);
     font-weight: 600;
     color: var(--navy);
     line-height: 1.2;
   }
   .card-desc {
-    font-size: 12px;
+    font-size: clamp(11px, 0.85vw, 13px);
     line-height: 1.55;
     color: var(--muted);
     font-weight: 300;
@@ -108,18 +106,18 @@
   .card-meta {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 6px;
+    gap: clamp(5px, 0.5vw, 8px);
     flex-shrink: 0;
   }
   .meta-box {
     border: 1px solid var(--border);
     border-radius: 4px;
-    padding: 7px 10px;
+    padding: clamp(5px, 0.5vw, 8px) clamp(7px, 0.6vw, 11px);
     background: var(--c-lt);
     overflow: hidden;
   }
   .meta-key {
-    font-size: 9px;
+    font-size: clamp(8px, 0.55vw, 9.5px);
     font-weight: 600;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -127,7 +125,7 @@
     margin-bottom: 2px;
   }
   .meta-val {
-    font-size: 11.5px;
+    font-size: clamp(10px, 0.8vw, 12.5px);
     font-weight: 500;
     color: var(--navy);
     line-height: 1.2;
@@ -144,9 +142,9 @@
     color: #fff;
     border: none;
     border-radius: 4px;
-    padding: 8px 16px;
+    padding: clamp(7px, 0.65vw, 10px) clamp(12px, 1.1vw, 17px);
     font-family: 'DM Sans', sans-serif;
-    font-size: 12px;
+    font-size: clamp(11px, 0.85vw, 13px);
     font-weight: 500;
     cursor: pointer;
     text-decoration: none;
@@ -259,17 +257,5 @@
   </div>
 
 </div>
-<script>
-  (function scaleToFit() {
-    const BASE_W = 1280, BASE_H = 750;
-    const el = document.querySelector('.grid');
-    function resize() {
-      const scale = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
-      el.style.transform = `scale(${scale})`;
-    }
-    resize();
-    window.addEventListener('resize', resize);
-  })();
-</script>
 </body>
 </html>
