@@ -92,7 +92,7 @@
   /* ── BOTTOM ROW ─────────────────────────────── */
   .row-bottom {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 8px;
     padding: 4px 0 0;
     min-height: 0;
@@ -347,6 +347,14 @@
     </div>
 
     <div class="panel">
+      <div class="panel-title">Pest Plant Populations 2024–25</div>
+      <div class="panel-sub">Plant counts by species and life stage · 18 sites</div>
+      <div class="chart-wrap">
+        <canvas id="weedChart"></canvas>
+      </div>
+    </div>
+
+    <div class="panel">
       <div class="panel-title">Trap Catches by Area 2024–25</div>
       <div class="panel-sub">Aramahoe · Ohorea · Retaruke · Manganui o te Ao</div>
       <div class="chart-wrap">
@@ -393,10 +401,10 @@ const border  = '#ddddd8';
    DATA — auto-updated by Icon_Sites_Data_Export.py
    Source: Kia_Wharite_Project.gdb / PCO_Treatment_Area_ExportFeatures
    ───────────────────────────────────────────────────────────────── */
-/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-16 10:42 */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-16 11:04 */
 const DATA = {
   "site": "Kia Wharite",
-  "generated": "2026-04-16T10:42:58.801432",
+  "generated": "2026-04-16T11:04:27.589450",
   "pcoRtci": {
     "labels": [
       "Waimarino Pipipi",
@@ -567,6 +575,56 @@ new Chart(document.getElementById('catchChart'), {
     }
   });
 })();
+
+/* ── PEST PLANT POPULATIONS 2024–25 ── */
+// Source: KW_weed_stats_2425.csv
+// 4 species: African Feather Grass (Eradication), Climbing Spindleberry (Eradication),
+//            Darwin's Barberry (Prog. Containment), Old Man's Beard (Prog. Containment)
+new Chart(document.getElementById('weedChart'), {
+  type: 'bar',
+  data: {
+    labels: ["African\nFeather Grass", "Climbing\nSpindleberry", "Darwin's\nBarberry", "Old Man's\nBeard"],
+    datasets: [
+      { label: 'Adult',    data: [147, 34, 33, 1],   backgroundColor: olive,   borderRadius: 2 },
+      { label: 'Juvenile', data: [625, 49, 228, 0],  backgroundColor: olive2,  borderRadius: 2 },
+      { label: 'Seedling', data: [0,   42, 380, 0],  backgroundColor: oliveLt, borderRadius: 2 },
+    ]
+  },
+  options: {
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'bottom',
+        labels: { font: { size: 10 }, boxWidth: 10, padding: 10 }
+      },
+      tooltip: {
+        callbacks: {
+          label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}`,
+          footer: items => {
+            const total = items.reduce((s, i) => s + i.parsed.y, 0);
+            const projectType = ['Eradication', 'Eradication', 'Prog. Containment', 'Prog. Containment'];
+            return [`Total: ${total.toLocaleString()}`, projectType[items[0].dataIndex]];
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        stacked: true,
+        grid: { display: false },
+        ticks: { font: { size: 9.5 } }
+      },
+      y: {
+        stacked: true,
+        beginAtZero: true,
+        grid: { color: border },
+        ticks: { font: { size: 10 } },
+        title: { display: true, text: 'No. of plants', font: { size: 10 }, color: '#8a8a82' }
+      }
+    }
+  }
+});
 
 /* ── TRAP CATCHES BY AREA 2024–25 ── */
 // Source: KW_trap_captures_2425.csv
