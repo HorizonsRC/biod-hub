@@ -399,10 +399,10 @@ const border  = '#ddddd8';
    DATA — auto-updated by Icon_Sites_Data_Export.py
    Source: Kia_Wharite_Project.gdb / PCO_Treatment_Area_ExportFeatures
    ───────────────────────────────────────────────────────────────── */
-/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-15 16:21 */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-15 16:27 */
 const DATA = {
   "site": "Kia Wharite",
-  "generated": "2026-04-15T16:21:53.835253",
+  "generated": "2026-04-15T16:27:46.218459",
   "pcoRtci": {
     "labels": [
       "Waimarino Pipipi",
@@ -439,6 +439,24 @@ const DATA = {
       0.1,
       0.1,
       0.1
+    ],
+    "years": [
+      "2022-23",
+      "2022-23",
+      "2023-24",
+      "2020-21",
+      "2021-22",
+      "2024-25",
+      "2021-22",
+      "2023-24",
+      "2020-21",
+      "2021-22",
+      "2020-21",
+      "2025-26",
+      "2023-24",
+      "2024-25",
+      "2022-23",
+      "2024-25"
     ]
   }
 };
@@ -506,8 +524,12 @@ new Chart(document.getElementById('catchChart'), {
     return;
   }
 
-  // Colour bars by RTCI threshold:
-  // < 5% → olive (good), 5–10% → gold (moderate), ≥ 10% → red (concern)
+  const years = DATA.pcoRtci.years || [];
+
+  // Colour bars by RTCI threshold (5% = NZ operational target for possums):
+  // < 5%  → olive (below target — good)
+  // 5–10% → gold  (above target — moderate)
+  // ≥ 10% → red   (well above target — concern)
   const colours = data.map(v => v < 5 ? olive : v < 10 ? gold : red);
 
   new Chart(document.getElementById('rtciChart'), {
@@ -515,7 +537,7 @@ new Chart(document.getElementById('catchChart'), {
     data: {
       labels,
       datasets: [{
-        label: 'Mean RTCI (%)',
+        label: 'RTCI (%)',
         data,
         backgroundColor: colours,
         borderRadius: 3,
@@ -530,8 +552,12 @@ new Chart(document.getElementById('catchChart'), {
           callbacks: {
             label: ctx => {
               const v = ctx.parsed.x;
-              const status = v < 5 ? 'Good' : v < 10 ? 'Moderate' : 'Above threshold';
-              return ` ${v}%  (${status})`;
+              const status = v < 5 ? 'Below target (<5%)' : v < 10 ? 'Above target (5–10%)' : 'Well above target (≥10%)';
+              return ` ${v}%  —  ${status}`;
+            },
+            afterLabel: ctx => {
+              const yr = years[ctx.dataIndex];
+              return yr ? `Latest result: ${yr}` : '';
             }
           }
         }
@@ -541,7 +567,7 @@ new Chart(document.getElementById('catchChart'), {
           grid: { color: border },
           beginAtZero: true,
           ticks: { font: { size: 10 }, callback: v => v + '%' },
-          title: { display: true, text: 'Mean RTCI (%)', font: { size: 10 }, color: '#8a8a82' }
+          title: { display: true, text: 'RTCI (%) · target <5%', font: { size: 10 }, color: '#8a8a82' }
         },
         y: { grid: { display: false }, ticks: { font: { size: 10.5 } } }
       }
