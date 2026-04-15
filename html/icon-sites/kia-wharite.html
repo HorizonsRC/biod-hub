@@ -40,7 +40,7 @@
   /* ── MASTER LAYOUT ─────────────────────────── */
   .wrapper {
     display: grid;
-    grid-template-rows: 58px 1fr 1fr;
+    grid-template-rows: 58px 430px 1fr;
     height: 806px;
     width: 953px;
     min-width: 953px;
@@ -297,7 +297,7 @@
     <!-- Middle: Pest catch breakdown -->
     <div class="panel">
       <div class="panel-title">Pest Animals Dispatched</div>
-      <div class="panel-sub">2024–25 Financial Year · 4 trapping areas</div>
+      <div class="panel-sub">4 trapping areas</div>
       <div class="chart-wrap">
         <canvas id="catchChart"></canvas>
       </div>
@@ -327,6 +327,11 @@
         </div>
       </div>
 
+      <div class="summary-section">
+        <div class="sum-heading navy">Pest Plant Control</div>
+        <div class="sum-detail">18 weed site inspections were carried out across the Kia Whārite project area, with control undertaken for 4 pest plant species — African Feather Grass, Climbing Spindleberry, Darwin's Barberry and Old Man's Beard.</div>
+      </div>
+
       <div class="contractor-row">
         <div class="contractor-label">Partners</div>
         <div class="contractor-val">DOC · Horizons · Ernslaw One Ltd · Iwi · Ngā Whenua Rāhui · QEII Trust</div>
@@ -347,18 +352,18 @@
     </div>
 
     <div class="panel">
-      <div class="panel-title">Pest Plant Populations 2024–25</div>
-      <div class="panel-sub">Plant counts by species and life stage · 18 sites</div>
+      <div class="panel-title">Trap Catches by Area</div>
+      <div class="panel-sub">Aramahoe · Ohorea · Retaruke · Manganui o te Ao</div>
       <div class="chart-wrap">
-        <canvas id="weedChart"></canvas>
+        <canvas id="catchAreaChart"></canvas>
       </div>
     </div>
 
     <div class="panel">
-      <div class="panel-title">Trap Catches by Area 2024–25</div>
-      <div class="panel-sub">Aramahoe · Ohorea · Retaruke · Manganui o te Ao</div>
+      <div class="panel-title">Pest Plant Populations</div>
+      <div class="panel-sub">Plant counts by species and life stage · 18 sites</div>
       <div class="chart-wrap">
-        <canvas id="catchAreaChart"></canvas>
+        <canvas id="weedChart"></canvas>
       </div>
     </div>
 
@@ -401,10 +406,10 @@ const border  = '#ddddd8';
    DATA — auto-updated by Icon_Sites_Data_Export.py
    Source: Kia_Wharite_Project.gdb / PCO_Treatment_Area_ExportFeatures
    ───────────────────────────────────────────────────────────────── */
-/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-16 11:04 */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-16 11:20 */
 const DATA = {
   "site": "Kia Wharite",
-  "generated": "2026-04-16T11:04:27.589450",
+  "generated": "2026-04-16T11:20:45.853527",
   "pcoRtci": {
     "labels": [
       "Waimarino Pipipi",
@@ -583,7 +588,7 @@ new Chart(document.getElementById('catchChart'), {
 new Chart(document.getElementById('weedChart'), {
   type: 'bar',
   data: {
-    labels: ["African\nFeather Grass", "Climbing\nSpindleberry", "Darwin's\nBarberry", "Old Man's\nBeard"],
+    labels: ['AFG', 'CSB', 'DBY', 'OMB'],
     datasets: [
       { label: 'Adult',    data: [147, 34, 33, 1],   backgroundColor: olive,   borderRadius: 2 },
       { label: 'Juvenile', data: [625, 49, 228, 0],  backgroundColor: olive2,  borderRadius: 2 },
@@ -600,6 +605,15 @@ new Chart(document.getElementById('weedChart'), {
       },
       tooltip: {
         callbacks: {
+          title: items => {
+            const fullNames = [
+              'African Feather Grass',
+              'Climbing Spindleberry',
+              "Darwin's Barberry",
+              "Old Man's Beard"
+            ];
+            return fullNames[items[0].dataIndex];
+          },
           label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}`,
           footer: items => {
             const total = items.reduce((s, i) => s + i.parsed.y, 0);
