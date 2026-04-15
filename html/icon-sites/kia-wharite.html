@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Kia Whārite</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --olive:    #3d5c2e;
+    --olive2:   #6a8f3e;
+    --olive-lt: #edf3e8;
+    --olive-md: #c8ddb8;
+    --gold:     #c8a84b;
+    --gold-lt:  #f6f0e4;
+    --gold-md:  #e8d9b5;
+    --navy:     #1f2e35;
+    --bg:       #f4f0ef;
+    --surface:  #ffffff;
+    --border:   #ddddd8;
+    --muted:    #5a5a52;
+    --label:    #8a8a82;
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    margin: 0; padding: 0;
+    background: var(--bg);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--navy);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  /* ── MASTER LAYOUT ─────────────────────────── */
+  .wrapper {
+    display: grid;
+    grid-template-rows: 58px 1fr 1fr;
+    height: 806px;
+    width: 953px;
+    min-width: 953px;
+    padding: 0 10px 10px;
+    background: var(--bg);
+    transform-origin: top center;
+  }
+
+  /* ── TITLE STRIP ───────────────────────────── */
+  .title-strip {
+    background: var(--bg);
+    border-bottom: 2px solid var(--olive);
+    display: flex;
+    align-items: flex-end;
+    padding: 0 4px 8px;
+    gap: 12px;
+  }
+  .title-strip h1 {
+    font-family: 'Source Serif 4', serif;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--navy);
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+  .title-strip .fy-badge {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--olive);
+    background: var(--olive-lt);
+    border: 1px solid var(--olive-md);
+    border-radius: 3px;
+    padding: 3px 8px;
+    align-self: center;
+    margin-bottom: 2px;
+  }
+
+  /* ── TOP ROW ──────────────────────────────── */
+  .row-top {
+    display: grid;
+    grid-template-columns: 210px 1fr 318px;
+    gap: 8px;
+    padding: 8px 0 4px;
+    min-height: 0;
+  }
+
+  /* ── BOTTOM ROW ─────────────────────────────── */
+  .row-bottom {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 4px 0 0;
+    min-height: 0;
+  }
+
+  /* ── PANELS ──────────────────────────────────── */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 13px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .panel-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--olive);
+    flex-shrink: 0;
+  }
+  .panel-sub {
+    font-size: 10px;
+    color: var(--label);
+    margin-top: -4px;
+    flex-shrink: 0;
+  }
+  .chart-wrap {
+    flex: 1;
+    position: relative;
+    min-height: 0;
+  }
+
+  /* ── STAT PANEL ──────────────────────────────── */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: repeat(3, 1fr);
+    gap: 5px;
+    flex: 1;
+  }
+  .stat-box {
+    background: var(--olive-lt);
+    border: 1px solid var(--olive-md);
+    border-radius: 4px;
+    padding: 8px 10px 6px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .stat-box.gold-box {
+    background: var(--gold-lt);
+    border-color: var(--gold-md);
+  }
+  .stat-box .s-val {
+    font-family: 'Source Serif 4', serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--olive);
+    line-height: 1;
+  }
+  .stat-box.gold-box .s-val { color: #8a6820; }
+  .stat-box .s-val.sm { font-size: 17px; }
+  .stat-box .s-key {
+    font-size: 9.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+    margin-top: 5px;
+    line-height: 1.3;
+  }
+
+  /* ── SUMMARY PANEL ───────────────────────────── */
+  .summary-section { margin-bottom: 4px; }
+  .summary-section:last-child { margin-bottom: 0; }
+
+  .sum-heading {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--olive);
+    border-bottom: 1px solid var(--olive-md);
+    padding-bottom: 2px;
+    margin-bottom: 4px;
+  }
+  .sum-heading.gold  { color: #8a6820; border: none; padding-bottom: 0; margin-bottom: 3px; }
+  .sum-heading.navy  { color: var(--navy); border: none; padding-bottom: 0; margin-bottom: 3px; }
+
+  .sum-hero {
+    font-family: 'Source Serif 4', serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--navy);
+    line-height: 1;
+  }
+  .sum-unit { font-size: 11px; color: var(--muted); font-weight: 400; }
+  .sum-detail {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.4;
+    margin-top: 1px;
+  }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
+  .pill {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 3px;
+    background: var(--olive-lt);
+    color: var(--olive);
+    border: 1px solid var(--olive-md);
+  }
+  .pill.gold { background: var(--gold-lt); color: #8a6820; border-color: var(--gold-md); }
+  .pill.navy { background: #e9ecee; color: var(--navy); border-color: #c8cdd0; }
+
+  /* achieved badge */
+  .achieved-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 3px;
+    background: #e8f3ee;
+    color: #2d6a4f;
+    border: 1px solid #b0d9c4;
+  }
+  .achieved-badge::before { content: '✓'; font-size: 10px; }
+
+  .contractor-row {
+    margin-top: 4px;
+    padding-top: 5px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .contractor-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--navy);
+    margin-bottom: 2px;
+  }
+  .contractor-val {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- TITLE -->
+  <div class="title-strip">
+    <h1>Kia Whārite</h1>
+    <span class="fy-badge">2025–26 · ICC Report Feb 2026</span>
+  </div>
+
+  <!-- TOP ROW -->
+  <div class="row-top">
+
+    <!-- Left: Stats at a glance -->
+    <div class="panel">
+      <div class="panel-title">Programme at a Glance</div>
+      <div class="panel-sub">Oct–Dec 2025 reporting period</div>
+      <div class="stat-grid">
+        <div class="stat-box">
+          <div class="s-val sm">180,000+</div>
+          <div class="s-key">ha Landscape Area</div>
+        </div>
+        <div class="stat-box">
+          <div class="s-val">8,625</div>
+          <div class="s-key">Trap Checks (Qtr)</div>
+        </div>
+        <div class="stat-box">
+          <div class="s-val">935</div>
+          <div class="s-key">Pest Animals Dispatched</div>
+        </div>
+        <div class="stat-box">
+          <div class="s-val">107</div>
+          <div class="s-key">Mustelids Caught</div>
+        </div>
+        <div class="stat-box gold-box">
+          <div class="s-val">50</div>
+          <div class="s-key">Whio Pairs on Key Rivers</div>
+        </div>
+        <div class="stat-box gold-box">
+          <div class="s-val sm">10%/yr</div>
+          <div class="s-key">Kiwi Population Growth</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Middle: Pest catch breakdown -->
+    <div class="panel">
+      <div class="panel-title">Pest Animals Dispatched</div>
+      <div class="panel-sub">Oct–Dec 2025 · Retaruke River and Waimarino areas</div>
+      <div class="chart-wrap">
+        <canvas id="catchChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Right: Activity summary -->
+    <div class="panel">
+      <div class="panel-title">Activity Summary</div>
+
+      <div class="summary-section">
+        <div class="sum-heading">Predator Trapping</div>
+        <div><span class="sum-hero">8,625</span> <span class="sum-unit">trap checks by 2 contractors</span></div>
+        <div class="sum-detail">Regular predator trapping carried out in the Retaruke and Whanganui River Catchments for whio protection, and in the Waimarino area for kiwi protection. Some checks delayed by weather events (high river levels, track closures) cleared by late December.</div>
+        <div class="pill-row">
+          <span class="pill">935 pests dispatched</span>
+          <span class="pill">107 mustelids</span>
+          <span class="pill">4 cats</span>
+        </div>
+      </div>
+
+      <div class="summary-section">
+        <div class="sum-heading gold">Whio &amp; Kiwi</div>
+        <div class="sum-detail">Multiple whio pairs sighted during trap services, including some with ducklings. Both long-term targets have been achieved and maintained.</div>
+        <div class="pill-row">
+          <span class="achieved-badge">50 whio pairs target</span>
+          <span class="achieved-badge">10% kiwi growth target</span>
+        </div>
+      </div>
+
+      <div class="summary-section">
+        <div class="sum-heading navy">Governance</div>
+        <div class="sum-detail">DOC, Horizons and iwi hui held 3 Dec 2025. All partners confirmed commitment to the programme. Inter-agency working groups and a project champions group being established in 2025–26 to improve visibility and refresh the project's vision.</div>
+      </div>
+
+      <div class="contractor-row">
+        <div class="contractor-label">Partners</div>
+        <div class="contractor-val">DOC · Horizons · Ernslaw One Ltd · Iwi · Ngā Whenua Rāhui · QEII Trust</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM ROW -->
+  <div class="row-bottom">
+
+    <div class="panel">
+      <div class="panel-title">Possum RTCI by PCO Area</div>
+      <div class="panel-sub" id="rtci-sub">Residual Trap Catch Index (%) — auto-updated from GDB</div>
+      <div class="chart-wrap">
+        <canvas id="rtciChart"></canvas>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Trap Network Overview</div>
+      <div class="panel-sub">Operational areas and annual budget allocation</div>
+      <div class="chart-wrap">
+        <canvas id="networkChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+(function scaleToFit() {
+  const BASE_W = 953, BASE_H = 806;
+  const wrapper = document.querySelector('.wrapper');
+  function resize() {
+    const scaleW = window.innerWidth  / BASE_W;
+    const scaleH = window.innerHeight / BASE_H;
+    const scale  = Math.min(scaleW, scaleH);
+    if (scaleW <= scaleH) {
+      wrapper.style.height = Math.round(window.innerHeight / scale) + 'px';
+    } else {
+      wrapper.style.height = BASE_H + 'px';
+    }
+    wrapper.style.transform = `scale(${scale})`;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+})();
+
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+Chart.defaults.color = '#5a5a52';
+
+const olive   = '#3d5c2e';
+const olive2  = '#6a8f3e';
+const oliveLt = '#9bbf78';
+const gold    = '#c8a84b';
+const goldLt  = '#e8d9b5';
+const red     = '#c0392b';
+const navy    = '#1f2e35';
+const border  = '#ddddd8';
+
+/* ─────────────────────────────────────────────────────────────────
+   DATA — auto-updated by Icon_Sites_Data_Export.py
+   Source: Kia_Wharite_Project.gdb / PCO_Treatment_Area_ExportFeatures
+   ───────────────────────────────────────────────────────────────── */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-15 16:21 */
+const DATA = {
+  "site": "Kia Wharite",
+  "generated": "2026-04-15T16:21:53.835253",
+  "pcoRtci": {
+    "labels": [
+      "Waimarino Pipipi",
+      "Tatu Heao",
+      "Tokirima",
+      "Matahiwi",
+      "Whangamomona",
+      "Ruatiti Stage One",
+      "Retaruke",
+      "Morikau",
+      "Makino North",
+      "West Raetihi",
+      "Mangaporau",
+      "Kaitieke",
+      "Kirikau",
+      "Raetihi Buffer Two",
+      "Ruatiti Stage Two",
+      "Whakahoro"
+    ],
+    "data": [
+      22.0,
+      7.6,
+      6.0,
+      5.1,
+      4.3,
+      2.6,
+      2.3,
+      2.0,
+      1.5,
+      1.5,
+      0.9,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1
+    ]
+  }
+};
+/* ICON_SITE_DATA_END */
+
+/* ── PEST CATCH BREAKDOWN ── */
+new Chart(document.getElementById('catchChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Mustelids', 'Cats', 'Other pests'],
+    datasets: [{
+      label: 'Animals dispatched',
+      data: [107, 4, 824],
+      backgroundColor: [olive, gold, olive2],
+      borderRadius: 4,
+      barThickness: 52,
+    }]
+  },
+  options: {
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => ` ${ctx.parsed.y} animals`,
+          afterLabel: ctx => {
+            const notes = ['Stoats, weasels, ferrets', 'Feral cats', 'Rats, possums, and other pests'];
+            return notes[ctx.dataIndex];
+          }
+        }
+      }
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+      y: {
+        grid: { color: border },
+        beginAtZero: true,
+        ticks: { font: { size: 10 } },
+        title: { display: true, text: 'No. dispatched', font: { size: 10 }, color: '#8a8a82' }
+      }
+    }
+  }
+});
+
+/* ── POSSUM RTCI BY PCO AREA ── */
+(function buildRtciChart() {
+  const labels = DATA.pcoRtci.labels;
+  const data   = DATA.pcoRtci.data;
+
+  // Update subtitle with generated date if available
+  if (DATA.generated) {
+    const d = new Date(DATA.generated);
+    document.getElementById('rtci-sub').textContent =
+      `Residual Trap Catch Index (%) — updated ${d.toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+  }
+
+  if (!labels.length) {
+    // No data yet — show a placeholder message
+    const ctx = document.getElementById('rtciChart').getContext('2d');
+    ctx.font = "13px 'DM Sans', sans-serif";
+    ctx.fillStyle = '#8a8a82';
+    ctx.textAlign = 'center';
+    ctx.fillText('Run Icon_Sites_Data_Export.py to populate this chart',
+                 ctx.canvas.width / 2, ctx.canvas.height / 2);
+    return;
+  }
+
+  // Colour bars by RTCI threshold:
+  // < 5% → olive (good), 5–10% → gold (moderate), ≥ 10% → red (concern)
+  const colours = data.map(v => v < 5 ? olive : v < 10 ? gold : red);
+
+  new Chart(document.getElementById('rtciChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Mean RTCI (%)',
+        data,
+        backgroundColor: colours,
+        borderRadius: 3,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const v = ctx.parsed.x;
+              const status = v < 5 ? 'Good' : v < 10 ? 'Moderate' : 'Above threshold';
+              return ` ${v}%  (${status})`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: border },
+          beginAtZero: true,
+          ticks: { font: { size: 10 }, callback: v => v + '%' },
+          title: { display: true, text: 'Mean RTCI (%)', font: { size: 10 }, color: '#8a8a82' }
+        },
+        y: { grid: { display: false }, ticks: { font: { size: 10.5 } } }
+      }
+    }
+  });
+})();
+
+/* ── TRAP NETWORK OVERVIEW ── */
+new Chart(document.getElementById('networkChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Trap Checks (Oct–Dec)', 'Pest Animals Dispatched', 'Mustelids Caught', 'Cats Caught', 'Contractor Teams'],
+    datasets: [{
+      label: 'Value',
+      data: [8625, 935, 107, 4, 2],
+      backgroundColor: [olive, olive, gold, goldLt, olive2],
+      borderRadius: 3,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => {
+            const units = ['checks', 'animals', 'mustelids', 'cats', 'teams'];
+            return ` ${ctx.parsed.x.toLocaleString()} ${units[ctx.dataIndex]}`;
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        type: 'logarithmic',
+        grid: { color: border },
+        ticks: { font: { size: 10 } },
+        title: { display: true, text: 'Value (log scale)', font: { size: 10 }, color: '#8a8a82' }
+      },
+      y: { grid: { display: false }, ticks: { font: { size: 10.5 } } }
+    }
+  }
+});
+</script>
+</body>
+</html>
