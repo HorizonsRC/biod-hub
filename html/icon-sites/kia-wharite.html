@@ -257,7 +257,6 @@
   <!-- TITLE -->
   <div class="title-strip">
     <h1>Kia Whārite</h1>
-    <span class="fy-badge">2025–26 · ICC Report Feb 2026</span>
   </div>
 
   <!-- TOP ROW -->
@@ -298,7 +297,7 @@
     <!-- Middle: Pest catch breakdown -->
     <div class="panel">
       <div class="panel-title">Pest Animals Dispatched</div>
-      <div class="panel-sub">Oct–Dec 2025 · Retaruke River and Waimarino areas</div>
+      <div class="panel-sub">2024–25 Financial Year · 4 trapping areas</div>
       <div class="chart-wrap">
         <canvas id="catchChart"></canvas>
       </div>
@@ -310,12 +309,12 @@
 
       <div class="summary-section">
         <div class="sum-heading">Predator Trapping</div>
-        <div><span class="sum-hero">8,625</span> <span class="sum-unit">trap checks by 2 contractors</span></div>
-        <div class="sum-detail">Regular predator trapping carried out in the Retaruke and Whanganui River Catchments for whio protection, and in the Waimarino area for kiwi protection. Some checks delayed by weather events (high river levels, track closures) cleared by late December.</div>
+        <div><span class="sum-hero">3,711</span> <span class="sum-unit">pest animals dispatched across 4 areas</span></div>
+        <div class="sum-detail">Trapping conducted across Aramahoe, Ohorea, Retaruke and Manganui o te Ao catchments, targeting rats, stoats, weasels and ferrets to protect kiwi and whio populations.</div>
         <div class="pill-row">
-          <span class="pill">935 pests dispatched</span>
-          <span class="pill">107 mustelids</span>
-          <span class="pill">4 cats</span>
+          <span class="pill">2,943 rats</span>
+          <span class="pill">437 mustelids</span>
+          <span class="pill">24,950 trap checks</span>
         </div>
       </div>
 
@@ -394,14 +393,15 @@ const border  = '#ddddd8';
    DATA — auto-updated by Icon_Sites_Data_Export.py
    Source: Kia_Wharite_Project.gdb / PCO_Treatment_Area_ExportFeatures
    ───────────────────────────────────────────────────────────────── */
-/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-16 09:58 */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-16 10:42 */
 const DATA = {
   "site": "Kia Wharite",
-  "generated": "2026-04-16T09:58:13.072670",
+  "generated": "2026-04-16T10:42:58.801432",
   "pcoRtci": {
     "labels": [
       "Waimarino Pipipi",
       "Tatu Heao",
+      "West Raetihi",
       "Tokirima",
       "Matahiwi",
       "Whangamomona",
@@ -409,17 +409,17 @@ const DATA = {
       "Retaruke",
       "Morikau",
       "Makino North",
-      "West Raetihi",
       "Mangaporau",
+      "Ruatiti Stage Two",
       "Kaitieke",
       "Kirikau",
       "Raetihi Buffer Two",
-      "Ruatiti Stage Two",
       "Whakahoro"
     ],
     "data": [
       22.0,
       7.6,
+      6.8,
       6.0,
       5.1,
       4.3,
@@ -427,9 +427,8 @@ const DATA = {
       2.3,
       2.0,
       1.5,
-      1.5,
       0.9,
-      0.1,
+      0.6,
       0.1,
       0.1,
       0.1,
@@ -438,34 +437,34 @@ const DATA = {
     "years": [
       "2022-23",
       "2022-23",
+      "2021-22",
       "2023-24",
-      "2020-21",
+      "2024-25",
       "2021-22",
       "2024-25",
       "2021-22",
       "2023-24",
       "2020-21",
+      "2024-25",
       "2021-22",
-      "2020-21",
-      "2025-26",
+      "2021-22",
       "2023-24",
       "2024-25",
-      "2022-23",
       "2024-25"
     ]
   }
 };
 /* ICON_SITE_DATA_END */
 
-/* ── PEST CATCH BREAKDOWN ── */
+/* ── PEST CATCH BREAKDOWN (FY 2024-25 annual) ── */
 new Chart(document.getElementById('catchChart'), {
   type: 'bar',
   data: {
-    labels: ['Mustelids', 'Cats', 'Other pests'],
+    labels: ['Rats', 'Mustelids', 'Other'],
     datasets: [{
       label: 'Animals dispatched',
-      data: [107, 4, 824],
-      backgroundColor: [olive, gold, olive2],
+      data: [2943, 437, 331],
+      backgroundColor: [olive, gold, oliveLt],
       borderRadius: 4,
       barThickness: 52,
     }]
@@ -476,9 +475,13 @@ new Chart(document.getElementById('catchChart'), {
       legend: { display: false },
       tooltip: {
         callbacks: {
-          label: ctx => ` ${ctx.parsed.y} animals`,
+          label: ctx => ` ${ctx.parsed.y.toLocaleString()} animals`,
           afterLabel: ctx => {
-            const notes = ['Stoats, weasels, ferrets', 'Feral cats', 'Rats, possums, and other pests'];
+            const notes = [
+              'Across all 4 trapping areas',
+              'Stoats, weasels, ferrets',
+              'Hedgehog, cat, mouse, possum, rabbit'
+            ];
             return notes[ctx.dataIndex];
           }
         }
@@ -504,8 +507,7 @@ new Chart(document.getElementById('catchChart'), {
   // Update subtitle with generated date if available
   if (DATA.generated) {
     const d = new Date(DATA.generated);
-    document.getElementById('rtci-sub').textContent =
-      `Residual Trap Catch Index (%) — updated ${d.toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+    document.getElementById('rtci-sub').textContent = 'Residual Trap Catch Index (%)';
   }
 
   if (!labels.length) {
@@ -606,6 +608,16 @@ new Chart(document.getElementById('catchAreaChart'), {
       tooltip: {
         callbacks: {
           label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.x.toLocaleString()}`,
+          afterLabel: ctx => {
+            if (ctx.dataset.label !== 'Other') return '';
+            const breakdown = [
+              'Hedgehog: 50  Rabbit: 14  Mouse: 5  Cat: 3  Possum: 1',
+              'Hedgehog: 56  Cat: 1  Rabbit: 1',
+              'Hedgehog: 87  Rabbit: 32  Mouse: 17  Cat: 5',
+              'Hedgehog: 38  Cat: 11  Mouse: 6  Possum: 2  Bird: 1',
+            ];
+            return breakdown[ctx.dataIndex] || '';
+          },
           footer: items => {
             const total = items.reduce((s, i) => s + i.parsed.x, 0);
             return `Total: ${total.toLocaleString()}`;
