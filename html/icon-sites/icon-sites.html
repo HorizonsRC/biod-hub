@@ -47,8 +47,8 @@
     border: 1px solid var(--border);
     border-radius: 6px;
     border-top: 4px solid var(--c);
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    display: flex;
+    flex-direction: column;
     padding: clamp(14px, 1.5vw, 22px) clamp(14px, 1.6vw, 26px) clamp(12px, 1.3vw, 20px);
     gap: clamp(6px, 0.7vw, 12px);
     overflow: hidden;
@@ -90,20 +90,23 @@
     color: var(--navy);
     line-height: 1.2;
   }
+  .card > div:first-child { flex-shrink: 0; }
+
   .card-desc {
     font-size: clamp(11px, 0.85vw, 13px);
     line-height: 1.55;
     color: var(--muted);
     font-weight: 300;
-    overflow: hidden;
+    flex: 1;
     min-height: 0;
-    align-self: start;
+    overflow: hidden;
   }
 
   .card-meta {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: clamp(5px, 0.6vw, 8px);
+    flex-shrink: 0;
   }
   .meta-box {
     border: 1px solid var(--border);
@@ -146,7 +149,7 @@
     text-decoration: none;
     width: fit-content;
     transition: opacity 0.18s ease;
-    align-self: start;
+    flex-shrink: 0;
   }
   .card-btn:hover { opacity: 0.82; }
   .btn-arrow { transition: transform 0.18s ease; display: inline-block; }
