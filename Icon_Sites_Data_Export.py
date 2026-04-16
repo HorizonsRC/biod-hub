@@ -77,6 +77,9 @@ if not CONTRACTOR_ITEM_ID or not TRAP_SERVICE_URL:
         "See config.example.py for the required keys."
     )
 
+# Path to the Kia Whārite local File Geodatabase — read from config.py
+KIA_WHARITE_GDB = getattr(config, "KIA_WHARITE_GDB", None)
+
 # PCO zone names that make up the Te Apiti / Manawatu Gorge programme
 TE_APITI_PCO_WHERE = (
     "PCOName IN ("
@@ -101,7 +104,8 @@ REPO_ROOT = Path(__file__).parent
 HTML_DIR  = REPO_ROOT / "html" / "icon-sites"
 
 ICON_SITE_HTML = {
-    "te-apiti": HTML_DIR / "te-apiti.html",
+    "te-apiti":    HTML_DIR / "te-apiti.html",
+    "kia-wharite": HTML_DIR / "kia-wharite.html",
     # Add further sites here as they are developed:
     # "bushy-park": HTML_DIR / "bushy-park.html",
 }
@@ -556,6 +560,77 @@ def process_te_apiti(wp: pd.DataFrame, pl: pd.DataFrame, gis: GIS) -> dict:
     }
 
 
+def process_kia_wharite() -> dict:
+    """
+    Read PCO treatment area RTCI data from the local Kia Whārite File GDB.
+
+    Source: Kia_Wharite_Project.gdb / PCO_Treatment_Area_ExportFeatures
+    Fields: PCOName (str), RTC (float — Residual Trap Catch Index, %)
+
+    Multiple polygons may exist per PCO area (one per monitoring block).
+    We group by PCOName and return the mean RTC rounded to one decimal place,
+    sorted descending so the highest-pressure areas appear at the top of the chart.
+    """
+    import arcpy  # available only in arcgispro-py3 environment
+
+    log.info("Processing Kia Whārite — PCO RTCI data from local GDB...")
+
+    if not KIA_WHARITE_GDB:
+        raise ValueError(
+            "KIA_WHARITE_GDB is not set in config.py. "
+            "Add it following the instructions in config.example.py."
+        )
+
+    fc = KIA_WHARITE_GDB + "\\PCO_Treatment_Area_ExportFeatures"
+    fields = ["PCOName", "RTC", "Yr_Results"]
+
+    rows = []
+    with arcpy.da.SearchCursor(fc, fields) as cur:
+        for row in cur:
+            pco_name, rtc, yr = row
+            if pco_name is not None and rtc is not None:
+                try:
+                    rows.append({
+                        "pco": str(pco_name).strip(),
+                        "rtc": float(rtc),
+                        "yr":  str(yr).strip() if yr is not None else None,
+                    })
+                except (ValueError, TypeError):
+                    log.warning(f"  Skipping row with non-numeric RTC: {row}")
+
+    log.info(f"  Read {len(rows)} features from PCO_Treatment_Area_ExportFeatures")
+
+    if not rows:
+        log.warning("  No valid PCO/RTC rows found — returning empty data.")
+        return {
+            "site":      "Kia Wharite",
+            "generated": datetime.datetime.now().isoformat(),
+            "pcoRtci":   {"labels": [], "data": [], "years": []},
+        }
+
+    df = pd.DataFrame(rows)
+
+    # Group by PCO: mean RTC, most recent Yr_Results, sorted highest RTC → lowest
+    grouped = (
+        df.groupby("pco", sort=False)
+        .agg(rtc=("rtc", "mean"), yr=("yr", lambda x: x.dropna().max() or None))
+        .reset_index()
+        .sort_values("rtc", ascending=False)
+    )
+
+    labels = grouped["pco"].tolist()
+    data   = [round(float(v), 1) for v in grouped["rtc"]]
+    years  = [str(v) if v and str(v) != "None" else None for v in grouped["yr"]]
+
+    log.info(f"  {len(labels)} PCO areas: {list(zip(labels, data, years))}")
+
+    return {
+        "site":      "Kia Wharite",
+        "generated": datetime.datetime.now().isoformat(),
+        "pcoRtci":   {"labels": labels, "data": data, "years": years},
+    }
+
+
 # ── Git push ──────────────────────────────────────────────────────────────────
 
 def git_commit_and_push(html_paths: list[Path]) -> None:
@@ -606,6 +681,8 @@ def main():
         # Each processor receives the full tables and filters internally.
         if site_key == "te-apiti":
             data = process_te_apiti(wp_all.copy(), pl_all.copy(), gis)
+        elif site_key == "kia-wharite":
+            data = process_kia_wharite()
         else:
             log.warning(f"No processor defined for '{site_key}' — skipping.")
             continue

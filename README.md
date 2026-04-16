@@ -25,7 +25,8 @@ biod-hub/
 │   ├── icon-sites/
 │   │   ├── icon-sites.html
 │   │   ├── bushy-park.html
-│   │   └── te-apiti.html                        # Auto-updated by Icon_Sites_Data_Export.py
+│   │   ├── te-apiti.html                        # Auto-updated by Icon_Sites_Data_Export.py
+│   │   └── kia-wharite.html                     # Auto-updated by Icon_Sites_Data_Export.py (PCO RTCI from local GDB)
 │   └── totara-reserve/                          # Placeholder for future content
 ├── Pressure_Management_Data_Join.py             # Pressure Management data pipeline
 ├── PM_Dashboard_Export.py                       # Builds dashboard_data.json and pushes to GitHub
@@ -53,23 +54,27 @@ HTML files are served via GitHub Pages at `https://HorizonsRC.github.io/biod-hub
 
 ### Data sources
 
-| Layer | Content |
-|---|---|
-| BioD Contractor Data feature layer (item ID set in `config.py`) | Waypoints (weed locations) and polylines (track coverage) |
-| Animal Pest Control Layer New (FeatureServer) | Trap network features and related inspection/catch records |
+| Source | Content | Config key |
+|---|---|---|
+| BioD Contractor Data feature layer (AGOL) | Waypoints (weed locations) and polylines (track coverage) | `CONTRACTOR_ITEM_ID` |
+| Animal Pest Control Layer New (AGOL FeatureServer) | Trap network features and related inspection/catch records | `TRAP_SERVICE_URL` |
+| Kia Whārite Project GDB (local network path) | PCO treatment area polygons with Residual Trap Catch Index (RTCI) results | `KIA_WHARITE_GDB` |
 
 ### Per-site outputs
 
-| Site | HTML file | Config key |
-|---|---|---|
-| Te Apiti – Manawatu Gorge | `html/icon-sites/te-apiti.html` | — |
-
-An all-years summary CSV is also written to `ICON_SITES_OUTPUT_DIR` (gitignored).
+| Site | HTML file | Data source | Notes |
+|---|---|---|---|
+| Te Āpiti – Manawatū Gorge | `html/icon-sites/te-apiti.html` | AGOL (BioD Contractor Data + Animal Pest Control) | Pest plant and trap catch data; all-years summary CSV written to `ICON_SITES_OUTPUT_DIR` |
+| Kia Whārite | `html/icon-sites/kia-wharite.html` | Local GDB (`KIA_WHARITE_GDB`) | PCO RTCI values from `PCO_Treatment_Area_ExportFeatures`; trap catch and weed data are static (from annual reports) |
 
 ### Setup
 
-1. Copy `config.example.py` to `config.py` and set `ICON_SITES_OUTPUT_DIR` to a local output folder
-2. Run from the ArcGIS Pro Python environment:
+1. Copy `config.example.py` to `config.py` and fill in the required keys:
+   - `CONTRACTOR_ITEM_ID` — AGOL item ID for the BioD Contractor Data feature layer
+   - `TRAP_SERVICE_URL` — FeatureServer URL for the Animal Pest Control layer
+   - `KIA_WHARITE_GDB` — network path to the Kia Whārite Project File Geodatabase
+   - `ICON_SITES_OUTPUT_DIR` — local folder for per-site summary CSVs (gitignored)
+2. Run from the ArcGIS Pro Python environment (`arcgispro-py3`):
 
 ```
 C:\Users\<you>\AppData\Local\ESRI\conda\envs\arcpro-scripts-3-5\python.exe Icon_Sites_Data_Export.py

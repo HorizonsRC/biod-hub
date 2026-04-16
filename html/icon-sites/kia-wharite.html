@@ -40,7 +40,7 @@
   /* ── MASTER LAYOUT ─────────────────────────── */
   .wrapper {
     display: grid;
-    grid-template-rows: 58px 430px 1fr;
+    grid-template-rows: 58px 405px 1fr;
     height: 806px;
     width: 953px;
     min-width: 953px;
@@ -121,7 +121,7 @@
   }
   .panel-sub {
     font-size: 10px;
-    color: var(--label);
+    color: var(--muted);
     margin-top: -4px;
     flex-shrink: 0;
   }
@@ -294,12 +294,12 @@
       </div>
     </div>
 
-    <!-- Middle: Pest catch breakdown -->
+    <!-- Middle: Possum RTCI -->
     <div class="panel">
-      <div class="panel-title">Pest Animals Dispatched</div>
-      <div class="panel-sub">4 trapping areas</div>
+      <div class="panel-title">Possum RTCI by PCO Area</div>
+      <div class="panel-sub" id="rtci-sub">Residual Trap Catch Index (%)</div>
       <div class="chart-wrap">
-        <canvas id="catchChart"></canvas>
+        <canvas id="rtciChart"></canvas>
       </div>
     </div>
 
@@ -329,7 +329,7 @@
 
       <div class="summary-section">
         <div class="sum-heading navy">Pest Plant Control</div>
-        <div class="sum-detail">18 weed site inspections were carried out across the Kia Whārite project area, with control undertaken for 4 pest plant species — African Feather Grass, Climbing Spindleberry, Darwin's Barberry and Old Man's Beard.</div>
+        <div class="sum-detail">18 weed site inspections were carried out across the Kia Whārite project area, with control undertaken for 4 pest plant species: African Feather Grass, Climbing Spindleberry, Darwin's Barberry and Old Man's Beard.</div>
       </div>
 
       <div class="contractor-row">
@@ -344,10 +344,10 @@
   <div class="row-bottom">
 
     <div class="panel">
-      <div class="panel-title">Possum RTCI by PCO Area</div>
-      <div class="panel-sub" id="rtci-sub">Residual Trap Catch Index (%) — auto-updated from GDB</div>
+      <div class="panel-title">Pest Animals Dispatched</div>
+      <div class="panel-sub">4 trapping areas</div>
       <div class="chart-wrap">
-        <canvas id="rtciChart"></canvas>
+        <canvas id="catchChart"></canvas>
       </div>
     </div>
 
@@ -501,12 +501,12 @@ new Chart(document.getElementById('catchChart'), {
       }
     },
     scales: {
-      x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+      x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#5a5a52' } },
       y: {
         grid: { color: border },
         beginAtZero: true,
-        ticks: { font: { size: 10 } },
-        title: { display: true, text: 'No. dispatched', font: { size: 10 }, color: '#8a8a82' }
+        ticks: { font: { size: 10 }, color: '#5a5a52' },
+        title: { display: true, text: 'No. dispatched', font: { size: 10 }, color: '#5a5a52' }
       }
     }
   }
@@ -527,7 +527,7 @@ new Chart(document.getElementById('catchChart'), {
     // No data yet — show a placeholder message
     const ctx = document.getElementById('rtciChart').getContext('2d');
     ctx.font = "13px 'DM Sans', sans-serif";
-    ctx.fillStyle = '#8a8a82';
+    ctx.fillStyle = '#5a5a52';
     ctx.textAlign = 'center';
     ctx.fillText('Run Icon_Sites_Data_Export.py to populate this chart',
                  ctx.canvas.width / 2, ctx.canvas.height / 2);
@@ -572,10 +572,10 @@ new Chart(document.getElementById('catchChart'), {
         x: {
           grid: { color: border },
           beginAtZero: true,
-          ticks: { font: { size: 10 }, callback: v => v + '%' },
-          title: { display: true, text: 'RTCI (%) · target <5%', font: { size: 10 }, color: '#8a8a82' }
+          ticks: { font: { size: 10 }, color: '#5a5a52', callback: v => v + '%' },
+          title: { display: true, text: 'RTCI (%) · target <5%', font: { size: 10 }, color: '#5a5a52' }
         },
-        y: { grid: { display: false }, ticks: { font: { size: 10.5 } } }
+        y: { grid: { display: false }, ticks: { font: { size: 10.5 }, color: '#5a5a52' } }
       }
     }
   });
@@ -601,7 +601,7 @@ new Chart(document.getElementById('weedChart'), {
       legend: {
         display: true,
         position: 'bottom',
-        labels: { font: { size: 10 }, boxWidth: 10, padding: 10 }
+        labels: { font: { size: 10 }, color: '#5a5a52', boxWidth: 10, padding: 10 }
       },
       tooltip: {
         callbacks: {
@@ -627,14 +627,14 @@ new Chart(document.getElementById('weedChart'), {
       x: {
         stacked: true,
         grid: { display: false },
-        ticks: { font: { size: 9.5 } }
+        ticks: { font: { size: 9.5 }, color: '#5a5a52' }
       },
       y: {
         stacked: true,
         beginAtZero: true,
         grid: { color: border },
-        ticks: { font: { size: 10 } },
-        title: { display: true, text: 'No. of plants', font: { size: 10 }, color: '#8a8a82' }
+        ticks: { font: { size: 10 }, color: '#5a5a52' },
+        title: { display: true, text: 'No. of plants', font: { size: 10 }, color: '#5a5a52' }
       }
     }
   }
@@ -675,7 +675,7 @@ new Chart(document.getElementById('catchAreaChart'), {
       legend: {
         display: true,
         position: 'bottom',
-        labels: { font: { size: 10 }, boxWidth: 10, padding: 10 }
+        labels: { font: { size: 10 }, color: '#5a5a52', boxWidth: 10, padding: 10 }
       },
       tooltip: {
         callbacks: {
@@ -701,10 +701,10 @@ new Chart(document.getElementById('catchAreaChart'), {
       x: {
         stacked: true,
         grid: { color: border },
-        ticks: { font: { size: 10 } },
-        title: { display: true, text: 'No. of catches', font: { size: 10 }, color: '#8a8a82' }
+        ticks: { font: { size: 10 }, color: '#5a5a52' },
+        title: { display: true, text: 'No. of catches', font: { size: 10 }, color: '#5a5a52' }
       },
-      y: { stacked: true, grid: { display: false }, ticks: { font: { size: 10.5 } } }
+      y: { stacked: true, grid: { display: false }, ticks: { font: { size: 10.5 }, color: '#5a5a52' } }
     }
   }
 });
