@@ -31,3 +31,9 @@ INSP_TABLE_ID    = 1
 
 # Priority Habitats spatial layer URL (used by Pressure_Management_Data_Join.py)
 FEATURE_SERVICE_URL = "https://services1.arcgis.com/your-org-id/arcgis/rest/services/your-ph-layer/FeatureServer/0"
+
+# ── Kia Whārite ───────────────────────────────────────────────────────────────
+
+# Local File Geodatabase containing the PCO treatment area data.
+# Layer: PCO_Treatment_Area_ExportFeatures  Fields used: PCOName, RTC
+KIA_WHARITE_GDB = r"\\gisdata\GIS\Department\Environmental_Management\Biodiversity\BioData\Biodiversity\Icon Sites\Kia Wharite\Kia_Wharite_Project\Kia_Wharite_Project.gdb"
