@@ -346,12 +346,12 @@
 </div>
 
 <script>
-/* ── SCALE TO FIT WIDTH ONLY ── */
+/* ── SCALE TO FIT WIDTH AND HEIGHT ── */
 (function scaleToFit() {
-  const BASE_W = 969;
+  const BASE_W = 969, BASE_H = 870;
   const el = document.querySelector('.wrapper');
   function resize() {
-    const scale = window.innerWidth / BASE_W;
+    const scale = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
     el.style.transform = `scale(${scale})`;
     el.style.transformOrigin = 'top left';
   }
