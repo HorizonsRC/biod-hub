@@ -29,7 +29,7 @@
     background: var(--bg);
     font-family: 'DM Sans', sans-serif;
     color: var(--navy);
-    display: flex; align-items: flex-start; justify-content: center;
+    display: flex; align-items: flex-start; justify-content: flex-start;
   }
 
   /* ── MASTER LAYOUT ─────────────────────────── */
@@ -38,7 +38,7 @@
     grid-template-rows: 70px 420px 1fr;
     height: 870px;
     width: 969px; min-width: 969px;
-    transform-origin: top center;
+    transform-origin: top left;
     padding: 0 12px 12px;
     background: var(--bg);
   }
@@ -346,14 +346,16 @@
 </div>
 
 <script>
-/* ── SCALE TO FIT WIDTH AND HEIGHT ── */
+/* ── SCALE TO FIT AND CENTRE ── */
 (function scaleToFit() {
   const BASE_W = 969, BASE_H = 870;
   const el = document.querySelector('.wrapper');
   function resize() {
     const scale = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
-    el.style.transform = `scale(${scale})`;
-    el.style.transformOrigin = 'top center';
+    const scaledWidth = BASE_W * scale;
+    const offsetX = (window.innerWidth - scaledWidth) / 2;
+    el.style.transformOrigin = 'top left';
+    el.style.transform = `translateX(${offsetX}px) scale(${scale})`;
   }
   resize();
   window.addEventListener('resize', resize);
