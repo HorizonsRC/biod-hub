@@ -346,16 +346,14 @@
 </div>
 
 <script>
-/* ── SCALE TO FIT AND CENTRE ── */
+/* ── SCALE TO FIT AND LEFT-ALIGN ── */
 (function scaleToFit() {
   const BASE_W = 969, BASE_H = 870;
   const el = document.querySelector('.wrapper');
   function resize() {
     const scale = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
-    const scaledWidth = BASE_W * scale;
-    const offsetX = (window.innerWidth - scaledWidth) / 2;
     el.style.transformOrigin = 'top left';
-    el.style.transform = `translateX(${offsetX}px) scale(${scale})`;
+    el.style.transform = `scale(${scale})`;
   }
   resize();
   window.addEventListener('resize', resize);
