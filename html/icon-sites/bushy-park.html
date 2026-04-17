@@ -347,19 +347,13 @@
 </div>
 
 <script>
-/* ── SCALE TO FIT VIEWPORT (Te Āpiti approach) ── */
+/* ── SCALE TO FIT VIEWPORT ── */
 (function scaleToFit() {
-  const BASE_W = 969, BASE_H = 870;
+  const BASE_W = 969;
   const wrapper = document.querySelector('.wrapper');
   function resize() {
-    const scaleW = window.innerWidth  / BASE_W;
-    const scaleH = window.innerHeight / BASE_H;
-    const scale  = Math.min(scaleW, scaleH);
-    if (scaleW <= scaleH) {
-      wrapper.style.height = Math.round(window.innerHeight / scale) + 'px';
-    } else {
-      wrapper.style.height = BASE_H + 'px';
-    }
+    const scale = window.innerWidth / BASE_W;
+    wrapper.style.height = Math.round(window.innerHeight / scale) + 'px';
     wrapper.style.transform = `scale(${scale})`;
   }
   resize();
