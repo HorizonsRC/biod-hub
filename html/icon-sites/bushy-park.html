@@ -26,10 +26,11 @@
 
   html, body {
     width: 100%; height: 100%; overflow: hidden;
+    margin: 0; padding: 0;
     background: var(--bg);
     font-family: 'DM Sans', sans-serif;
     color: var(--navy);
-    display: flex; align-items: flex-start; justify-content: flex-start;
+    display: flex; align-items: flex-start; justify-content: center;
   }
 
   /* ── MASTER LAYOUT ─────────────────────────── */
@@ -38,7 +39,7 @@
     grid-template-rows: 70px 420px 1fr;
     height: 870px;
     width: 969px; min-width: 969px;
-    transform-origin: top left;
+    transform-origin: top center;
     padding: 0 12px 12px;
     background: var(--bg);
   }
@@ -346,14 +347,20 @@
 </div>
 
 <script>
-/* ── SCALE TO FIT AND LEFT-ALIGN ── */
+/* ── SCALE TO FIT VIEWPORT (Te Āpiti approach) ── */
 (function scaleToFit() {
   const BASE_W = 969, BASE_H = 870;
-  const el = document.querySelector('.wrapper');
+  const wrapper = document.querySelector('.wrapper');
   function resize() {
-    const scale = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
-    el.style.transformOrigin = 'top left';
-    el.style.transform = `scale(${scale})`;
+    const scaleW = window.innerWidth  / BASE_W;
+    const scaleH = window.innerHeight / BASE_H;
+    const scale  = Math.min(scaleW, scaleH);
+    if (scaleW <= scaleH) {
+      wrapper.style.height = Math.round(window.innerHeight / scale) + 'px';
+    } else {
+      wrapper.style.height = BASE_H + 'px';
+    }
+    wrapper.style.transform = `scale(${scale})`;
   }
   resize();
   window.addEventListener('resize', resize);
