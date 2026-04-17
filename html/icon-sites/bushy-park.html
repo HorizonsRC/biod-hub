@@ -38,7 +38,7 @@
     grid-template-rows: 70px 420px 1fr;
     height: 870px;
     width: 969px; min-width: 969px;
-    transform-origin: top center;
+    transform-origin: top left;
     padding: 0 12px 12px;
     background: var(--bg);
   }
@@ -346,6 +346,18 @@
 </div>
 
 <script>
+/* ── SCALE TO FIT WIDTH ONLY ── */
+(function scaleToFit() {
+  const BASE_W = 969;
+  const el = document.querySelector('.wrapper');
+  function resize() {
+    const scale = window.innerWidth / BASE_W;
+    el.style.transform = `scale(${scale})`;
+    el.style.transformOrigin = 'top left';
+  }
+  resize();
+  window.addEventListener('resize', resize);
+})();
 
 Chart.defaults.font.family = "'DM Sans', sans-serif";
 Chart.defaults.color = '#5a5a52';
