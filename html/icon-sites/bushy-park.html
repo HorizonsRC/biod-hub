@@ -346,16 +346,6 @@
 </div>
 
 <script>
-(function scaleToFit() {
-  const BASE_W = 969, BASE_H = 870;
-  const el = document.querySelector('.wrapper');
-  function resize() {
-    const scale = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
-    el.style.transform = `scale(${scale})`;
-  }
-  resize();
-  window.addEventListener('resize', resize);
-})();
 
 Chart.defaults.font.family = "'DM Sans', sans-serif";
 Chart.defaults.color = '#5a5a52';
