@@ -318,12 +318,12 @@
       </div>
     </div>
 
-    <!-- Middle: Weed species by count -->
+    <!-- Middle: Bird Sightings (top centre — most prominent position) -->
     <div class="panel">
-      <div class="panel-title">Weed Species Controlled</div>
-      <div class="panel-sub">Pest plant records by species · FY 23-24 and 24-25</div>
+      <div class="panel-title">Bird Sightings</div>
+      <div class="panel-sub" id="bird-sub">Recent observations near the estuary</div>
       <div class="chart-wrap">
-        <canvas id="weedCountChart"></canvas>
+        <canvas id="birdChart"></canvas>
       </div>
     </div>
 
@@ -367,10 +367,10 @@
   <div class="row-bottom">
 
     <div class="panel">
-      <div class="panel-title">Bird Sightings</div>
-      <div class="panel-sub" id="bird-sub">Recent observations near the estuary</div>
+      <div class="panel-title">Weed Species Controlled</div>
+      <div class="panel-sub">Pest plant locations by species · FY 2024–25</div>
       <div class="chart-wrap">
-        <canvas id="birdChart"></canvas>
+        <canvas id="weedCountChart"></canvas>
       </div>
     </div>
 
@@ -429,11 +429,11 @@ const border  = '#ddddd8';
    Source: BioD Contractor Data feature layer (Horo34W / Manawatū Estuary)
            Animal Pest Control feature layer (PCOName: Manawatu Estuaries variants)
    ───────────────────────────────────────────────────────────────── */
-/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-21 10:55 */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-21 11:12 */
 const DATA = {
   "fy": "24-25",
   "site": "Manaw\u0101t\u016b Estuary",
-  "generated": "2026-04-21T10:55:53.565213",
+  "generated": "2026-04-21T11:12:55.567266",
   "stats": {
     "records_2425": 925,
     "records_2324": 116,
@@ -526,73 +526,64 @@ const DATA = {
   },
   "birdSightings": {
     "labels": [
-      "Sterna striata",
-      "Haematopus unicolor",
-      "Haematopus finschi",
-      "Limosa lapponica",
+      "White-fronted Tern",
+      "Variable Oystercatcher",
+      "Bar-tailed Godwit",
+      "South Island Pied Oystercatcher",
+      "Caspian Tern",
+      "Red Knot",
       "Wrybill",
-      "Silver Gull",
-      "Kelp Gull",
-      "Silvereye",
+      "Pied Stilt",
       "Other"
     ],
     "data": [
+      7,
       6,
       5,
       4,
-      4,
+      2,
+      2,
       1,
       1,
-      1,
-      1,
-      42
+      33
     ],
     "otherSpecies": [
-      "Gray Teal",
-      "Australasian Swamphen",
-      "Pied Stilt",
-      "South Island Oystercatcher",
-      "Variable Oystercatcher",
-      "Bar-tailed Godwit",
       "Black-billed Gull",
-      "Caspian Tern",
-      "White-fronted Tern",
-      "Pied Cormorant",
       "Royal Spoonbill",
-      "White-faced Heron",
       "Sacred Kingfisher",
       "New Zealand Fantail",
-      "Welcome Swallow",
-      "Masked Lapwing",
       "Swamp Harrier",
-      "Gray Gerygone",
       "Australasian Shoveler",
-      "Red Knot",
-      "Great Cormorant",
-      "Little Egret",
-      "Little Pied Cormorant",
-      "Little Black Cormorant",
       "New Zealand Grebe",
       "Paradise Shelduck",
-      "Australasian Gannet",
       "Tui",
       "New Zealand Bellbird",
       "Australasian Bittern",
       "Sharp-tailed Sandpiper",
       "New Zealand Pigeon",
-      "Pacific Golden-Plover",
       "New Zealand Scaup",
       "Double-banded Plover",
       "Red-necked Stint",
-      "Hirundo neoxena",
-      "Calidris canutus",
-      "Anas superciliosa \u00d7 platyrhynchos",
-      "Egretta garzetta",
-      "Hydroprogne caspia",
-      "Egretta novaehollandiae"
+      "White-faced Heron",
+      "Welcome Swallow",
+      "Little Egret",
+      "Silver Gull",
+      "Kelp Gull",
+      "Silvereye",
+      "Gray Teal",
+      "Australasian Swamphen",
+      "South Island Oystercatcher",
+      "Pied Cormorant",
+      "Masked Lapwing",
+      "Gray Gerygone",
+      "Great Cormorant",
+      "Little Pied Cormorant",
+      "Little Black Cormorant",
+      "Australasian Gannet",
+      "Pacific Golden-Plover"
     ],
     "period": "Last 30 days",
-    "total": 65,
+    "total": 64,
     "sources": [
       "eBird",
       "iNaturalist"
@@ -706,7 +697,7 @@ document.getElementById('pill-weed-2324').textContent = fmt(DATA.stats.records_2
 
 const toArr = arr => (arr || []).map(v => v ?? 0);
 
-/* ── WEED SPECIES BY COUNT (top middle) ── */
+/* ── WEED SPECIES BY COUNT (bottom left — FY 24-25 only) ── */
 (function () {
   const wc = DATA.weedByCount;
   if (!wc.labels.length) return;
@@ -715,42 +706,28 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
     type: 'bar',
     data: {
       labels: wc.labels,
-      datasets: [
-        {
-          label: '24-25',
-          data: toArr(wc.data_2425),
-          backgroundColor: slate,
-          borderRadius: 3,
-        },
-        {
-          label: '23-24',
-          data: toArr(wc.data_2324),
-          backgroundColor: slateLt,
-          borderRadius: 3,
-        }
-      ]
+      datasets: [{
+        data: toArr(wc.data_2425),
+        backgroundColor: gold,
+        borderRadius: 3,
+      }]
     },
     options: {
       indexAxis: 'y',
       maintainAspectRatio: false,
       plugins: {
-        legend: {
-          display: true,
-          position: 'bottom',
-          labels: { font: { size: 9.5 }, color: '#5a5a52', boxWidth: 10, padding: 8 }
-        },
+        legend: { display: false },
         tooltip: {
           callbacks: {
             label: ctx => {
               const sp  = ctx.label;
               const val = ctx.parsed.x;
-              const fy  = ctx.dataset.label;
-              if (sp === 'Other' && fy === '24-25') {
+              if (sp === 'Other') {
                 const others = wc.otherSpecies || [];
-                return [` ${val.toLocaleString()} records (${fy})`, '', ' Includes:']
-                  .concat(others.map(s => `   · ${s}`));
+                return [` ${val.toLocaleString()} locations`, '', ' Includes:']
+                  .concat(others.slice(0, 10).map(s => `   · ${s}`));
               }
-              return ` ${val.toLocaleString()} records (${fy})`;
+              return ` ${val.toLocaleString()} locations`;
             }
           }
         }
@@ -787,7 +764,7 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
   });
 })();
 
-/* ── BIRD SIGHTINGS — eBird + iNaturalist doughnut chart (bottom left) ── */
+/* ── BIRD SIGHTINGS — eBird + iNaturalist doughnut chart (top centre) ── */
 (function () {
   const bs  = DATA.birdSightings || { labels: [], data: [], otherSpecies: [], period: null, total: null, sources: [] };
   const ctx = document.getElementById('birdChart').getContext('2d');
@@ -833,10 +810,10 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
           display: true,
           position: 'right',
           labels: {
-            font: { size: 9.5 },
+            font: { size: 10.5 },
             color: '#5a5a52',
-            boxWidth: 10,
-            padding: 6,
+            boxWidth: 11,
+            padding: 8,
             generateLabels: chart => {
               const ds  = chart.data.datasets[0];
               const tot = ds.data.reduce((s, v) => s + v, 0);
