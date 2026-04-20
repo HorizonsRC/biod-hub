@@ -212,8 +212,11 @@
     color: var(--slate);
     border: 1px solid var(--slate-md);
   }
-  .pill.gold { background: var(--gold-lt); color: #8a6820; border-color: var(--gold-md); }
-  .pill.navy { background: #e9ecee; color: var(--navy); border-color: #c8cdd0; }
+  .pill.gold      { background: var(--gold-lt); color: #8a6820; border-color: var(--gold-md); }
+  .pill.navy      { background: #e9ecee; color: var(--navy); border-color: #c8cdd0; }
+  .pill.rtci-good { background: #e8f3ee; color: #2d6a4f; border-color: #b0d9c4; }
+  .pill.rtci-warn { background: var(--gold-lt); color: #8a6820; border-color: var(--gold-md); }
+  .pill.rtci-alert{ background: #fce8e6; color: #c0392b; border-color: #f5c6c2; }
 
   /* ── RTCI TABLE ─────────────────────────────────── */
   .rtci-table {
@@ -347,6 +350,11 @@
         <div class="sum-detail">Trap catch data updated automatically — see charts below.</div>
       </div>
 
+      <div class="summary-section">
+        <div class="sum-heading navy">Possum RTCI</div>
+        <div class="pill-row" id="rtci-pills"></div>
+      </div>
+
       <div class="contractor-row">
         <div class="contractor-label">Governance</div>
         <div class="contractor-val">DOC · Horowhenua District Council · Horizons · The Wildlife Foxton Trust · Manawatū Estuary Trust · Foxton Beach Progressive Association · NZ Four Wheel Drive Association · Forest and Bird · Ngāti Raukawa · Ngāti Muaūpoko · Rangitāne o Manawatū</div>
@@ -359,20 +367,10 @@
   <div class="row-bottom">
 
     <div class="panel">
-      <div class="panel-title">Possum Control — RTCI Results</div>
-      <div class="panel-sub">Residual Trap Catch Index (%) · most recent monitoring result per PCO area</div>
-      <div id="rtci-wrap" style="flex:1;overflow-y:auto;margin-top:4px;">
-        <table class="rtci-table" id="rtci-table">
-          <thead>
-            <tr>
-              <th>PCO Area</th>
-              <th>RTCI</th>
-              <th>FY</th>
-            </tr>
-          </thead>
-          <tbody id="rtci-tbody"></tbody>
-        </table>
-        <div id="rtci-empty" class="rtci-empty" style="display:none;">No RTCI data available — run Icon_Sites_Data_Export.py to populate.</div>
+      <div class="panel-title">Bird Sightings</div>
+      <div class="panel-sub" id="bird-sub">Recent observations near the estuary</div>
+      <div class="chart-wrap">
+        <canvas id="birdChart"></canvas>
       </div>
     </div>
 
@@ -431,11 +429,11 @@ const border  = '#ddddd8';
    Source: BioD Contractor Data feature layer (Horo34W / Manawatū Estuary)
            Animal Pest Control feature layer (PCOName: Manawatu Estuaries variants)
    ───────────────────────────────────────────────────────────────── */
-/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-21 10:11 */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-21 10:37 */
 const DATA = {
   "fy": "24-25",
   "site": "Manaw\u0101t\u016b Estuary",
-  "generated": "2026-04-21T10:11:24.853914",
+  "generated": "2026-04-21T10:37:20.276200",
   "stats": {
     "records_2425": 925,
     "records_2324": 116,
@@ -525,6 +523,85 @@ const DATA = {
       "24-25",
       "21-22"
     ]
+  },
+  "birdSightings": {
+    "labels": [
+      "Black Swan",
+      "Canada Goose",
+      "Pied Stilt",
+      "Pacific Black Duck x Mallard (hybrid)",
+      "Royal Spoonbill",
+      "Mallard",
+      "South Island Oystercatcher",
+      "Wrybill",
+      "Other"
+    ],
+    "data": [
+      441,
+      165,
+      28,
+      27,
+      26,
+      23,
+      22,
+      16,
+      179
+    ],
+    "otherSpecies": [
+      "Kelp Gull",
+      "House Sparrow",
+      "Black-billed Gull",
+      "Double-banded Plover",
+      "New Zealand Scaup",
+      "Bar-tailed Godwit",
+      "Gray Teal",
+      "European Goldfinch",
+      "Pacific Golden-Plover",
+      "Silver Gull",
+      "Welcome Swallow",
+      "Rock Pigeon",
+      "Pied Cormorant",
+      "Caspian Tern",
+      "Eastern Rosella",
+      "Graylag Goose",
+      "Variable Oystercatcher",
+      "White-faced Heron",
+      "New Zealand Grebe",
+      "Australasian Gannet",
+      "Australasian Swamphen",
+      "Sacred Kingfisher",
+      "European Starling",
+      "Masked Lapwing",
+      "Australian Magpie",
+      "Red Knot",
+      "Eurasian Blackbird",
+      "Little Pied Cormorant",
+      "Yellowhammer",
+      "Tui",
+      "Australasian Bittern",
+      "Silvereye",
+      "White-fronted Tern",
+      "New Zealand Fantail",
+      "Swamp Harrier",
+      "Gray Gerygone",
+      "Eurasian Skylark",
+      "Common Chaffinch",
+      "European Greenfinch",
+      "Redpoll",
+      "Australasian Shoveler",
+      "Great Cormorant",
+      "Little Egret",
+      "Little Black Cormorant",
+      "Song Thrush",
+      "Paradise Shelduck",
+      "New Zealand Bellbird",
+      "Sharp-tailed Sandpiper",
+      "California Quail",
+      "New Zealand Pigeon",
+      "Red-necked Stint"
+    ],
+    "period": "Last 30 days",
+    "total": 927
   },
   "traps": {
     "total": 43,
@@ -695,28 +772,107 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
   });
 })();
 
-/* ── PCO RTCI TABLE (bottom left) ── */
+/* ── POSSUM RTCI PILLS (activity summary) ── */
 (function () {
-  const rtci   = DATA.pcoRtci || { labels: [], data: [], years: [] };
-  const tbody  = document.getElementById('rtci-tbody');
-  const empty  = document.getElementById('rtci-empty');
-
+  const rtci     = DATA.pcoRtci || { labels: [], data: [], years: [] };
+  const container = document.getElementById('rtci-pills');
   if (!rtci.labels.length) {
-    document.getElementById('rtci-table').style.display = 'none';
-    empty.style.display = 'block';
+    container.innerHTML = '<span style="font-size:10px;color:var(--muted)">–</span>';
+    return;
+  }
+  rtci.labels.forEach((label, i) => {
+    const val  = rtci.data[i];
+    const yr   = rtci.years[i] || '';
+    const cls  = val < 5 ? 'rtci-good' : val < 10 ? 'rtci-warn' : 'rtci-alert';
+    const pill = document.createElement('span');
+    pill.className = `pill ${cls}`;
+    pill.title     = yr ? `Latest result: ${yr}` : '';
+    pill.textContent = `${label} ${val}%`;
+    container.appendChild(pill);
+  });
+})();
+
+/* ── BIRD SIGHTINGS — eBird doughnut chart (bottom left) ── */
+(function () {
+  const bs  = DATA.birdSightings || { labels: [], data: [], otherSpecies: [], period: null, total: null };
+  const ctx = document.getElementById('birdChart').getContext('2d');
+
+  if (!bs.labels.length) {
+    ctx.font      = "12px 'DM Sans', sans-serif";
+    ctx.fillStyle = '#8a8a82';
+    ctx.textAlign = 'center';
+    ctx.fillText('Run Icon_Sites_Data_Export.py to populate',
+                 ctx.canvas.width / 2, ctx.canvas.height / 2);
     return;
   }
 
-  rtci.labels.forEach((label, i) => {
-    const val = rtci.data[i];
-    const yr  = rtci.years[i] || '–';
-    const cls = val < 5 ? 'good' : val < 10 ? 'warn' : 'alert';
-    const tr  = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${label}</td>
-      <td><span class="rtci-badge ${cls}">${val}%</span></td>
-      <td class="rtci-fy">${yr}</td>`;
-    tbody.appendChild(tr);
+  // Update panel subtitle with period and total
+  const sub = document.getElementById('bird-sub');
+  if (sub && bs.period) {
+    sub.textContent = `${bs.period} · ${(bs.total || 0).toLocaleString()} individuals · eBird`;
+  }
+
+  const birdPalette = [
+    '#2a5898','#4a85c4','#7aaee8','#b5ccee',
+    '#c8a84b','#e8d9b5','#1f2e35','#5a5a52',
+    '#8a8a82',
+  ];
+
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: bs.labels,
+      datasets: [{
+        data: bs.data,
+        backgroundColor: birdPalette.slice(0, bs.labels.length),
+        borderColor: '#ffffff',
+        borderWidth: 2,
+        hoverOffset: 6,
+      }]
+    },
+    options: {
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'right',
+          labels: {
+            font: { size: 9.5 },
+            color: '#5a5a52',
+            boxWidth: 10,
+            padding: 6,
+            generateLabels: chart => {
+              const ds  = chart.data.datasets[0];
+              const tot = ds.data.reduce((s, v) => s + v, 0);
+              return chart.data.labels.map((lbl, i) => ({
+                text:        `${lbl} (${ds.data[i]})`,
+                fillStyle:   ds.backgroundColor[i],
+                strokeStyle: '#ffffff',
+                lineWidth:   1,
+                hidden:      false,
+                index:       i,
+              }));
+            }
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const val = ctx.parsed;
+              const tot = ctx.dataset.data.reduce((s, v) => s + v, 0);
+              const pct = tot ? Math.round(val / tot * 100) : 0;
+              const lbl = ctx.label;
+              if (lbl === 'Other') {
+                const others = bs.otherSpecies || [];
+                return [` ${val.toLocaleString()} individuals (${pct}%)`, '', ' Includes:']
+                  .concat(others.slice(0, 8).map(s => `   · ${s}`));
+              }
+              return ` ${val.toLocaleString()} individuals (${pct}%)`;
+            }
+          }
+        }
+      }
+    }
   });
 })();
 
