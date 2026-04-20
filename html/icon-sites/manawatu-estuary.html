@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Manawatū Estuary</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --slate:    #2a5898;
+    --slate2:   #4a85c4;
+    --slate-lt: #eaf0fc;
+    --slate-md: #b5ccee;
+    --gold:     #c8a84b;
+    --gold-lt:  #f6f0e4;
+    --gold-md:  #e8d9b5;
+    --navy:     #1f2e35;
+    --bg:       #f4f0ef;
+    --surface:  #ffffff;
+    --border:   #ddddd8;
+    --muted:    #5a5a52;
+    --label:    #8a8a82;
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    margin: 0; padding: 0;
+    background: var(--bg);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--navy);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  /* ── MASTER LAYOUT ─────────────────────────── */
+  .wrapper {
+    display: grid;
+    grid-template-rows: 58px 405px 1fr;
+    height: 806px;
+    width: 953px;
+    min-width: 953px;
+    padding: 0 10px 10px;
+    background: var(--bg);
+    transform-origin: top center;
+  }
+
+  /* ── TITLE STRIP ───────────────────────────── */
+  .title-strip {
+    background: var(--bg);
+    border-bottom: 2px solid var(--slate);
+    display: flex;
+    align-items: flex-end;
+    padding: 0 4px 8px;
+    gap: 12px;
+  }
+  .title-strip h1 {
+    font-family: 'Source Serif 4', serif;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--navy);
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+  .title-strip .fy-badge {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--slate);
+    background: var(--slate-lt);
+    border: 1px solid var(--slate-md);
+    border-radius: 3px;
+    padding: 3px 8px;
+    align-self: center;
+    margin-bottom: 2px;
+  }
+
+  /* ── TOP ROW ──────────────────────────────── */
+  .row-top {
+    display: grid;
+    grid-template-columns: 210px 1fr 318px;
+    gap: 8px;
+    padding: 8px 0 4px;
+    min-height: 0;
+  }
+
+  /* ── BOTTOM ROW ─────────────────────────────── */
+  .row-bottom {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    padding: 4px 0 0;
+    min-height: 0;
+  }
+
+  /* ── PANELS ──────────────────────────────────── */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 13px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .panel-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--slate);
+    flex-shrink: 0;
+  }
+  .panel-sub {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: -4px;
+    flex-shrink: 0;
+  }
+  .chart-wrap {
+    flex: 1;
+    position: relative;
+    min-height: 0;
+  }
+
+  /* ── STAT PANEL ──────────────────────────────── */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: repeat(3, 1fr);
+    gap: 5px;
+    flex: 1;
+  }
+  .stat-box {
+    background: var(--slate-lt);
+    border: 1px solid var(--slate-md);
+    border-radius: 4px;
+    padding: 8px 10px 6px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .stat-box.gold-box {
+    background: var(--gold-lt);
+    border-color: var(--gold-md);
+  }
+  .stat-box .s-val {
+    font-family: 'Source Serif 4', serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--slate);
+    line-height: 1;
+  }
+  .stat-box.gold-box .s-val { color: #8a6820; }
+  .stat-box .s-val.sm { font-size: 17px; }
+  .stat-box .s-key {
+    font-size: 9.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+    margin-top: 5px;
+    line-height: 1.3;
+  }
+
+  /* ── SUMMARY PANEL ───────────────────────────── */
+  .summary-section { margin-bottom: 4px; }
+  .summary-section:last-child { margin-bottom: 0; }
+
+  .sum-heading {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--slate);
+    border-bottom: 1px solid var(--slate-md);
+    padding-bottom: 2px;
+    margin-bottom: 4px;
+  }
+  .sum-heading.gold  { color: #8a6820; border: none; padding-bottom: 0; margin-bottom: 3px; }
+  .sum-heading.navy  { color: var(--navy); border: none; padding-bottom: 0; margin-bottom: 3px; }
+
+  .sum-hero {
+    font-family: 'Source Serif 4', serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--navy);
+    line-height: 1;
+  }
+  .sum-unit { font-size: 11px; color: var(--muted); font-weight: 400; }
+  .sum-detail {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.4;
+    margin-top: 1px;
+  }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
+  .pill {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 3px;
+    background: var(--slate-lt);
+    color: var(--slate);
+    border: 1px solid var(--slate-md);
+  }
+  .pill.gold { background: var(--gold-lt); color: #8a6820; border-color: var(--gold-md); }
+  .pill.navy { background: #e9ecee; color: var(--navy); border-color: #c8cdd0; }
+
+  .contractor-row {
+    margin-top: 4px;
+    padding-top: 5px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .contractor-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--navy);
+    margin-bottom: 2px;
+  }
+  .contractor-val {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- TITLE -->
+  <div class="title-strip">
+    <h1>Manawatū Estuary</h1>
+    <span class="fy-badge">FY 2024–25</span>
+  </div>
+
+  <!-- TOP ROW -->
+  <div class="row-top">
+
+    <!-- Left: Stats at a glance -->
+    <div class="panel">
+      <div class="panel-title">Programme at a Glance</div>
+      <div class="panel-sub">2024–25 Financial Year</div>
+      <div class="stat-grid">
+        <div class="stat-box">
+          <div class="s-val sm">~690</div>
+          <div class="s-key">ha Estuary Area</div>
+        </div>
+        <div class="stat-box">
+          <div class="s-val" id="val-trap-total">–</div>
+          <div class="s-key">Traps Deployed</div>
+        </div>
+        <div class="stat-box">
+          <div class="s-val" id="val-trap-catches">–</div>
+          <div class="s-key">Total Trap Catches</div>
+        </div>
+        <div class="stat-box">
+          <div class="s-val" id="val-trap-species">–</div>
+          <div class="s-key">Trap Species Caught</div>
+        </div>
+        <div class="stat-box gold-box">
+          <div class="s-val" id="val-weed-records">–</div>
+          <div class="s-key">Weed Locations 24-25</div>
+        </div>
+        <div class="stat-box gold-box">
+          <div class="s-val" id="val-weed-species">–</div>
+          <div class="s-key">Weed Species Targeted</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Middle: Weed species by count -->
+    <div class="panel">
+      <div class="panel-title">Weed Species Controlled</div>
+      <div class="panel-sub">Pest plant records by species · FY 23-24 and 24-25</div>
+      <div class="chart-wrap">
+        <canvas id="weedCountChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Right: Activity summary -->
+    <div class="panel">
+      <div class="panel-title">Activity Summary</div>
+
+      <div class="summary-section">
+        <div class="sum-heading">Pest Plant Control</div>
+        <div class="sum-detail">Invasive pest plants are managed across the estuary to protect internationally significant migratory shorebird habitat and indigenous coastal and wetland communities.</div>
+        <div class="pill-row">
+          <span class="pill" id="pill-weed-2425">– locations (24-25)</span>
+          <span class="pill" id="pill-weed-2324">– locations (23-24)</span>
+        </div>
+      </div>
+
+      <div class="summary-section">
+        <div class="sum-heading gold">Shorebird Values</div>
+        <div class="sum-detail">The Manawatū Estuary is a critical stopover and overwintering site for threatened migratory species including bar-tailed godwit and knot. Active pest control supports productive feeding and roosting habitat.</div>
+      </div>
+
+      <div class="summary-section">
+        <div class="sum-heading navy">Predator Control</div>
+        <div class="sum-detail">Trapping targets rats, mustelids and cats to protect ground-nesting shorebirds and indigenous estuary wildlife throughout the year.</div>
+      </div>
+
+      <div class="contractor-row">
+        <div class="contractor-label">Partners</div>
+        <div class="contractor-val">Horizons · DOC · Rangitāne o Manawatū · Muaūpoko</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM ROW -->
+  <div class="row-bottom">
+
+    <div class="panel">
+      <div class="panel-title">Weed Coverage by Area</div>
+      <div class="panel-sub">Area treated (m²) by species · FY 23-24 and 24-25</div>
+      <div class="chart-wrap">
+        <canvas id="weedAreaChart"></canvas>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Pest Animal Catches by Year</div>
+      <div class="panel-sub">Catches recorded per species by financial year</div>
+      <div class="chart-wrap">
+        <canvas id="catchesChart"></canvas>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Trap Network by Type</div>
+      <div class="panel-sub">Number of traps deployed</div>
+      <div class="chart-wrap">
+        <canvas id="trapTypeChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+(function scaleToFit() {
+  const BASE_W = 953, BASE_H = 806;
+  const wrapper = document.querySelector('.wrapper');
+  function resize() {
+    const scaleW = window.innerWidth  / BASE_W;
+    const scaleH = window.innerHeight / BASE_H;
+    const scale  = Math.min(scaleW, scaleH);
+    if (scaleW <= scaleH) {
+      wrapper.style.height = Math.round(window.innerHeight / scale) + 'px';
+    } else {
+      wrapper.style.height = BASE_H + 'px';
+    }
+    wrapper.style.transform = `scale(${scale})`;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+})();
+
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+Chart.defaults.color = '#5a5a52';
+
+const slate   = '#2a5898';
+const slate2  = '#4a85c4';
+const slateLt = '#7aaee8';
+const gold    = '#c8a84b';
+const goldLt  = '#e8d9b5';
+const navy    = '#1f2e35';
+const border  = '#ddddd8';
+
+/* ─────────────────────────────────────────────────────────────────
+   DATA — auto-updated by Icon_Sites_Data_Export.py
+   Source: BioD Contractor Data feature layer (Horo34W / Manawatū Estuary)
+           Animal Pest Control feature layer (PCOName: Manawatu Estuaries variants)
+   ───────────────────────────────────────────────────────────────── */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-20 16:51 */
+const DATA = {
+  "fy": "24-25",
+  "site": "Manaw\u0101t\u016b Estuary",
+  "generated": "2026-04-20T16:51:51.315633",
+  "stats": {
+    "records_2425": 925,
+    "records_2324": 116,
+    "area_sqm_2425": 11022,
+    "species_2425": 36,
+    "trapTotal": 43
+  },
+  "weedByCount": {
+    "labels": [
+      "Climbing Dock",
+      "Goat's Rue",
+      "Fleabane",
+      "Everlasting Pea",
+      "Caper Spurge",
+      "Other"
+    ],
+    "data_2425": [
+      100,
+      107,
+      97,
+      85,
+      76,
+      460
+    ],
+    "data_2324": [
+      25,
+      0,
+      1,
+      0,
+      3,
+      87
+    ],
+    "otherSpecies": [
+      "Japanese Honeysuckle",
+      "Pampas Grass",
+      "Sydney Golden Wattle",
+      "Tree Lupin",
+      "Poplar",
+      "Gorse",
+      "Smilax spp.",
+      "Periwinkle",
+      "Osteospermum (African Daisy)",
+      "Senecio (Pink Ragwort)",
+      "English Ivy",
+      "Agapanthus",
+      "Japanese honeysuckle",
+      "African Iceplant",
+      "Convolvulus",
+      "Pampas",
+      "Boxthorn",
+      "Karo",
+      "Montbretia",
+      "Lily of the Valley Vine",
+      "Yucca",
+      "German Ivy",
+      "Fennel",
+      "Elaeagnus",
+      "Inkweed",
+      "Broom",
+      "Unknown",
+      "Arum Lily",
+      "Tradescantia",
+      "Boneseed",
+      "Stinking Iris",
+      "Sea Bindweed",
+      "Brush Wattle",
+      "Old man's beard",
+      "Radinosiphon leptostachya",
+      "Cape Ivy",
+      "Formosa Lily",
+      "Japanese Holly Fern"
+    ]
+  },
+  "weedByArea": {
+    "labels": [
+      "Poplar",
+      "Smilax spp.",
+      "Periwinkle",
+      "Japanese Honeysuckle",
+      "Everlasting Pea"
+    ],
+    "data_2425": [
+      3672,
+      1017,
+      960,
+      864,
+      800
+    ],
+    "data_2324": [
+      0,
+      0,
+      1070,
+      0,
+      0
+    ]
+  },
+  "traps": {
+    "total": 43,
+    "byType": {
+      "labels": [
+        "DOC200",
+        "DOC250",
+        "A24",
+        "Other"
+      ],
+      "data": [
+        34,
+        5,
+        3,
+        1
+      ]
+    },
+    "catchesBySpecies": {
+      "labels": [
+        "23-24",
+        "24-25"
+      ],
+      "species": [
+        "Cat",
+        "Ferret",
+        "Hedgehog",
+        "Mouse",
+        "Rabbit",
+        "Rat",
+        "Stoat",
+        "Possum",
+        "Weasel"
+      ],
+      "data": {
+        "Cat": [
+          0,
+          0
+        ],
+        "Ferret": [
+          1,
+          0
+        ],
+        "Hedgehog": [
+          9,
+          17
+        ],
+        "Mouse": [
+          0,
+          1
+        ],
+        "Rabbit": [
+          0,
+          0
+        ],
+        "Rat": [
+          10,
+          14
+        ],
+        "Stoat": [
+          25,
+          11
+        ],
+        "Possum": [
+          0,
+          0
+        ],
+        "Weasel": [
+          3,
+          4
+        ]
+      }
+    }
+  }
+};
+/* ICON_SITE_DATA_END */
+
+function fmt(v, suffix, decimals) {
+  if (v == null) return '–';
+  const n = decimals != null ? v.toFixed(decimals) : v.toLocaleString();
+  return suffix ? n + ' ' + suffix : n;
+}
+
+// Stat boxes
+document.getElementById('val-trap-total').textContent   = fmt(DATA.stats.trapTotal);
+document.getElementById('val-weed-records').textContent = fmt(DATA.stats.records_2425);
+document.getElementById('val-weed-species').textContent = fmt(DATA.stats.species_2425);
+
+// Weed location pills
+document.getElementById('pill-weed-2425').textContent = fmt(DATA.stats.records_2425, 'locations (24-25)');
+document.getElementById('pill-weed-2324').textContent = fmt(DATA.stats.records_2324, 'locations (23-24)');
+
+// Trap catches for primary FY (computed from catchesBySpecies)
+(function () {
+  const cs  = (DATA.traps && DATA.traps.catchesBySpecies) ? DATA.traps.catchesBySpecies : {};
+  const idx = (cs.labels || []).indexOf(DATA.fy);
+  let total = 0, spCount = 0;
+  if (idx >= 0 && cs.data) {
+    Object.values(cs.data).forEach(arr => {
+      const v = arr[idx] || 0;
+      total   += v;
+      if (v > 0) spCount++;
+    });
+  }
+  document.getElementById('val-trap-catches').textContent = fmt(total || null);
+  document.getElementById('val-trap-species').textContent = fmt(spCount || null);
+})();
+
+const toArr = arr => (arr || []).map(v => v ?? 0);
+
+/* ── WEED SPECIES BY COUNT (top middle) ── */
+(function () {
+  const wc = DATA.weedByCount;
+  if (!wc.labels.length) return;
+
+  new Chart(document.getElementById('weedCountChart'), {
+    type: 'bar',
+    data: {
+      labels: wc.labels,
+      datasets: [
+        {
+          label: '24-25',
+          data: toArr(wc.data_2425),
+          backgroundColor: slate,
+          borderRadius: 3,
+        },
+        {
+          label: '23-24',
+          data: toArr(wc.data_2324),
+          backgroundColor: slateLt,
+          borderRadius: 3,
+        }
+      ]
+    },
+    options: {
+      indexAxis: 'y',
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom',
+          labels: { font: { size: 9.5 }, color: '#5a5a52', boxWidth: 10, padding: 8 }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const sp  = ctx.label;
+              const val = ctx.parsed.x;
+              const fy  = ctx.dataset.label;
+              if (sp === 'Other' && fy === '24-25') {
+                const others = wc.otherSpecies || [];
+                return [` ${val.toLocaleString()} records (${fy})`, '', ' Includes:']
+                  .concat(others.map(s => `   · ${s}`));
+              }
+              return ` ${val.toLocaleString()} records (${fy})`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: border },
+          ticks: { font: { size: 10 }, color: '#5a5a52' },
+          title: { display: true, text: 'Weed locations', font: { size: 10 }, color: '#5a5a52' }
+        },
+        y: { grid: { display: false }, ticks: { font: { size: 10.5 }, color: '#5a5a52' } }
+      }
+    }
+  });
+})();
+
+/* ── WEED COVERAGE BY AREA (bottom left) ── */
+(function () {
+  const wa = DATA.weedByArea;
+  if (!wa.labels.length) return;
+
+  new Chart(document.getElementById('weedAreaChart'), {
+    type: 'bar',
+    data: {
+      labels: wa.labels,
+      datasets: [
+        {
+          label: '24-25',
+          data: toArr(wa.data_2425),
+          backgroundColor: slate,
+          borderRadius: 3,
+        },
+        {
+          label: '23-24',
+          data: toArr(wa.data_2324),
+          backgroundColor: slateLt,
+          borderRadius: 3,
+        }
+      ]
+    },
+    options: {
+      indexAxis: 'y',
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom',
+          labels: { font: { size: 9.5 }, color: '#5a5a52', boxWidth: 10, padding: 8 }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.parsed.x.toLocaleString()} m² (${ctx.dataset.label})`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: border },
+          ticks: { font: { size: 10 }, color: '#5a5a52' },
+          title: { display: true, text: 'Area (m²)', font: { size: 10 }, color: '#5a5a52' }
+        },
+        y: { grid: { display: false }, ticks: { font: { size: 10.5 }, color: '#5a5a52' } }
+      }
+    }
+  });
+})();
+
+/* ── PEST ANIMAL CATCHES BY YEAR × SPECIES (bottom middle) ── */
+const _cs = (DATA.traps && DATA.traps.catchesBySpecies) ? DATA.traps.catchesBySpecies
+  : { labels: [], species: [], data: {} };
+
+const _speciesPalette = {
+  Rat:      '#6b4423',
+  Mouse:    '#b89271',
+  Possum:   '#4a4a4a',
+  Stoat:    '#2a5898',
+  Weasel:   '#4a85c4',
+  Ferret:   '#7aaee8',
+  Hedgehog: '#c8a84b',
+  Rabbit:   '#e0bb6a',
+  Cat:      '#1a5c7c',
+};
+
+const _csDatasets = (_cs.species || [])
+  .filter(sp => (_cs.data[sp] || []).some(v => v > 0))
+  .map(sp => ({
+    label: sp,
+    data: _cs.data[sp] || [],
+    backgroundColor: _speciesPalette[sp] || slate2,
+    borderRadius: 2,
+    stack: 'catches',
+  }));
+
+new Chart(document.getElementById('catchesChart'), {
+  type: 'bar',
+  data: { labels: _cs.labels, datasets: _csDatasets },
+  options: {
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'bottom',
+        labels: { font: { size: 9.5 }, color: '#5a5a52', boxWidth: 10, padding: 6 }
+      },
+      tooltip: {
+        callbacks: {
+          label: ctx => {
+            const val = ctx.parsed.y;
+            if (!val) return null;
+            return ` ${ctx.dataset.label}: ${val.toLocaleString()}`;
+          },
+          footer: items => {
+            const total = items.reduce((s, i) => s + (i.parsed.y || 0), 0);
+            return total ? `Total: ${total.toLocaleString()} catches` : '';
+          }
+        }
+      }
+    },
+    scales: {
+      x: { grid: { display: false }, stacked: true, ticks: { font: { size: 10.5 }, color: '#5a5a52' } },
+      y: {
+        grid: { color: border },
+        stacked: true,
+        beginAtZero: true,
+        ticks: { font: { size: 10 }, color: '#5a5a52' },
+        title: { display: true, text: 'Catches', font: { size: 10 }, color: '#5a5a52' }
+      }
+    }
+  }
+});
+
+/* ── TRAP NETWORK BY TYPE (bottom right) ── */
+(function () {
+  const bt = (DATA.traps && DATA.traps.byType) ? DATA.traps.byType : { labels: [], data: [] };
+  if (!bt.labels.length) return;
+
+  const colors = [slate, slate2, slateLt, gold, goldLt, navy];
+  new Chart(document.getElementById('trapTypeChart'), {
+    type: 'bar',
+    data: {
+      labels: bt.labels,
+      datasets: [{
+        label: 'Traps',
+        data: bt.data,
+        backgroundColor: colors.slice(0, bt.labels.length),
+        borderRadius: 3,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.parsed.x.toLocaleString()} traps`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: border },
+          ticks: { font: { size: 10 }, color: '#5a5a52' },
+          title: { display: true, text: 'No. of traps', font: { size: 10 }, color: '#5a5a52' }
+        },
+        y: { grid: { display: false }, ticks: { font: { size: 10.5 }, color: '#5a5a52' } }
+      }
+    }
+  });
+})();
+</script>
+</body>
+</html>
