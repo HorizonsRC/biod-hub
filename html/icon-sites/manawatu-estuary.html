@@ -253,6 +253,32 @@
   .rtci-fy { font-size: 10.5px; color: var(--muted); }
   .rtci-empty { font-size: 11px; color: var(--muted); padding: 12px 4px; }
 
+  /* ── NOTABLE SIGHTINGS STRIP ─────────────────────── */
+  .notable-wrap {
+    flex-shrink: 0;
+    margin-top: 5px;
+    padding-top: 6px;
+    border-top: 1px solid var(--border);
+  }
+  .notable-label {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--slate);
+    margin-bottom: 4px;
+  }
+  .notable-row { display: flex; flex-wrap: wrap; gap: 4px; }
+  .notable-pill {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 3px;
+    background: #fff3e0;
+    color: #8a4800;
+    border: 1px solid #f5c47a;
+  }
+
   .contractor-row {
     margin-top: 4px;
     padding-top: 5px;
@@ -325,6 +351,10 @@
       <div class="chart-wrap">
         <canvas id="birdChart"></canvas>
       </div>
+      <div class="notable-wrap" id="bird-notable" style="display:none">
+        <div class="notable-label">Notable / Threatened Species Detected</div>
+        <div class="notable-row" id="bird-notable-pills"></div>
+      </div>
     </div>
 
     <!-- Right: Activity summary -->
@@ -347,7 +377,7 @@
 
       <div class="summary-section">
         <div class="sum-heading navy">Predator Control</div>
-        <div class="sum-detail">Trap catch data updated automatically — see charts below.</div>
+        <div id="predator-stats" class="sum-detail">–</div>
       </div>
 
       <div class="summary-section">
@@ -429,11 +459,11 @@ const border  = '#ddddd8';
    Source: BioD Contractor Data feature layer (Horo34W / Manawatū Estuary)
            Animal Pest Control feature layer (PCOName: Manawatu Estuaries variants)
    ───────────────────────────────────────────────────────────────── */
-/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-21 11:12 */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-21 11:31 */
 const DATA = {
   "fy": "24-25",
   "site": "Manaw\u0101t\u016b Estuary",
-  "generated": "2026-04-21T11:12:55.567266",
+  "generated": "2026-04-21T11:31:00.192326",
   "stats": {
     "records_2425": 925,
     "records_2324": 116,
@@ -526,34 +556,34 @@ const DATA = {
   },
   "birdSightings": {
     "labels": [
-      "White-fronted Tern",
       "Variable Oystercatcher",
-      "Bar-tailed Godwit",
       "South Island Pied Oystercatcher",
+      "Bar-tailed Godwit",
+      "White-fronted Tern",
       "Caspian Tern",
-      "Red Knot",
+      "Royal Spoonbill",
       "Wrybill",
-      "Pied Stilt",
+      "New Zealand Fantail",
       "Other"
     ],
     "data": [
+      36,
+      27,
+      22,
+      15,
+      11,
       7,
       6,
-      5,
       4,
-      2,
-      2,
-      1,
-      1,
-      33
+      53
     ],
     "otherSpecies": [
-      "Black-billed Gull",
-      "Royal Spoonbill",
+      "Red Knot",
       "Sacred Kingfisher",
-      "New Zealand Fantail",
+      "Black-billed Gull",
       "Swamp Harrier",
       "Australasian Shoveler",
+      "Pied Stilt",
       "New Zealand Grebe",
       "Paradise Shelduck",
       "Tui",
@@ -564,14 +594,28 @@ const DATA = {
       "New Zealand Scaup",
       "Double-banded Plover",
       "Red-necked Stint",
+      "Pacific Golden Plover",
+      "Pied Shag",
+      "Kelp Gull",
+      "Himantopus leucocephalus",
+      "Pachyptila turtur",
+      "Silver Gull",
+      "Vanellus miles",
       "White-faced Heron",
       "Welcome Swallow",
       "Little Egret",
-      "Silver Gull",
-      "Kelp Gull",
+      "Chroicocephalus novaehollandiae scopulinus",
+      "Vanellus miles novaehollandiae",
+      "Anarhynchus bicinctus",
+      "Larus dominicanus dominicanus",
+      "Australasian Swamphen",
+      "Anarhynchus bicinctus bicinctus",
+      "Puffinus gavia",
+      "Porphyrio melanotus melanotus",
+      "Todiramphus sanctus vagans",
+      "Himantopus novaezelandiae",
       "Silvereye",
       "Gray Teal",
-      "Australasian Swamphen",
       "South Island Oystercatcher",
       "Pied Cormorant",
       "Masked Lapwing",
@@ -580,10 +624,38 @@ const DATA = {
       "Little Pied Cormorant",
       "Little Black Cormorant",
       "Australasian Gannet",
-      "Pacific Golden-Plover"
+      "Pacific Golden-Plover",
+      "Sterna hirundo",
+      "Phalacrocorax varius varius",
+      "Thalassarche cauta",
+      "Ardenna bulleri",
+      "Ardea alba modesta",
+      "Egretta novaehollandiae novaehollandiae"
     ],
-    "period": "Last 30 days",
-    "total": 64,
+    "notableSightings": [
+      {
+        "name": "Caspian Tern",
+        "count": 11
+      },
+      {
+        "name": "Wrybill",
+        "count": 6
+      },
+      {
+        "name": "Black-billed Gull",
+        "count": 2
+      },
+      {
+        "name": "New Zealand Grebe",
+        "count": 1
+      },
+      {
+        "name": "Australasian Bittern",
+        "count": 1
+      }
+    ],
+    "period": "Past 12 months",
+    "total": 238,
     "sources": [
       "eBird",
       "iNaturalist"
@@ -744,6 +816,32 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
   });
 })();
 
+/* ── PREDATOR CONTROL STATS (activity summary) ── */
+(function () {
+  const cs  = (DATA.traps && DATA.traps.catchesBySpecies) ? DATA.traps.catchesBySpecies : {};
+  const labels = cs.labels || [];
+  const fyIdx  = labels.indexOf(DATA.fy);
+  const el     = document.getElementById('predator-stats');
+  if (!el) return;
+
+  if (fyIdx < 0 || !cs.data) { el.textContent = 'No catch records available.'; return; }
+
+  let total = 0;
+  const topSp = [];
+  Object.entries(cs.data).forEach(([sp, arr]) => {
+    const v = arr[fyIdx] || 0;
+    total += v;
+    if (v > 0) topSp.push({ name: sp, count: v });
+  });
+  topSp.sort((a, b) => b.count - a.count);
+
+  const topStr = topSp.slice(0, 3).map(s => `${s.name} (${s.count})`).join(' · ');
+  el.innerHTML =
+    `<span style="font-size:13px;font-family:'Source Serif 4',serif;font-weight:600;color:var(--navy)">${total}</span>` +
+    ` <span style="color:var(--muted)">catches in FY ${DATA.fy}</span>` +
+    (topStr ? `<br><span style="color:var(--muted)">${topStr}</span>` : '');
+})();
+
 /* ── POSSUM RTCI PILLS (activity summary) ── */
 (function () {
   const rtci     = DATA.pcoRtci || { labels: [], data: [], years: [] };
@@ -778,11 +876,27 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
     return;
   }
 
-  // Update panel subtitle with period, total, and sources
+  // Subtitle: period, total, sources
   const sub = document.getElementById('bird-sub');
   if (sub && bs.period) {
     const srcStr = (bs.sources || []).join(' + ') || 'eBird + iNaturalist';
     sub.textContent = `${bs.period} · ${(bs.total || 0).toLocaleString()} sightings · ${srcStr}`;
+  }
+
+  // Notable / threatened species pills
+  const notable = bs.notableSightings || [];
+  if (notable.length) {
+    const wrap  = document.getElementById('bird-notable');
+    const pills = document.getElementById('bird-notable-pills');
+    if (wrap && pills) {
+      notable.forEach(s => {
+        const pill = document.createElement('span');
+        pill.className   = 'notable-pill';
+        pill.textContent = `${s.name} (${s.count})`;
+        pills.appendChild(pill);
+      });
+      wrap.style.display = '';
+    }
   }
 
   const birdPalette = [
