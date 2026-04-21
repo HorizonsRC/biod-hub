@@ -31,6 +31,8 @@ import sys
 import datetime
 from pathlib import Path
 
+import requests
+
 import pandas as pd
 from arcgis.gis import GIS
 from arcgis.features import FeatureLayer  # noqa: F401
@@ -71,6 +73,9 @@ TRAP_SERVICE_URL   = getattr(config, "TRAP_SERVICE_URL", None)
 TRAP_LAYER_ID      = getattr(config, "TRAP_LAYER_ID", 0)
 INSP_TABLE_ID      = getattr(config, "INSP_TABLE_ID", 1)
 
+PCO_MONITORING_URL = getattr(config, "PCO_MONITORING_URL", None)
+EBIRD_API_KEY      = getattr(config, "EBIRD_API_KEY", None)
+
 if not CONTRACTOR_ITEM_ID or not TRAP_SERVICE_URL:
     sys.exit(
         "ERROR: CONTRACTOR_ITEM_ID and TRAP_SERVICE_URL must be set in config.py. "
@@ -89,6 +94,14 @@ TE_APITI_PCO_WHERE = (
     ")"
 )
 
+# PCO zone names for the Manawatū Estuary programme (all known casing/spacing variants)
+MANAWATU_ESTUARY_PCO_WHERE = (
+    "PCOName IN ("
+    "'MANAWATU ESTUARIES ', 'Manawatu Estuaries ', "
+    "'Manawatu estuaries ', 'Bio Manawatu Estuary'"
+    ")"
+)
+
 # Financial year label used in log messages and CSV filenames
 # Each site processor uses its own FY field/value for filtering.
 FY_LABEL = "2024-25"  # used only for log/CSV naming; actual FY filter is per-site
@@ -104,8 +117,9 @@ REPO_ROOT = Path(__file__).parent
 HTML_DIR  = REPO_ROOT / "html" / "icon-sites"
 
 ICON_SITE_HTML = {
-    "te-apiti":    HTML_DIR / "te-apiti.html",
-    "kia-wharite": HTML_DIR / "kia-wharite.html",
+    "te-apiti":          HTML_DIR / "te-apiti.html",
+    "kia-wharite":       HTML_DIR / "kia-wharite.html",
+    "manawatu-estuary":  HTML_DIR / "manawatu-estuary.html",
     # Add further sites here as they are developed:
     # "bushy-park": HTML_DIR / "bushy-park.html",
 }
@@ -631,6 +645,543 @@ def process_kia_wharite() -> dict:
     }
 
 
+def process_manawatu_estuary(wp: pd.DataFrame, gis: GIS) -> dict:
+    """
+    Derive the DATA object for manawatu-estuary.html.
+
+    Weed data: BioD Contractor Data feature layer, SiteID='Horo34W', FY 23-24 and 24-25.
+    Trap data: Animal Pest Control layer, PCOName variants for Manawatu Estuaries.
+    Shows side-by-side FY comparison for both weed count and weed area charts.
+    """
+    log.info("Processing Manawatū Estuary...")
+
+    SITE_COL    = "SiteID"
+    FY_COL      = "FinYr"
+    SPECIES_COL = "SpeciesID"
+    SIZE_COL    = "Size_sqm"
+    SITE_ID     = "Horo34W"
+    FY_PRIMARY  = "24-25"
+    FY_PRIOR    = "23-24"
+    TOP_N       = 5
+
+    CATCH_SPECIES = ["Cat", "Ferret", "Hedgehog", "Mouse", "Rabbit",
+                     "Rat", "Stoat", "Possum", "Weasel"]
+
+    # ── Filter by site ────────────────────────────────────────────────────────
+    if SITE_COL in wp.columns:
+        wp = wp[wp[SITE_COL] == SITE_ID].copy()
+
+    log.info(f"  {len(wp):,} waypoints for {SITE_ID}")
+
+    # ── Split by FY ───────────────────────────────────────────────────────────
+    wp_primary = wp[wp[FY_COL] == FY_PRIMARY].copy() if FY_COL in wp.columns else pd.DataFrame()
+    wp_prior   = wp[wp[FY_COL] == FY_PRIOR].copy()   if FY_COL in wp.columns else pd.DataFrame()
+
+    log.info(f"  {len(wp_primary):,} records for {FY_PRIMARY}, {len(wp_prior):,} for {FY_PRIOR}")
+
+    # ── Stats ─────────────────────────────────────────────────────────────────
+    records_2425  = int(len(wp_primary))      if not wp_primary.empty else None
+    records_2324  = int(len(wp_prior))        if not wp_prior.empty   else None
+    area_sqm_2425 = (
+        int(round(float(wp_primary[SIZE_COL].sum())))
+        if SIZE_COL in wp_primary.columns and not wp_primary.empty else None
+    )
+    species_2425  = (
+        int(wp_primary[SPECIES_COL].nunique())
+        if SPECIES_COL in wp_primary.columns and not wp_primary.empty else None
+    )
+
+    # ── Weed species by count ─────────────────────────────────────────────────
+    sc_primary = (
+        wp_primary[SPECIES_COL].value_counts()
+        if SPECIES_COL in wp_primary.columns and not wp_primary.empty
+        else pd.Series(dtype=int)
+    )
+    sc_prior = (
+        wp_prior[SPECIES_COL].value_counts()
+        if SPECIES_COL in wp_prior.columns and not wp_prior.empty
+        else pd.Series(dtype=int)
+    )
+
+    # Order by combined count across both FYs; top N shown individually, rest → "Other"
+    combined    = sc_primary.add(sc_prior, fill_value=0).sort_values(ascending=False)
+    top_species = list(combined.head(TOP_N).index)
+    other_species = list(combined.iloc[TOP_N:].index) if len(combined) > TOP_N else []
+
+    chart_count_labels = top_species + (["Other"] if other_species else [])
+
+    def get_counts(sc, top_sp, include_other):
+        counts = [int(sc.get(sp, 0)) for sp in top_sp]
+        if include_other:
+            other_total = int(sum(sc.get(sp, 0) for sp in sc.index if sp not in top_sp))
+            counts.append(other_total)
+        return counts
+
+    count_2425 = get_counts(sc_primary, top_species, bool(other_species))
+    count_2324 = get_counts(sc_prior,   top_species, bool(other_species))
+
+    # ── Weed species by category (24-25 only) ─────────────────────────────────
+    WOODY_PESTS = {
+        "Boneseed", "Boxthorn", "Brush Wattle", "Elaeagnus", "Gorse", "Inkweed",
+        "Karo", "Poplar", "Sydney Golden Wattle", "Tree Lupin", "Yucca",
+    }
+    GROUND_COVER_PESTS = {
+        "African Iceplant", "Agapanthus", "Arum Lily", "Caper Spurge", "Fleabane",
+        "Formosa Lily", "Goat's Rue", "Japanese Holly Fern",
+        "Osteospermum (African Daisy)", "Pampas Grass", "Periwinkle",
+        "Senecio (Pink Ragwort)", "Stinking Iris",
+    }
+    CLIMBING_PESTS = {
+        "Climbing Dock", "English Ivy", "Cape Ivy", "Convolvulus",
+        "Everlasting Pea", "German Ivy", "Japanese Honeysuckle", "Smilax spp.",
+    }
+
+    cat_sp: dict = {"Woody Pests": {}, "Ground Cover Pests": {}, "Climbing Pests": {}}
+    for sp, cnt in sc_primary.items():
+        sp_str = str(sp)
+        if sp_str in WOODY_PESTS:
+            cat_sp["Woody Pests"][sp_str] = int(cnt)
+        elif sp_str in GROUND_COVER_PESTS:
+            cat_sp["Ground Cover Pests"][sp_str] = int(cnt)
+        elif sp_str in CLIMBING_PESTS:
+            cat_sp["Climbing Pests"][sp_str] = int(cnt)
+
+    weed_by_category = {
+        "labels": ["Woody Pests", "Ground Cover Pests", "Climbing Pests"],
+        "data": [
+            sum(cat_sp["Woody Pests"].values()),
+            sum(cat_sp["Ground Cover Pests"].values()),
+            sum(cat_sp["Climbing Pests"].values()),
+        ],
+        "species": {k: dict(sorted(v.items(), key=lambda x: -x[1])) for k, v in cat_sp.items()},
+    }
+    log.info(f"  Weed by category: { {k: d for k, d in zip(weed_by_category['labels'], weed_by_category['data'])} }")
+
+    # ── Trap data (Animal Pest Control layer) ─────────────────────────────────
+    trap_total         = 0
+    trap_types         = {"labels": [], "data": []}
+    catches_by_species = {"labels": [], "species": CATCH_SPECIES, "data": {}}
+
+    try:
+        traps = fetch_service_url_as_df(
+            gis, TRAP_SERVICE_URL, TRAP_LAYER_ID, where=MANAWATU_ESTUARY_PCO_WHERE
+        )
+        log.info(f"  Trap columns: {sorted(traps.columns.tolist())}")
+
+        if not traps.empty:
+            trap_total = len(traps)
+
+            if "TrapType" in traps.columns:
+                tc = traps["TrapType"].value_counts()
+                trap_types = {"labels": list(tc.index), "data": [int(v) for v in tc.values]}
+
+            trap_ids = (
+                set(traps["GlobalID"].dropna().astype(str).str.strip("{}").str.lower().tolist())
+                if "GlobalID" in traps.columns else set()
+            )
+
+            try:
+                insp_all = fetch_service_url_as_df(
+                    gis, TRAP_SERVICE_URL, INSP_TABLE_ID, where="1=1"
+                )
+            except Exception as e:
+                log.warning(f"    Inspection full-table query failed: {e}")
+                insp_all = pd.DataFrame()
+
+            if not insp_all.empty:
+                log.info(f"  Inspection columns: {sorted(insp_all.columns.tolist())}")
+
+                join_col = None
+                for cand in ("TrapParentID", "ParentGlobalID", "ParentID"):
+                    if cand in insp_all.columns:
+                        join_col = cand
+                        break
+                if join_col is None:
+                    pid_cols = [c for c in insp_all.columns if "parent" in c.lower()]
+                    if pid_cols:
+                        join_col = pid_cols[0]
+                log.info(f"  Inspection join column: {join_col}")
+
+                if join_col and trap_ids:
+                    normalised = insp_all[join_col].astype(str).str.strip("{}").str.lower()
+                    insp = insp_all[normalised.isin(trap_ids)].copy()
+                else:
+                    insp = pd.DataFrame()
+                log.info(f"  Inspection records matching Manawatū Estuary traps: {len(insp):,}")
+
+                if not insp.empty and "created_date" in insp.columns and "SpeciesCaught" in insp.columns:
+                    insp["_dt"] = pd.to_datetime(insp["created_date"], unit="ms", errors="coerce")
+                    insp["_fy"] = insp["_dt"].apply(date_to_fy)
+
+                    caught = insp[insp["SpeciesCaught"].isin(CATCH_SPECIES)].copy()
+                    log.info(f"  Inspection rows with a recorded catch: {len(caught):,}")
+
+                    if not caught.empty:
+                        pivot = (
+                            caught.groupby(["_fy", "SpeciesCaught"])
+                            .size()
+                            .unstack(fill_value=0)
+                        )
+                        # Prefer the two display FYs; fall back to all available
+                        desired = [fy for fy in [FY_PRIOR, FY_PRIMARY] if fy in pivot.index]
+                        fy_order = desired if desired else sorted(
+                            [fy for fy in pivot.index if fy]
+                        )
+                        pivot = pivot.reindex(fy_order)
+                        catches_by_species = {
+                            "labels":  fy_order,
+                            "species": CATCH_SPECIES,
+                            "data": {
+                                sp: [
+                                    int(pivot.at[fy, sp]) if sp in pivot.columns else 0
+                                    for fy in fy_order
+                                ]
+                                for sp in CATCH_SPECIES
+                            },
+                        }
+                        totals = {sp: sum(catches_by_species["data"][sp]) for sp in CATCH_SPECIES}
+                        log.info(f"  Catches by species (display FYs): {totals}")
+
+        log.info(f"  {trap_total:,} traps in Manawatū Estuary")
+
+    except Exception as exc:
+        log.warning(f"  Trap layer query failed — skipping trap data. Error: {exc}")
+
+    # ── PCO Monitoring — RTCI results ─────────────────────────────────────────
+    # Fields checked newest → oldest; PCOs are monitored every ~3 years so the
+    # most recent non-null value may be several FYs back.
+    PCO_RTCI_WHERE = "Label IN ('Waitarere', 'Himatangi', 'Coastal Foxton')"
+    RTCI_FY_FIELDS = [
+        "F24_25_Monitor_Results",
+        "F23_24_Monitor_Results",
+        "F22_23_Monitor_Results",
+        "F21_22_Monitor_Results",
+        "F20_21_Monitor_Results",
+        "F19_20_Monitor_Results",
+        "F18_19_Monitor_Results",
+    ]
+
+    pco_rtci: dict = {"labels": [], "data": [], "years": []}
+
+    if PCO_MONITORING_URL:
+        try:
+            pco_df = fetch_service_url_as_df(gis, PCO_MONITORING_URL, 0, where=PCO_RTCI_WHERE)
+            log.info(f"  PCO monitoring columns: {sorted(pco_df.columns.tolist())}")
+
+            for _, row in pco_df.iterrows():
+                label = row.get("Label")
+                if label is None:
+                    continue
+                rtci_val = None
+                rtci_yr  = None
+                for field in RTCI_FY_FIELDS:
+                    if field not in pco_df.columns:
+                        continue
+                    val = row.get(field)
+                    try:
+                        if val is not None and not pd.isna(val):
+                            rtci_val = round(float(val), 1)
+                            # Extract FY label: "F24_25_Monitor_Results" → "24-25"
+                            rtci_yr = field.replace("F", "", 1).replace("_Monitor_Results", "").replace("_", "-")
+                            break
+                    except (TypeError, ValueError):
+                        continue
+                if rtci_val is not None:
+                    pco_rtci["labels"].append(str(label))
+                    pco_rtci["data"].append(rtci_val)
+                    pco_rtci["years"].append(rtci_yr)
+
+            log.info(f"  PCO RTCI results: {list(zip(pco_rtci['labels'], pco_rtci['data'], pco_rtci['years']))}")
+
+        except Exception as exc:
+            log.warning(f"  PCO monitoring query failed — skipping RTCI data. Error: {exc}")
+    else:
+        log.warning("  PCO_MONITORING_URL not set in config.py — skipping RTCI data.")
+
+    # ── Bird sightings — eBird + iNaturalist (combined, native species only) ───
+    # Both sources are normalised to occurrence count (number of records per
+    # species) so the metric is consistent across the two platforms.
+    # eBird:       each checklist entry = 1 occurrence regardless of howMany
+    # iNaturalist: each research-grade observation = 1 occurrence
+    # Introduced/pest species are excluded via an NZ-specific exclusion list
+    # (eBird) and the introduced=false parameter (iNaturalist).
+    BIRD_LAT       = -40.470
+    BIRD_LNG       = 175.235
+    BIRD_DIST_KM   = 10
+    BIRD_BACK_DAYS = 365   # full year for iNaturalist; eBird caps at 30
+    BIRD_TOP_N     = 8
+
+    # Threatened / At Risk species per NZ Threat Classification System.
+    # Any of these detected in sightings are surfaced as notable finds.
+    BIRD_THREATENED = {
+        "Australasian Bittern",   # Nationally Critical
+        "New Zealand Dotterel",   # Nationally Critical
+        "Black-billed Gull",      # Nationally Critical
+        "Wrybill",                # Nationally Vulnerable
+        "Black-fronted Tern",     # Nationally Vulnerable
+        "New Zealand Grebe",      # At Risk – Declining
+        "Brown Teal",             # At Risk – Recovering
+        "Caspian Tern",           # At Risk – Declining
+        "New Zealand Falcon",     # At Risk – Declining
+        "Mātātā",                 # At Risk – Declining (Fernbird)
+        "Fernbird",
+    }
+
+    # Scientific name → NZ common name lookup.
+    # Applied when iNaturalist returns a scientific name (common_name is null for some taxa).
+    SCI_TO_COMMON = {
+        # Terns
+        "Sterna striata":                       "White-fronted Tern",
+        "Hydroprogne caspia":                   "Caspian Tern",
+        "Chlidonias albostriatus":              "Black-fronted Tern",
+        # Oystercatchers
+        "Haematopus unicolor":                  "Variable Oystercatcher",
+        "Haematopus finschi":                   "South Island Pied Oystercatcher",
+        # Godwits / waders
+        "Limosa lapponica":                     "Bar-tailed Godwit",
+        "Calidris canutus":                     "Red Knot",
+        "Calidris acuminata":                   "Sharp-tailed Sandpiper",
+        "Calidris ruficollis":                  "Red-necked Stint",
+        "Pluvialis fulva":                      "Pacific Golden Plover",
+        "Anarhynchus frontalis":                "Wrybill",
+        "Charadrius bicinctus":                 "Double-banded Plover",
+        "Charadrius obscurus":                  "New Zealand Dotterel",
+        # Egrets / herons
+        "Egretta novaehollandiae":              "White-faced Heron",
+        "Egretta garzetta":                     "Little Egret",
+        "Ardea modesta":                        "White Heron",
+        "Ardea alba":                           "Great Egret",
+        # Swallows
+        "Hirundo neoxena":                      "Welcome Swallow",
+        # Gulls
+        "Chroicocephalus novaehollandiae":      "Silver Gull",
+        "Larus dominicanus":                    "Kelp Gull",
+        "Chroicocephalus bulleri":              "Black-billed Gull",
+        # Shags / cormorants
+        "Phalacrocorax melanoleucos":           "Little Pied Shag",
+        "Phalacrocorax sulcirostris":           "Little Black Shag",
+        "Phalacrocorax varius":                 "Pied Shag",
+        # Waterfowl — native
+        "Anas chlorotis":                       "Brown Teal",
+        "Spatula rhynchotis":                   "Australasian Shoveler",
+        "Aythya novaeseelandiae":               "New Zealand Scaup",
+        "Tadorna variegata":                    "Paradise Shelduck",
+        "Anas gracilis":                        "Grey Teal",
+        "Anas superciliosa":                    "Grey Duck",
+        # Grebes
+        "Poliocephalus rufopectus":             "New Zealand Grebe",
+        # Gannets / spoonbills / bitterns
+        "Sула serrator":                        "Australasian Gannet",
+        "Sula serrator":                        "Australasian Gannet",
+        "Platalea regia":                       "Royal Spoonbill",
+        "Botaurus poiciloptilus":               "Australasian Bittern",
+        # Rails / swamphens
+        "Porphyrio melanotus":                  "Australasian Swamphen",
+        # Stilts
+        "Himantopus himantopus":                "Pied Stilt",
+        # Kingfishers / fantails / silvereyes / honeyeaters / pigeons
+        "Todiramphus sanctus":                  "Sacred Kingfisher",
+        "Rhipidura fuliginosa":                 "New Zealand Fantail",
+        "Zosterops lateralis":                  "Silvereye",
+        "Prosthemadera novaeseelandiae":        "Tui",
+        "Anthornis melanura":                   "New Zealand Bellbird",
+        "Hemiphaga novaeseelandiae":            "New Zealand Pigeon",
+        # Raptors
+        "Circus approximans":                   "Swamp Harrier",
+        "Falco novaeseelandiae":                "New Zealand Falcon",
+        # Warblers
+        "Gerygone igata":                       "Grey Gerygone",
+    }
+
+    # Introduced/pest birds in NZ — excluded from the chart.
+    # Covers both eBird common names, iNaturalist common names, and scientific names.
+    INTRODUCED_NZ = {
+        # Waterfowl (common and scientific names)
+        "Mallard", "Anas platyrhynchos",
+        "Black Swan", "Cygnus atratus",
+        "Canada Goose", "Branta canadensis",
+        "Graylag Goose", "Anser anser",
+        "Mute Swan", "Cygnus olor",
+        "Pacific Black Duck x Mallard (hybrid)",
+        "Anas superciliosa \u00d7 platyrhynchos",
+        "Anas superciliosa × platyrhynchos",
+        # Pigeons / doves
+        "Rock Pigeon", "Feral Pigeon", "Spotted Dove", "Barbary Dove", "Laughing Dove",
+        # Passerines
+        "House Sparrow", "Common Starling", "European Starling", "Common Myna",
+        "Yellowhammer", "Chaffinch", "Common Chaffinch",
+        "European Greenfinch", "European Goldfinch",
+        "Common Redpoll", "Redpoll",
+        "Eurasian Skylark", "Skylark",
+        "Song Thrush", "Common Blackbird", "Eurasian Blackbird",
+        # Parrots
+        "Eastern Rosella",
+        # Raptors / owls
+        "Little Owl",
+        # Gallinaceous
+        "California Quail", "Ring-necked Pheasant",
+        # Other
+        "Australian Magpie",
+    }
+
+    # Priority species for the Manawatū Estuary — surfaced first in the chart
+    # regardless of occurrence count, so ecologically significant species
+    # are not buried behind incidentals.
+    BIRD_PRIORITY = [
+        "Bar-tailed Godwit", "White-fronted Tern", "Variable Oystercatcher",
+        "South Island Pied Oystercatcher", "Wrybill", "Caspian Tern",
+        "Black-billed Gull", "Royal Spoonbill", "Australasian Bittern",
+        "New Zealand Dotterel", "Pied Stilt", "New Zealand Grebe",
+        "Brown Teal", "Australasian Shoveler", "New Zealand Scaup",
+        "New Zealand Pigeon", "Tui", "New Zealand Bellbird",
+        "Sacred Kingfisher", "Swamp Harrier", "New Zealand Fantail",
+        "Grey Teal", "Paradise Shelduck", "New Zealand Falcon",
+        "Red Knot", "Sharp-tailed Sandpiper", "Double-banded Plover",
+        "Pacific Golden Plover", "Red-necked Stint",
+    ]
+
+    species_counts: dict = {}
+    sources_used:   list = []
+
+    # ── eBird ─────────────────────────────────────────────────────────────────
+    if EBIRD_API_KEY:
+        try:
+            resp = requests.get(
+                "https://api.ebird.org/v2/data/obs/geo/recent",
+                params={"lat": BIRD_LAT, "lng": BIRD_LNG, "dist": BIRD_DIST_KM,
+                        "maxResults": 500, "back": min(BIRD_BACK_DAYS, 30)},
+                headers={"X-eBirdApiToken": EBIRD_API_KEY},
+                timeout=30,
+            )
+            resp.raise_for_status()
+            ebird_obs = resp.json()
+            ebird_individuals = 0
+            for o in ebird_obs:
+                name = o.get("comName") or o.get("sciName") or "Unknown"
+                name = SCI_TO_COMMON.get(name, name)
+                if not name or name in INTRODUCED_NZ:
+                    continue
+                # eBird 'howMany' is the count of individuals observed on that
+                # checklist entry. Missing or 'X' (presence-only) → count as 1.
+                how = o.get("howMany")
+                try:
+                    count = int(how) if how is not None else 1
+                except (TypeError, ValueError):
+                    count = 1
+                species_counts[name] = species_counts.get(name, 0) + count
+                ebird_individuals += count
+            sources_used.append("eBird")
+            log.info(f"  eBird: {len(ebird_obs)} records → {ebird_individuals} individuals, "
+                     f"{len(species_counts)} native species after filtering")
+        except Exception as exc:
+            log.warning(f"  eBird query failed: {exc}")
+    else:
+        log.warning("  EBIRD_API_KEY not set — skipping eBird sightings.")
+
+    # ── iNaturalist ───────────────────────────────────────────────────────────
+    try:
+        d1 = (datetime.datetime.now() - datetime.timedelta(days=BIRD_BACK_DAYS)).strftime("%Y-%m-%d")
+        resp = requests.get(
+            "https://api.inaturalist.org/v1/observations",
+            params={
+                "iconic_taxa":   "Aves",
+                "lat":           BIRD_LAT,
+                "lng":           BIRD_LNG,
+                "radius":        BIRD_DIST_KM,
+                "quality_grade": "research",
+                "introduced":    "false",   # native species only
+                "d1":            d1,
+                "per_page":      200,
+                "order_by":      "observed_on",
+            },
+            timeout=30,
+        )
+        resp.raise_for_status()
+        inat_obs = resp.json().get("results", [])
+        for o in inat_obs:
+            taxon = o.get("taxon") or {}
+            cn    = (taxon.get("common_name") or {}).get("name")
+            sci   = taxon.get("name") or ""
+            # Prefer common name; if absent fall back through SCI_TO_COMMON lookup
+            name  = cn or SCI_TO_COMMON.get(sci) or sci or "Unknown"
+            if name and name not in INTRODUCED_NZ:
+                species_counts[name] = species_counts.get(name, 0) + 1
+        sources_used.append("iNaturalist")
+        log.info(f"  iNaturalist: {len(inat_obs)} research-grade records")
+    except Exception as exc:
+        log.warning(f"  iNaturalist query failed: {exc}")
+
+    # ── Notable / threatened species detected ─────────────────────────────────
+    notable_sightings = sorted(
+        [{"name": sp, "count": cnt}
+         for sp, cnt in species_counts.items() if sp in BIRD_THREATENED],
+        key=lambda x: x["count"], reverse=True,
+    )
+    log.info(f"  Notable sightings: {[(r['name'], r['count']) for r in notable_sightings]}")
+
+    # ── Assemble combined result ───────────────────────────────────────────────
+    bird_sightings: dict = {
+        "labels": [], "data": [], "otherSpecies": [],
+        "notableSightings": notable_sightings,
+        "period": None, "total": None, "sources": [],
+    }
+    if species_counts:
+        priority_set = set(BIRD_PRIORITY)
+        priority_sp  = sorted(
+            [(sp, cnt) for sp, cnt in species_counts.items() if sp in priority_set],
+            key=lambda x: x[1], reverse=True
+        )
+        other_sp = sorted(
+            [(sp, cnt) for sp, cnt in species_counts.items() if sp not in priority_set],
+            key=lambda x: x[1], reverse=True
+        )
+        sorted_sp = priority_sp + other_sp
+        top    = sorted_sp[:BIRD_TOP_N]
+        others = sorted_sp[BIRD_TOP_N:]
+        labels = [s[0] for s in top]
+        data   = [s[1] for s in top]
+        if others:
+            labels.append("Other")
+            data.append(len(others))
+        bird_sightings = {
+            "labels":          labels,
+            "data":            data,
+            "otherSpecies":    [s[0] for s in others],
+            "notableSightings": notable_sightings,
+            "period":          "Past 12 months",
+            "total":           sum(species_counts.values()),
+            "sources":         sources_used,
+        }
+        log.info(f"  Combined bird sightings top species: {list(zip(labels[:5], data[:5]))}")
+
+    return {
+        "fy":        FY_PRIMARY,
+        "site":      "Manaw\u0101t\u016b Estuary",
+        "generated": datetime.datetime.now().isoformat(),
+        "stats": {
+            "records_2425": records_2425,
+            "records_2324": records_2324,
+            "area_sqm_2425": area_sqm_2425,
+            "species_2425":  species_2425,
+            "trapTotal":     trap_total or None,
+        },
+        "weedByCount": {
+            "labels":      chart_count_labels,
+            "data_2425":   count_2425,
+            "data_2324":   count_2324,
+            "otherSpecies": other_species,
+        },
+        "weedByCategory":  weed_by_category,
+        "pcoRtci":         pco_rtci,
+        "birdSightings": bird_sightings,
+        "traps": {
+            "total":            trap_total or None,
+            "byType":           trap_types,
+            "catchesBySpecies": catches_by_species,
+        },
+    }
+
+
 # ── Git push ──────────────────────────────────────────────────────────────────
 
 def git_commit_and_push(html_paths: list[Path]) -> None:
@@ -683,6 +1234,8 @@ def main():
             data = process_te_apiti(wp_all.copy(), pl_all.copy(), gis)
         elif site_key == "kia-wharite":
             data = process_kia_wharite()
+        elif site_key == "manawatu-estuary":
+            data = process_manawatu_estuary(wp_all.copy(), gis)
         else:
             log.warning(f"No processor defined for '{site_key}' — skipping.")
             continue

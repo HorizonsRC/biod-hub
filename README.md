@@ -26,7 +26,8 @@ biod-hub/
 │   │   ├── icon-sites.html
 │   │   ├── bushy-park.html
 │   │   ├── te-apiti.html                        # Auto-updated by Icon_Sites_Data_Export.py
-│   │   └── kia-wharite.html                     # Auto-updated by Icon_Sites_Data_Export.py (PCO RTCI from local GDB)
+│   │   ├── kia-wharite.html                     # Auto-updated by Icon_Sites_Data_Export.py (PCO RTCI from local GDB)
+│   │   └── manawatu-estuary.html                # Auto-updated by Icon_Sites_Data_Export.py
 │   └── totara-reserve/                          # Placeholder for future content
 ├── Pressure_Management_Data_Join.py             # Pressure Management data pipeline
 ├── PM_Dashboard_Export.py                       # Builds dashboard_data.json and pushes to GitHub
@@ -66,6 +67,7 @@ HTML files are served via GitHub Pages at `https://HorizonsRC.github.io/biod-hub
 |---|---|---|---|
 | Te Āpiti – Manawatū Gorge | `html/icon-sites/te-apiti.html` | AGOL (BioD Contractor Data + Animal Pest Control) | Pest plant and trap catch data; all-years summary CSV written to `ICON_SITES_OUTPUT_DIR` |
 | Kia Whārite | `html/icon-sites/kia-wharite.html` | Local GDB (`KIA_WHARITE_GDB`) | PCO RTCI values from `PCO_Treatment_Area_ExportFeatures`; trap catch and weed data are static (from annual reports) |
+| Manawatū Estuary | `html/icon-sites/manawatu-estuary.html` | AGOL (BioD Contractor Data + Animal Pest Control) | Weed count + area by species (FY 23-24 and 24-25); trap catches by species; SiteID `Horo34W` |
 
 ### Setup
 
