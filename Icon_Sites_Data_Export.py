@@ -94,6 +94,9 @@ TE_APITI_PCO_WHERE = (
     ")"
 )
 
+# PCO zone name for the Pukaha – Mount Bruce programme
+PUKAHA_PCO_WHERE = "PCOName IN ('Bio Pukaha')"
+
 # PCO zone names for the Manawatū Estuary programme (all known casing/spacing variants)
 MANAWATU_ESTUARY_PCO_WHERE = (
     "PCOName IN ("
@@ -120,6 +123,7 @@ ICON_SITE_HTML = {
     "te-apiti":          HTML_DIR / "te-apiti.html",
     "kia-wharite":       HTML_DIR / "kia-wharite.html",
     "manawatu-estuary":  HTML_DIR / "manawatu-estuary.html",
+    "pukaha":            HTML_DIR / "pukaha.html",
     # Add further sites here as they are developed:
     # "bushy-park": HTML_DIR / "bushy-park.html",
 }
@@ -1182,6 +1186,229 @@ def process_manawatu_estuary(wp: pd.DataFrame, gis: GIS) -> dict:
     }
 
 
+def process_pukaha(wp: pd.DataFrame, pl: pd.DataFrame, gis: GIS) -> dict:
+    """
+    Derive the DATA object for pukaha.html.
+
+    Weed data: BioD Contractor Data feature layer, SiteName='Pukaha extension', FY 24-25.
+    Trap data: Animal Pest Control layer, PCOName IN ('Bio Pukaha').
+    Filtered by SiteName rather than SiteID (field confirmed against layer schema on first run).
+    """
+    log.info("Processing Pukaha – Mount Bruce...")
+
+    SITE_NAME_COL = "SiteName"
+    FY_COL        = "FinYr"
+    DATE_COL      = "Date"
+    SPECIES_COL   = "SpeciesID"
+    AGE_COL       = "Age_class"
+    RPMP_COL      = "RPMPspecies"
+    LEN_COL       = "Shape__Length"
+    SITE_NAME     = "Pukaha extension"
+    FY_VAL        = "24-25"
+    TOP_N         = 5
+
+    CATCH_SPECIES = ["Cat", "Ferret", "Hedgehog", "Mouse", "Rabbit",
+                     "Rat", "Stoat", "Possum", "Weasel"]
+
+    # ── Filter by site name ───────────────────────────────────────────────────
+    if SITE_NAME_COL in wp.columns:
+        wp = wp[wp[SITE_NAME_COL] == SITE_NAME].copy()
+    else:
+        log.warning(f"  Column '{SITE_NAME_COL}' not found in waypoints — check layer schema")
+    if SITE_NAME_COL in pl.columns:
+        pl = pl[pl[SITE_NAME_COL] == SITE_NAME].copy()
+
+    log.info(f"  {len(wp):,} waypoints, {len(pl):,} polylines for {SITE_NAME!r}")
+
+    # ── Filter to display FY ──────────────────────────────────────────────────
+    if FY_COL in wp.columns:
+        wp = wp[wp[FY_COL] == FY_VAL].copy()
+    if FY_COL in pl.columns:
+        pl = pl[pl[FY_COL] == FY_VAL].copy()
+
+    log.info(f"  {len(wp):,} waypoints, {len(pl):,} polylines for FY {FY_VAL}")
+
+    # ── Parse dates ───────────────────────────────────────────────────────────
+    if DATE_COL in pl.columns and not pl.empty:
+        pl["_dt"]    = pd.to_datetime(pl[DATE_COL], errors="coerce")
+        pl["_month"] = pl["_dt"].dt.month
+    if DATE_COL in wp.columns and not wp.empty:
+        wp["_dt"] = pd.to_datetime(wp[DATE_COL], errors="coerce")
+
+    # ── Core stats ────────────────────────────────────────────────────────────
+    km_total = (
+        round(float(pl[LEN_COL].sum()) / 1000)
+        if LEN_COL in pl.columns and not pl.empty else None
+    )
+    unique_visits = (
+        int(wp["_dt"].dt.date.nunique())
+        if "_dt" in wp.columns and not wp.empty else None
+    )
+    total_records  = int(len(wp)) if not wp.empty else 0
+    unique_species = (
+        int(wp[SPECIES_COL].nunique())
+        if SPECIES_COL in wp.columns and not wp.empty else None
+    )
+    rpmp_count = (
+        int((wp[RPMP_COL].str.upper().isin(["Y", "YES"])).sum())
+        if RPMP_COL in wp.columns and not wp.empty else None
+    )
+    rpmp_pct = (
+        round(rpmp_count / total_records * 100)
+        if rpmp_count is not None and total_records > 0 else None
+    )
+
+    # ── Age class counts ──────────────────────────────────────────────────────
+    age_map = {"A": 0, "J": 0, "S": 0}
+    if AGE_COL in wp.columns and not wp.empty:
+        for key, cnt in wp[AGE_COL].str.upper().value_counts().items():
+            if key in age_map:
+                age_map[key] = int(cnt)
+
+    # ── Species composition: top N + "Other" ─────────────────────────────────
+    species_labels:    list = []
+    species_data:      list = []
+    other_species_list: list = []
+
+    if SPECIES_COL in wp.columns and not wp.empty:
+        sc  = wp[SPECIES_COL].value_counts()
+        top = sc.head(TOP_N)
+        species_labels = list(top.index)
+        species_data   = [int(v) for v in top.values]
+        other_total    = int(sc.iloc[TOP_N:].sum())
+        if other_total > 0:
+            species_labels.append("Other")
+            species_data.append(other_total)
+            other_species_list = list(sc.iloc[TOP_N:].index)
+
+    # ── Track km by month (FY order: Jul–Jun) ─────────────────────────────────
+    fy_months    = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6]
+    month_labels = ["Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+                    "Jan", "Feb", "Mar", "Apr", "May", "Jun"]
+    if "_month" in pl.columns and LEN_COL in pl.columns and not pl.empty:
+        km_by_month = (pl.groupby("_month")[LEN_COL].sum() / 1000).to_dict()
+        track_data  = [round(km_by_month.get(m, 0.0), 1) for m in fy_months]
+    else:
+        track_data = [None] * 12
+
+    # ── Trap data (Animal Pest Control layer) ─────────────────────────────────
+    trap_total  = 0
+    trap_types  = {"labels": [], "data": []}
+    catches_by_species = {"labels": [], "species": CATCH_SPECIES, "data": {}}
+
+    try:
+        traps = fetch_service_url_as_df(
+            gis, TRAP_SERVICE_URL, TRAP_LAYER_ID, where=PUKAHA_PCO_WHERE
+        )
+        log.info(f"  Trap columns: {sorted(traps.columns.tolist())}")
+
+        if not traps.empty:
+            trap_total = len(traps)
+
+            if "TrapType" in traps.columns:
+                tc = traps["TrapType"].value_counts()
+                trap_types = {"labels": list(tc.index), "data": [int(v) for v in tc.values]}
+
+            trap_ids = (
+                set(traps["GlobalID"].dropna().astype(str).str.strip("{}").str.lower().tolist())
+                if "GlobalID" in traps.columns else set()
+            )
+
+            try:
+                insp_all = fetch_service_url_as_df(
+                    gis, TRAP_SERVICE_URL, INSP_TABLE_ID, where="1=1"
+                )
+            except Exception as e:
+                log.warning(f"    Inspection full-table query failed: {e}")
+                insp_all = pd.DataFrame()
+
+            if not insp_all.empty:
+                join_col = None
+                for cand in ("TrapParentID", "ParentGlobalID", "ParentID"):
+                    if cand in insp_all.columns:
+                        join_col = cand
+                        break
+                if join_col is None:
+                    pid_cols = [c for c in insp_all.columns if "parent" in c.lower()]
+                    if pid_cols:
+                        join_col = pid_cols[0]
+                log.info(f"  Inspection join column: {join_col}")
+
+                if join_col and trap_ids:
+                    normalised = insp_all[join_col].astype(str).str.strip("{}").str.lower()
+                    insp = insp_all[normalised.isin(trap_ids)].copy()
+                else:
+                    insp = pd.DataFrame()
+                log.info(f"  Inspection records matching Pukaha traps: {len(insp):,}")
+
+                if not insp.empty and "created_date" in insp.columns and "SpeciesCaught" in insp.columns:
+                    insp["_dt"] = pd.to_datetime(insp["created_date"], unit="ms", errors="coerce")
+                    insp["_fy"] = insp["_dt"].apply(date_to_fy)
+
+                    caught = insp[insp["SpeciesCaught"].isin(CATCH_SPECIES)].copy()
+                    log.info(f"  Inspection rows with a recorded catch: {len(caught):,}")
+
+                    if not caught.empty:
+                        pivot = (
+                            caught.groupby(["_fy", "SpeciesCaught"])
+                            .size()
+                            .unstack(fill_value=0)
+                        )
+                        fy_order = sorted([fy for fy in pivot.index if fy])
+                        pivot    = pivot.reindex(fy_order)
+                        catches_by_species = {
+                            "labels":  fy_order,
+                            "species": CATCH_SPECIES,
+                            "data": {
+                                sp: [int(pivot.at[fy, sp]) if sp in pivot.columns else 0
+                                     for fy in fy_order]
+                                for sp in CATCH_SPECIES
+                            },
+                        }
+                        totals = {sp: sum(catches_by_species["data"][sp]) for sp in CATCH_SPECIES}
+                        log.info(f"  Catches by species (all FYs): {totals}")
+
+        log.info(f"  {trap_total:,} traps in Bio Pukaha")
+
+    except Exception as exc:
+        log.warning(f"  Trap layer query failed — skipping trap data. Error: {exc}")
+
+    return {
+        "fy":        FY_VAL,
+        "site":      "Pukaha \u2013 Mount Bruce",
+        "generated": datetime.datetime.now().isoformat(),
+        "stats": {
+            "km":       km_total,
+            "visits":   unique_visits,
+            "records":  total_records or None,
+            "rpmp":     rpmp_count,
+            "species":  unique_species,
+            "trapTotal": trap_total or None,
+        },
+        "speciesComp": {
+            "labels":       species_labels,
+            "data":         species_data,
+            "otherSpecies": other_species_list,
+        },
+        "trackByMonth": {
+            "labels": month_labels,
+            "data":   track_data,
+        },
+        "summary": {
+            "rpmpPct":      rpmp_pct,
+            "kmTotal":      km_total,
+            "visits":       unique_visits,
+            "speciesCount": unique_species,
+            "records":      total_records or None,
+        },
+        "traps": {
+            "total":            trap_total or None,
+            "byType":           trap_types,
+            "catchesBySpecies": catches_by_species,
+        },
+    }
+
+
 # ── Git push ──────────────────────────────────────────────────────────────────
 
 def git_commit_and_push(html_paths: list[Path]) -> None:
@@ -1236,6 +1463,8 @@ def main():
             data = process_kia_wharite()
         elif site_key == "manawatu-estuary":
             data = process_manawatu_estuary(wp_all.copy(), gis)
+        elif site_key == "pukaha":
+            data = process_pukaha(wp_all.copy(), pl_all.copy(), gis)
         else:
             log.warning(f"No processor defined for '{site_key}' — skipping.")
             continue
