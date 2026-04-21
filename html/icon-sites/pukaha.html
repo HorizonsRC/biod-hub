@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pukaha – Mount Bruce</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --forest:    #2d5a27;
+    --forest2:   #4a8a42;
+    --forest-lt: #e8f3e6;
+    --forest-md: #b0d4ac;
+    --gold:      #c8a84b;
+    --gold-lt:   #f6f0e4;
+    --gold-md:   #e8d9b5;
+    --navy:      #1f2e35;
+    --bg:        #f4f0ef;
+    --surface:   #ffffff;
+    --border:    #ddddd8;
+    --muted:     #5a5a52;
+    --label:     #8a8a82;
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    margin: 0; padding: 0;
+    background: var(--bg);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--navy);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  /* ── MASTER LAYOUT ─────────────────────────── */
+  .wrapper {
+    display: grid;
+    grid-template-rows: 58px 405px 1fr;
+    height: 806px;
+    width: 953px;
+    min-width: 953px;
+    padding: 0 10px 10px;
+    background: var(--bg);
+    transform-origin: top center;
+  }
+
+  /* ── TITLE STRIP ───────────────────────────── */
+  .title-strip {
+    background: var(--bg);
+    border-bottom: 2px solid var(--forest);
+    display: flex;
+    align-items: flex-end;
+    padding: 0 4px 8px;
+    gap: 12px;
+  }
+  .title-strip h1 {
+    font-family: 'Source Serif 4', serif;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--navy);
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+
+  /* ── TOP ROW ──────────────────────────────── */
+  .row-top {
+    display: grid;
+    grid-template-columns: 210px 1fr 318px;
+    gap: 8px;
+    padding: 8px 0 4px;
+    min-height: 0;
+  }
+
+  /* ── BOTTOM ROW ─────────────────────────────── */
+  .row-bottom {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    padding: 4px 0 0;
+    min-height: 0;
+  }
+
+  /* ── PANELS ──────────────────────────────────── */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 13px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .panel-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--forest);
+    flex-shrink: 0;
+  }
+  .panel-sub {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: -4px;
+    flex-shrink: 0;
+  }
+  .chart-wrap {
+    flex: 1;
+    position: relative;
+    min-height: 0;
+  }
+
+  /* ── STAT PANEL ──────────────────────────────── */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: repeat(3, 1fr);
+    gap: 5px;
+    flex: 1;
+  }
+  .stat-box {
+    background: var(--forest-lt);
+    border: 1px solid var(--forest-md);
+    border-radius: 4px;
+    padding: 8px 10px 6px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .stat-box.gold-box {
+    background: var(--gold-lt);
+    border-color: var(--gold-md);
+  }
+  .stat-box .s-val {
+    font-family: 'Source Serif 4', serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--forest);
+    line-height: 1;
+  }
+  .stat-box.gold-box .s-val { color: #8a6820; }
+  .stat-box .s-val.sm { font-size: 17px; }
+  .stat-box .s-key {
+    font-size: 9.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+    margin-top: 5px;
+    line-height: 1.3;
+  }
+
+  /* ── SUMMARY PANEL ───────────────────────────── */
+  .summary-section { margin-bottom: 3px; }
+  .summary-section:last-child { margin-bottom: 0; }
+
+  .sum-heading {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--forest);
+    border-bottom: 1px solid var(--forest-md);
+    padding-bottom: 2px;
+    margin-bottom: 3px;
+  }
+  .sum-heading.gold { color: #8a6820; border-bottom: 1px solid var(--gold-md); padding-bottom: 2px; margin-bottom: 3px; }
+  .sum-heading.navy { color: var(--navy); border-bottom: 1px solid #c8cdd0; padding-bottom: 2px; margin-bottom: 3px; }
+  .sum-loc {
+    font-size: 9.5px;
+    font-weight: 500;
+    color: var(--muted);
+    margin-top: -2px;
+    margin-bottom: 2px;
+  }
+
+  .sum-hero {
+    font-family: 'Source Serif 4', serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--navy);
+    line-height: 1;
+  }
+  .sum-unit { font-size: 11px; color: var(--muted); font-weight: 400; }
+  .sum-detail {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.4;
+    margin-top: 1px;
+  }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
+  .pill {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 3px;
+    background: var(--forest-lt);
+    color: var(--forest);
+    border: 1px solid var(--forest-md);
+  }
+  .pill.gold { background: var(--gold-lt); color: #8a6820; border-color: var(--gold-md); }
+
+  .contractor-row {
+    margin-top: 4px;
+    padding-top: 5px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .contractor-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--navy);
+    margin-bottom: 2px;
+  }
+  .contractor-val {
+    font-size: 10.5px;
+    font-weight: 400;
+    line-height: 1.35;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- TITLE -->
+  <div class="title-strip">
+    <h1>Pukaha – Mount Bruce</h1>
+  </div>
+
+  <!-- TOP ROW -->
+  <div class="row-top">
+
+    <!-- Left: Stats at a glance -->
+    <div class="panel">
+      <div class="panel-title">Programme at a Glance</div>
+      <div class="panel-sub">2024–25 Financial Year</div>
+      <div class="stat-grid">
+        <div class="stat-box">
+          <div class="s-val" id="val-visits">–</div>
+          <div class="s-key">Site Visits</div>
+        </div>
+        <div class="stat-box">
+          <div class="s-val" id="val-km">–</div>
+          <div class="s-key">km Tracked</div>
+        </div>
+        <div class="stat-box">
+          <div class="s-val" id="val-trap-total">–</div>
+          <div class="s-key">Traps Deployed</div>
+        </div>
+        <div class="stat-box">
+          <div class="s-val" id="val-trap-catches">–</div>
+          <div class="s-key">Total Trap Catches</div>
+        </div>
+        <div class="stat-box gold-box">
+          <div class="s-val" id="val-weed-records">–</div>
+          <div class="s-key">Weed Locations</div>
+        </div>
+        <div class="stat-box gold-box">
+          <div class="s-val" id="val-weed-species">–</div>
+          <div class="s-key">Weed Species Targeted</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Middle: Pest plant species chart -->
+    <div class="panel">
+      <div class="panel-title">Weed Species Controlled</div>
+      <div class="panel-sub">Pest plant locations by species · Pukaha extension</div>
+      <div class="chart-wrap">
+        <canvas id="weedCountChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Right: Activity summary -->
+    <div class="panel">
+      <div class="panel-title">Activity Summary</div>
+
+      <div class="summary-section">
+        <div class="sum-heading">Pest Plant Control</div>
+        <div class="sum-loc">Pukaha extension</div>
+        <div class="sum-detail" id="weed-summary-detail">–</div>
+      </div>
+
+      <div class="summary-section">
+        <div class="sum-heading navy">Predator Control</div>
+        <div id="predator-stats" class="sum-detail">–</div>
+      </div>
+
+      <div class="contractor-row">
+        <div class="contractor-label">Partners</div>
+        <div class="contractor-val">Pukaha Mount Bruce National Wildlife Centre · DOC · Horizons</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM ROW -->
+  <div class="row-bottom">
+
+    <div class="panel">
+      <div class="panel-title">Track Coverage by Month</div>
+      <div class="panel-sub">km of track covered · Pukaha extension</div>
+      <div class="chart-wrap">
+        <canvas id="trackChart"></canvas>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Pest Animal Catches by Year</div>
+      <div class="panel-sub">Catches per species by financial year · Bio Pukaha</div>
+      <div class="chart-wrap">
+        <canvas id="catchesChart"></canvas>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Trap Network by Type</div>
+      <div class="panel-sub">Number of traps deployed · Bio Pukaha</div>
+      <div class="chart-wrap">
+        <canvas id="trapTypeChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+(function scaleToFit() {
+  const BASE_W = 953, BASE_H = 806;
+  const wrapper = document.querySelector('.wrapper');
+  function resize() {
+    const scaleW = window.innerWidth  / BASE_W;
+    const scaleH = window.innerHeight / BASE_H;
+    const scale  = Math.min(scaleW, scaleH);
+    if (scaleW <= scaleH) {
+      wrapper.style.height = Math.round(window.innerHeight / scale) + 'px';
+    } else {
+      wrapper.style.height = BASE_H + 'px';
+    }
+    wrapper.style.transform = `scale(${scale})`;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+})();
+
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+Chart.defaults.color = '#5a5a52';
+
+const forest   = '#2d5a27';
+const forest2  = '#4a8a42';
+const forestLt = '#7ab872';
+const gold     = '#c8a84b';
+const goldLt   = '#e8d9b5';
+const navy     = '#1f2e35';
+const border   = '#ddddd8';
+
+/* ─────────────────────────────────────────────────────────────────
+   DATA — auto-updated by Icon_Sites_Data_Export.py
+   Source: BioD Contractor Data feature layer (SiteName: Pukaha extension)
+           Animal Pest Control feature layer (PCOName: Bio Pukaha)
+   ───────────────────────────────────────────────────────────────── */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run placeholder */
+const DATA = {
+  "fy": "24-25",
+  "site": "Pukaha \u2013 Mount Bruce",
+  "generated": null,
+  "stats": {
+    "km": null,
+    "visits": null,
+    "records": null,
+    "rpmp": null,
+    "species": null,
+    "trapTotal": null
+  },
+  "speciesComp": {
+    "labels": [],
+    "data": [],
+    "otherSpecies": []
+  },
+  "trackByMonth": {
+    "labels": ["Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar","Apr","May","Jun"],
+    "data": [null,null,null,null,null,null,null,null,null,null,null,null]
+  },
+  "summary": {
+    "rpmpPct": null,
+    "kmTotal": null,
+    "visits": null,
+    "speciesCount": null,
+    "records": null
+  },
+  "traps": {
+    "total": null,
+    "byType": {"labels": [], "data": []},
+    "catchesBySpecies": {"labels": [], "species": [], "data": {}}
+  }
+};
+/* ICON_SITE_DATA_END */
+
+function fmt(v, suffix, decimals) {
+  if (v == null) return '–';
+  const n = decimals != null ? v.toFixed(decimals) : v.toLocaleString();
+  return suffix ? n + ' ' + suffix : n;
+}
+
+// Stat boxes
+document.getElementById('val-visits').textContent       = fmt(DATA.stats.visits);
+document.getElementById('val-km').textContent           = fmt(DATA.stats.km);
+document.getElementById('val-trap-total').textContent   = fmt(DATA.stats.trapTotal);
+document.getElementById('val-weed-records').textContent = fmt(DATA.stats.records);
+document.getElementById('val-weed-species').textContent = fmt(DATA.stats.species);
+
+// Trap catches for primary FY
+(function () {
+  const cs  = (DATA.traps && DATA.traps.catchesBySpecies) ? DATA.traps.catchesBySpecies : {};
+  const idx = (cs.labels || []).indexOf(DATA.fy);
+  let total = 0;
+  if (idx >= 0 && cs.data) {
+    Object.values(cs.data).forEach(arr => { total += arr[idx] || 0; });
+  }
+  document.getElementById('val-trap-catches').textContent = fmt(total || null);
+})();
+
+const toArr = arr => (arr || []).map(v => v ?? 0);
+
+/* ── WEED SPECIES BY COUNT (top middle) ── */
+(function () {
+  const sc = DATA.speciesComp;
+  if (!sc.labels.length) return;
+
+  new Chart(document.getElementById('weedCountChart'), {
+    type: 'bar',
+    data: {
+      labels: sc.labels,
+      datasets: [{
+        data: toArr(sc.data),
+        backgroundColor: gold,
+        borderRadius: 3,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          bodyFont:  { size: 9.5 },
+          titleFont: { size: 10 },
+          boxPadding: 3,
+          padding: 6,
+          callbacks: {
+            label: ctx => {
+              const sp  = ctx.label;
+              const val = ctx.parsed.x;
+              if (sp === 'Other') {
+                const others = sc.otherSpecies || [];
+                return [` ${val.toLocaleString()} locations`, '', ' Includes:']
+                  .concat(others.map(s => `   · ${s}`));
+              }
+              return ` ${val.toLocaleString()} locations`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: border },
+          ticks: { font: { size: 10 }, color: '#5a5a52' },
+          title: { display: true, text: 'Weed locations', font: { size: 10 }, color: '#5a5a52' }
+        },
+        y: { grid: { display: false }, ticks: { font: { size: 10.5 }, color: '#5a5a52' } }
+      }
+    }
+  });
+})();
+
+/* ── ACTIVITY SUMMARY — Pest Plant ── */
+(function () {
+  const s  = DATA.summary;
+  const el = document.getElementById('weed-summary-detail');
+  if (!el) return;
+  const parts = [];
+  if (s.records)         parts.push(`${s.records.toLocaleString()} locations recorded`);
+  if (s.speciesCount)    parts.push(`${s.speciesCount} species targeted`);
+  if (s.visits)          parts.push(`${s.visits} site visits`);
+  if (s.kmTotal)         parts.push(`${s.kmTotal} km tracked`);
+  if (s.rpmpPct != null) parts.push(`${s.rpmpPct}% RPMP species`);
+  el.textContent = parts.join(' · ') || '–';
+})();
+
+/* ── PREDATOR CONTROL STATS ── */
+(function () {
+  const cs     = (DATA.traps && DATA.traps.catchesBySpecies) ? DATA.traps.catchesBySpecies : {};
+  const labels = cs.labels || [];
+  const fyIdx  = labels.indexOf(DATA.fy);
+  const el     = document.getElementById('predator-stats');
+  if (!el) return;
+
+  if (fyIdx < 0 || !cs.data) { el.textContent = 'No catch records available.'; return; }
+
+  let total = 0;
+  const topSp = [];
+  Object.entries(cs.data).forEach(([sp, arr]) => {
+    const v = arr[fyIdx] || 0;
+    total += v;
+    if (v > 0) topSp.push({ name: sp, count: v });
+  });
+  topSp.sort((a, b) => b.count - a.count);
+
+  const topStr = topSp.slice(0, 3).map(s => `${s.name} (${s.count})`).join(' · ');
+  el.innerHTML =
+    `<span style="font-size:13px;font-family:'Source Serif 4',serif;font-weight:600;color:var(--navy)">${total}</span>` +
+    ` <span style="color:var(--muted)">trap catches</span>` +
+    (topStr ? `<br><span style="color:var(--muted)">${topStr}</span>` : '');
+})();
+
+/* ── TRACK COVERAGE BY MONTH (bottom left) ── */
+(function () {
+  const tm = DATA.trackByMonth;
+  if (!tm || !tm.data.some(v => v != null && v > 0)) return;
+
+  new Chart(document.getElementById('trackChart'), {
+    type: 'bar',
+    data: {
+      labels: tm.labels,
+      datasets: [{
+        label: 'km',
+        data: toArr(tm.data),
+        backgroundColor: forest2,
+        borderRadius: 3,
+      }]
+    },
+    options: {
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y.toFixed(1)} km` } }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 9.5 }, color: '#5a5a52' } },
+        y: {
+          grid: { color: border },
+          beginAtZero: true,
+          ticks: { font: { size: 10 }, color: '#5a5a52' },
+          title: { display: true, text: 'km', font: { size: 10 }, color: '#5a5a52' }
+        }
+      }
+    }
+  });
+})();
+
+/* ── PEST ANIMAL CATCHES BY YEAR × SPECIES (bottom middle) ── */
+const _cs = (DATA.traps && DATA.traps.catchesBySpecies) ? DATA.traps.catchesBySpecies
+  : { labels: [], species: [], data: {} };
+
+const _speciesPalette = {
+  Rat:      '#6b4423',
+  Mouse:    '#b89271',
+  Possum:   '#4a4a4a',
+  Stoat:    '#2d5a27',
+  Weasel:   '#4a8a42',
+  Ferret:   '#7ab872',
+  Hedgehog: '#c8a84b',
+  Rabbit:   '#e0bb6a',
+  Cat:      '#1a5c7c',
+};
+
+const _csDatasets = (_cs.species || [])
+  .filter(sp => (_cs.data[sp] || []).some(v => v > 0))
+  .map(sp => ({
+    label: sp,
+    data: _cs.data[sp] || [],
+    backgroundColor: _speciesPalette[sp] || forest2,
+    borderRadius: 2,
+    stack: 'catches',
+  }));
+
+new Chart(document.getElementById('catchesChart'), {
+  type: 'bar',
+  data: { labels: _cs.labels, datasets: _csDatasets },
+  options: {
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'bottom',
+        labels: { font: { size: 9.5 }, color: '#5a5a52', boxWidth: 10, padding: 6 }
+      },
+      tooltip: {
+        callbacks: {
+          label: ctx => {
+            const val = ctx.parsed.y;
+            if (!val) return null;
+            return ` ${ctx.dataset.label}: ${val.toLocaleString()}`;
+          },
+          footer: items => {
+            const total = items.reduce((s, i) => s + (i.parsed.y || 0), 0);
+            return total ? `Total: ${total.toLocaleString()} catches` : '';
+          }
+        }
+      }
+    },
+    scales: {
+      x: { grid: { display: false }, stacked: true, ticks: { font: { size: 10.5 }, color: '#5a5a52' } },
+      y: {
+        grid: { color: border },
+        stacked: true,
+        beginAtZero: true,
+        ticks: { font: { size: 10 }, color: '#5a5a52' },
+        title: { display: true, text: 'Catches', font: { size: 10 }, color: '#5a5a52' }
+      }
+    }
+  }
+});
+
+/* ── TRAP NETWORK BY TYPE (bottom right) ── */
+(function () {
+  const bt = (DATA.traps && DATA.traps.byType) ? DATA.traps.byType : { labels: [], data: [] };
+  if (!bt.labels.length) return;
+
+  const colors = [forest, forest2, forestLt, gold, goldLt, navy];
+  new Chart(document.getElementById('trapTypeChart'), {
+    type: 'bar',
+    data: {
+      labels: bt.labels,
+      datasets: [{
+        label: 'Traps',
+        data: bt.data,
+        backgroundColor: colors.slice(0, bt.labels.length),
+        borderRadius: 3,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.x.toLocaleString()} traps` } }
+      },
+      scales: {
+        x: {
+          grid: { color: border },
+          ticks: { font: { size: 10 }, color: '#5a5a52' },
+          title: { display: true, text: 'No. of traps', font: { size: 10 }, color: '#5a5a52' }
+        },
+        y: { grid: { display: false }, ticks: { font: { size: 10.5 }, color: '#5a5a52' } }
+      }
+    }
+  });
+})();
+</script>
+</body>
+</html>
