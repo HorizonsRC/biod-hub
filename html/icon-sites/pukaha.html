@@ -310,8 +310,8 @@
   <div class="row-bottom">
 
     <div class="panel">
-      <div class="panel-title">Track Coverage by Month</div>
-      <div class="panel-sub">km of track covered · Pukaha extension</div>
+      <div class="panel-title">Track Coverage by Year</div>
+      <div class="panel-sub">km by survey type · all financial years · Pukaha extension</div>
       <div class="chart-wrap">
         <canvas id="trackChart"></canvas>
       </div>
@@ -394,35 +394,10 @@ const DATA = {
     ],
     "otherSpecies": []
   },
-  "trackByMonth": {
-    "labels": [
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun"
-    ],
-    "data": [
-      0.0,
-      0.0,
-      0.0,
-      752.2,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0
-    ]
+  "trackByType": {
+    "labels": [],
+    "helicopter": [],
+    "ground": []
   },
   "summary": {
     "rpmpPct": 99,
@@ -666,30 +641,32 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
     (topStr ? `<br><span style="color:var(--muted)">${topStr}</span>` : '');
 })();
 
-/* ── TRACK COVERAGE BY MONTH (bottom left) ── */
+/* ── TRACK COVERAGE BY TYPE × FY (bottom left) ── */
 (function () {
-  const tm = DATA.trackByMonth;
-  if (!tm || !tm.data.some(v => v != null && v > 0)) return;
+  const tt = DATA.trackByType;
+  if (!tt || !tt.labels.length) return;
 
   new Chart(document.getElementById('trackChart'), {
     type: 'bar',
     data: {
-      labels: tm.labels,
-      datasets: [{
-        label: 'km',
-        data: toArr(tm.data),
-        backgroundColor: forest2,
-        borderRadius: 3,
-      }]
+      labels: tt.labels,
+      datasets: [
+        { label: 'Helicopter survey', data: toArr(tt.helicopter), backgroundColor: '#1a5c7c', borderRadius: 3 },
+        { label: 'Ground control',    data: toArr(tt.ground),     backgroundColor: forest2,   borderRadius: 3 },
+      ]
     },
     options: {
       maintainAspectRatio: false,
       plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y.toFixed(1)} km` } }
+        legend: {
+          display: true,
+          position: 'bottom',
+          labels: { font: { size: 9.5 }, color: '#5a5a52', boxWidth: 10, padding: 6 }
+        },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)} km` } }
       },
       scales: {
-        x: { grid: { display: false }, ticks: { font: { size: 9.5 }, color: '#5a5a52' } },
+        x: { grid: { display: false }, ticks: { font: { size: 10.5 }, color: '#5a5a52' } },
         y: {
           grid: { color: border },
           beginAtZero: true,
