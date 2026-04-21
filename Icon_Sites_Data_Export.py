@@ -1226,6 +1226,9 @@ def process_pukaha(wp: pd.DataFrame, pl: pd.DataFrame, gis: GIS) -> dict:
 
     log.info(f"  {len(wp):,} waypoints, {len(pl):,} polylines for {SITE_NAME!r}")
 
+    # Keep site-filtered copy for multi-year by-FY charts (before FY filter below)
+    wp_site = wp.copy()
+
     # ── Filter to display FY ──────────────────────────────────────────────────
     if FY_COL in wp.columns:
         wp = wp[wp[FY_COL] == FY_VAL].copy()
@@ -1379,6 +1382,39 @@ def process_pukaha(wp: pd.DataFrame, pl: pd.DataFrame, gis: GIS) -> dict:
     except Exception as exc:
         log.warning(f"  Trap layer query failed — skipping trap data. Error: {exc}")
 
+    # ── OMB controlled by FY × age class (all FYs) ───────────────────────────
+    # Uses wp_site (all FYs) so the chart shows the full programme history.
+    # Filtered to Control_notes not-null: records where a control action was
+    # recorded (cut stump / foliar spray / hedge trim) vs survey-only visits.
+    omb_by_fy_age: dict = {"labels": [], "adults": [], "juveniles": [], "seedlings": []}
+
+    CONTROL_COL = "Control_notes"
+    OMB_SPECIES = "Old man's beard"
+
+    if FY_COL in wp_site.columns and SPECIES_COL in wp_site.columns and not wp_site.empty:
+        omb = wp_site[wp_site[SPECIES_COL] == OMB_SPECIES].copy()
+        if CONTROL_COL in omb.columns:
+            omb = omb[omb[CONTROL_COL].notna() & (omb[CONTROL_COL].astype(str).str.strip() != "")]
+            log.info(f"  OMB Control_notes values: {omb[CONTROL_COL].value_counts().to_dict()}")
+        else:
+            log.warning(f"  Column '{CONTROL_COL}' not found — using all OMB records")
+
+        if not omb.empty and AGE_COL in omb.columns and FY_COL in omb.columns:
+            all_fy = sorted(omb[FY_COL].dropna().unique())
+            adults, juveniles, seedlings = [], [], []
+            for fy in all_fy:
+                ac = omb[omb[FY_COL] == fy][AGE_COL].str.upper().value_counts()
+                adults.append(int(ac.get("A", 0)))
+                juveniles.append(int(ac.get("J", 0)))
+                seedlings.append(int(ac.get("S", 0)))
+            omb_by_fy_age = {
+                "labels":    list(all_fy),
+                "adults":    adults,
+                "juveniles": juveniles,
+                "seedlings": seedlings,
+            }
+            log.info(f"  OMB by FY×age: { {fy: (a,j,s) for fy,a,j,s in zip(all_fy,adults,juveniles,seedlings)} }")
+
     return {
         "fy":        FY_VAL,
         "site":      "Pukaha \u2013 Mount Bruce",
@@ -1412,6 +1448,7 @@ def process_pukaha(wp: pd.DataFrame, pl: pd.DataFrame, gis: GIS) -> dict:
             "byType":           trap_types,
             "catchesBySpecies": catches_by_species,
         },
+        "ombByFyAge": omb_by_fy_age,
     }
 
 

@@ -273,10 +273,10 @@
       </div>
     </div>
 
-    <!-- Middle: Pest plant species chart -->
+    <!-- Middle: OMB by year × age class -->
     <div class="panel">
-      <div class="panel-title">Weed Species Controlled</div>
-      <div class="panel-sub">Pest plant locations by species · Pukaha extension</div>
+      <div class="panel-title">Old Man's Beard Controlled by Year</div>
+      <div class="panel-sub">Controlled locations by age class · all financial years · Pukaha extension</div>
       <div class="chart-wrap">
         <canvas id="weedCountChart"></canvas>
       </div>
@@ -528,6 +528,12 @@ const DATA = {
         ]
       }
     }
+  },
+  "ombByFyAge": {
+    "labels": [],
+    "adults": [],
+    "juveniles": [],
+    "seedlings": []
   }
 };
 /* ICON_SITE_DATA_END */
@@ -558,52 +564,51 @@ document.getElementById('val-weed-species').textContent = fmt(DATA.stats.species
 
 const toArr = arr => (arr || []).map(v => v ?? 0);
 
-/* ── WEED SPECIES BY COUNT (top middle) ── */
+/* ── OMB CONTROLLED BY FY × AGE CLASS (top middle) ── */
 (function () {
-  const sc = DATA.speciesComp;
-  if (!sc.labels.length) return;
+  const oa = DATA.ombByFyAge;
+  if (!oa || !oa.labels.length) return;
 
   new Chart(document.getElementById('weedCountChart'), {
     type: 'bar',
     data: {
-      labels: sc.labels,
-      datasets: [{
-        data: toArr(sc.data),
-        backgroundColor: gold,
-        borderRadius: 3,
-      }]
+      labels: oa.labels,
+      datasets: [
+        { label: 'Adult',    data: toArr(oa.adults),    backgroundColor: forest,   borderRadius: 2, stack: 'age' },
+        { label: 'Juvenile', data: toArr(oa.juveniles), backgroundColor: forest2,  borderRadius: 2, stack: 'age' },
+        { label: 'Seedling', data: toArr(oa.seedlings), backgroundColor: forestLt, borderRadius: 2, stack: 'age' },
+      ]
     },
     options: {
-      indexAxis: 'y',
       maintainAspectRatio: false,
       plugins: {
-        legend: { display: false },
+        legend: {
+          display: true,
+          position: 'bottom',
+          labels: { font: { size: 9.5 }, color: '#5a5a52', boxWidth: 10, padding: 6 }
+        },
         tooltip: {
-          bodyFont:  { size: 9.5 },
-          titleFont: { size: 10 },
-          boxPadding: 3,
-          padding: 6,
           callbacks: {
             label: ctx => {
-              const sp  = ctx.label;
-              const val = ctx.parsed.x;
-              if (sp === 'Other') {
-                const others = sc.otherSpecies || [];
-                return [` ${val.toLocaleString()} locations`, '', ' Includes:']
-                  .concat(others.map(s => `   · ${s}`));
-              }
-              return ` ${val.toLocaleString()} locations`;
+              const v = ctx.parsed.y;
+              return v ? ` ${ctx.dataset.label}: ${v.toLocaleString()}` : null;
+            },
+            footer: items => {
+              const total = items.reduce((s, i) => s + (i.parsed.y || 0), 0);
+              return total ? `Total: ${total.toLocaleString()} controlled` : '';
             }
           }
         }
       },
       scales: {
-        x: {
+        x: { grid: { display: false }, stacked: true, ticks: { font: { size: 10.5 }, color: '#5a5a52' } },
+        y: {
           grid: { color: border },
+          stacked: true,
+          beginAtZero: true,
           ticks: { font: { size: 10 }, color: '#5a5a52' },
-          title: { display: true, text: 'Weed locations', font: { size: 10 }, color: '#5a5a52' }
-        },
-        y: { grid: { display: false }, ticks: { font: { size: 10.5 }, color: '#5a5a52' } }
+          title: { display: true, text: 'Locations controlled', font: { size: 10 }, color: '#5a5a52' }
+        }
       }
     }
   });
