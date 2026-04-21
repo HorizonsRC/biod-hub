@@ -32,6 +32,14 @@ INSP_TABLE_ID    = 1
 # Priority Habitats spatial layer URL (used by Pressure_Management_Data_Join.py)
 FEATURE_SERVICE_URL = "https://services1.arcgis.com/your-org-id/arcgis/rest/services/your-ph-layer/FeatureServer/0"
 
+# PCO Management Dataset — RTCI monitoring results (read-only)
+# Used by Manawatū Estuary dashboard (layer 0)
+PCO_MONITORING_URL = "https://services1.arcgis.com/VuN78wcRdq1Oj69W/arcgis/rest/services/PCO_Management_Dataset/FeatureServer"
+
+# eBird API key — used to fetch recent bird sightings near icon sites
+# Keys do not expire. Generate or view yours at https://ebird.org/api/keygen
+EBIRD_API_KEY = "your-ebird-api-key"
+
 # ── Kia Whārite ───────────────────────────────────────────────────────────────
 
 # Local File Geodatabase containing the PCO treatment area data.
