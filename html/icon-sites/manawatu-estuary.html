@@ -172,21 +172,28 @@
   }
 
   /* ── SUMMARY PANEL ───────────────────────────── */
-  .summary-section { margin-bottom: 4px; }
+  .summary-section { margin-bottom: 3px; }
   .summary-section:last-child { margin-bottom: 0; }
 
   .sum-heading {
-    font-size: 10px;
+    font-size: 9.5px;
     font-weight: 700;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.09em;
     text-transform: uppercase;
     color: var(--slate);
     border-bottom: 1px solid var(--slate-md);
     padding-bottom: 2px;
-    margin-bottom: 4px;
+    margin-bottom: 3px;
   }
-  .sum-heading.gold  { color: #8a6820; border: none; padding-bottom: 0; margin-bottom: 3px; }
-  .sum-heading.navy  { color: var(--navy); border: none; padding-bottom: 0; margin-bottom: 3px; }
+  .sum-heading.gold  { color: #8a6820; border-bottom: 1px solid var(--gold-md); padding-bottom: 2px; margin-bottom: 3px; }
+  .sum-heading.navy  { color: var(--navy); border-bottom: 1px solid var(--slate-md); padding-bottom: 2px; margin-bottom: 3px; }
+  .sum-loc {
+    font-size: 9.5px;
+    font-weight: 500;
+    color: var(--muted);
+    margin-top: -2px;
+    margin-bottom: 2px;
+  }
 
   .sum-hero {
     font-family: 'Source Serif 4', serif;
@@ -253,26 +260,26 @@
   .rtci-fy { font-size: 10.5px; color: var(--muted); }
   .rtci-empty { font-size: 11px; color: var(--muted); padding: 12px 4px; }
 
-  /* ── NOTABLE SIGHTINGS STRIP ─────────────────────── */
+  /* ── NOTABLE STRIP (bird sightings + weed season) ────── */
   .notable-wrap {
     flex-shrink: 0;
-    margin-top: 5px;
-    padding-top: 6px;
+    margin-top: 3px;
+    padding-top: 4px;
     border-top: 1px solid var(--border);
   }
   .notable-label {
-    font-size: 9.5px;
+    font-size: 9px;
     font-weight: 700;
-    letter-spacing: 0.09em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--slate);
-    margin-bottom: 4px;
+    margin-bottom: 2px;
   }
-  .notable-row { display: flex; flex-wrap: wrap; gap: 4px; }
+  .notable-row { display: flex; flex-wrap: wrap; gap: 3px; }
   .notable-pill {
-    font-size: 10px;
+    font-size: 9.5px;
     font-weight: 600;
-    padding: 2px 7px;
+    padding: 1px 6px;
     border-radius: 3px;
     background: #fff3e0;
     color: #8a4800;
@@ -294,8 +301,9 @@
     margin-bottom: 2px;
   }
   .contractor-val {
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 400;
+    line-height: 1.35;
     color: var(--muted);
   }
 </style>
@@ -306,7 +314,6 @@
   <!-- TITLE -->
   <div class="title-strip">
     <h1>Manawatū Estuary</h1>
-    <span class="fy-badge">FY 2024–25</span>
   </div>
 
   <!-- TOP ROW -->
@@ -335,7 +342,7 @@
         </div>
         <div class="stat-box gold-box">
           <div class="s-val" id="val-weed-records">–</div>
-          <div class="s-key">Weed Locations 24-25</div>
+          <div class="s-key">Weed Locations</div>
         </div>
         <div class="stat-box gold-box">
           <div class="s-val" id="val-weed-species">–</div>
@@ -363,10 +370,8 @@
 
       <div class="summary-section">
         <div class="sum-heading">Pest Plant Control</div>
-        <div class="pill-row">
-          <span class="pill" id="pill-weed-2425">– locations (24-25)</span>
-          <span class="pill" id="pill-weed-2324">– locations (23-24)</span>
-        </div>
+        <div class="sum-loc">Plateau + Wetland MU1–5</div>
+        <div class="sum-detail" style="margin-top:3px">6 management units · 2–3 control sweeps per season</div>
       </div>
 
       <div class="summary-section">
@@ -398,15 +403,22 @@
 
     <div class="panel">
       <div class="panel-title">Weed Species Controlled</div>
-      <div class="panel-sub">Pest plant locations by species · FY 2024–25</div>
+      <div class="panel-sub">Weed locations by category · Plateau + Wetland MU1–5</div>
       <div class="chart-wrap">
         <canvas id="weedCountChart"></canvas>
+      </div>
+      <div class="notable-wrap">
+        <div class="notable-label">Season highlights</div>
+        <div class="notable-row">
+          <span class="pill rtci-good" title="African ice plant substantially reduced in Wetland MU4 after prior-season management">Ice plant reduced · MU4</span>
+          <span class="pill rtci-warn" title="Cape smilax establishing after poplar clearing — needs monitoring">Cape smilax emerging · MU2</span>
+        </div>
       </div>
     </div>
 
     <div class="panel">
       <div class="panel-title">Pest Animal Catches by Year</div>
-      <div class="panel-sub">Catches recorded per species by financial year</div>
+      <div class="panel-sub">Catches per species by financial year · Fernbird Flat</div>
       <div class="chart-wrap">
         <canvas id="catchesChart"></canvas>
       </div>
@@ -414,7 +426,7 @@
 
     <div class="panel">
       <div class="panel-title">Trap Network by Type</div>
-      <div class="panel-sub">Number of traps deployed</div>
+      <div class="panel-sub">Number of traps deployed · Fernbird Flat</div>
       <div class="chart-wrap">
         <canvas id="trapTypeChart"></canvas>
       </div>
@@ -459,11 +471,11 @@ const border  = '#ddddd8';
    Source: BioD Contractor Data feature layer (Horo34W / Manawatū Estuary)
            Animal Pest Control feature layer (PCOName: Manawatu Estuaries variants)
    ───────────────────────────────────────────────────────────────── */
-/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-21 11:31 */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-21 14:32 */
 const DATA = {
   "fy": "24-25",
   "site": "Manaw\u0101t\u016b Estuary",
-  "generated": "2026-04-21T11:31:00.192326",
+  "generated": "2026-04-21T14:32:28.828452",
   "stats": {
     "records_2425": 925,
     "records_2324": 116,
@@ -537,6 +549,58 @@ const DATA = {
       "Japanese Holly Fern"
     ]
   },
+  "weedByCategory": {
+    "labels": [
+      "Woody Pests",
+      "Ground Cover Pests",
+      "Climbing Pests"
+    ],
+    "data": [
+      179,
+      422,
+      320
+    ],
+    "species": {
+      "Woody Pests": {
+        "Poplar": 50,
+        "Sydney Golden Wattle": 45,
+        "Tree Lupin": 37,
+        "Gorse": 32,
+        "Boxthorn": 8,
+        "Yucca": 2,
+        "Karo": 1,
+        "Elaeagnus": 1,
+        "Inkweed": 1,
+        "Boneseed": 1,
+        "Brush Wattle": 1
+      },
+      "Ground Cover Pests": {
+        "Goat's Rue": 107,
+        "Fleabane": 97,
+        "Caper Spurge": 76,
+        "Pampas Grass": 64,
+        "Periwinkle": 24,
+        "Osteospermum (African Daisy)": 21,
+        "Senecio (Pink Ragwort)": 18,
+        "Agapanthus": 9,
+        "African Iceplant": 2,
+        "Arum Lily": 1,
+        "Stinking Iris": 1,
+        "Japanese Holly Fern": 1,
+        "Formosa Lily": 1
+      },
+      "Climbing Pests": {
+        "Climbing Dock": 100,
+        "Everlasting Pea": 85,
+        "Japanese Honeysuckle": 76,
+        "Smilax spp.": 30,
+        "English Ivy": 16,
+        "Convolvulus": 10,
+        "German Ivy": 2,
+        "Cape Ivy": 1
+      }
+    }
+  },
   "pcoRtci": {
     "labels": [
       "Coastal Foxton",
@@ -556,75 +620,75 @@ const DATA = {
   },
   "birdSightings": {
     "labels": [
+      "Bar-tailed Godwit",
       "Variable Oystercatcher",
       "South Island Pied Oystercatcher",
-      "Bar-tailed Godwit",
+      "Black-billed Gull",
+      "Wrybill",
       "White-fronted Tern",
       "Caspian Tern",
-      "Royal Spoonbill",
-      "Wrybill",
-      "New Zealand Fantail",
+      "Double-banded Plover",
       "Other"
     ],
     "data": [
-      36,
+      73,
+      38,
       27,
       22,
+      21,
       15,
+      12,
       11,
-      7,
-      6,
-      4,
       53
     ],
     "otherSpecies": [
+      "Royal Spoonbill",
+      "New Zealand Scaup",
+      "Pied Stilt",
       "Red Knot",
       "Sacred Kingfisher",
-      "Black-billed Gull",
+      "New Zealand Fantail",
+      "New Zealand Grebe",
       "Swamp Harrier",
       "Australasian Shoveler",
-      "Pied Stilt",
-      "New Zealand Grebe",
-      "Paradise Shelduck",
       "Tui",
-      "New Zealand Bellbird",
       "Australasian Bittern",
+      "Paradise Shelduck",
+      "New Zealand Bellbird",
       "Sharp-tailed Sandpiper",
       "New Zealand Pigeon",
-      "New Zealand Scaup",
-      "Double-banded Plover",
       "Red-necked Stint",
       "Pacific Golden Plover",
-      "Pied Shag",
+      "South Island Oystercatcher",
       "Kelp Gull",
-      "Himantopus leucocephalus",
-      "Pachyptila turtur",
-      "Silver Gull",
-      "Vanellus miles",
-      "White-faced Heron",
+      "Pied Shag",
       "Welcome Swallow",
+      "Silver Gull",
+      "Gray Teal",
+      "Pacific Golden-Plover",
+      "Himantopus leucocephalus",
+      "White-faced Heron",
+      "Pachyptila turtur",
+      "Vanellus miles",
+      "Australasian Swamphen",
       "Little Egret",
+      "Australasian Gannet",
       "Chroicocephalus novaehollandiae scopulinus",
       "Vanellus miles novaehollandiae",
       "Anarhynchus bicinctus",
       "Larus dominicanus dominicanus",
-      "Australasian Swamphen",
+      "Pied Cormorant",
+      "Masked Lapwing",
+      "Little Pied Cormorant",
       "Anarhynchus bicinctus bicinctus",
       "Puffinus gavia",
       "Porphyrio melanotus melanotus",
       "Todiramphus sanctus vagans",
       "Himantopus novaezelandiae",
       "Silvereye",
-      "Gray Teal",
-      "South Island Oystercatcher",
-      "Pied Cormorant",
-      "Masked Lapwing",
       "Gray Gerygone",
       "Great Cormorant",
-      "Little Pied Cormorant",
       "Little Black Cormorant",
-      "Australasian Gannet",
-      "Pacific Golden-Plover",
       "Sterna hirundo",
       "Phalacrocorax varius varius",
       "Thalassarche cauta",
@@ -634,28 +698,28 @@ const DATA = {
     ],
     "notableSightings": [
       {
-        "name": "Caspian Tern",
-        "count": 11
+        "name": "Black-billed Gull",
+        "count": 22
       },
       {
         "name": "Wrybill",
-        "count": 6
+        "count": 21
       },
       {
-        "name": "Black-billed Gull",
-        "count": 2
+        "name": "Caspian Tern",
+        "count": 12
       },
       {
         "name": "New Zealand Grebe",
-        "count": 1
+        "count": 3
       },
       {
         "name": "Australasian Bittern",
-        "count": 1
+        "count": 2
       }
     ],
     "period": "Past 12 months",
-    "total": 238,
+    "total": 413,
     "sources": [
       "eBird",
       "iNaturalist"
@@ -747,10 +811,6 @@ document.getElementById('val-trap-total').textContent   = fmt(DATA.stats.trapTot
 document.getElementById('val-weed-records').textContent = fmt(DATA.stats.records_2425);
 document.getElementById('val-weed-species').textContent = fmt(DATA.stats.species_2425);
 
-// Weed location pills
-document.getElementById('pill-weed-2425').textContent = fmt(DATA.stats.records_2425, 'locations (24-25)');
-document.getElementById('pill-weed-2324').textContent = fmt(DATA.stats.records_2324, 'locations (23-24)');
-
 // Trap catches for primary FY (computed from catchesBySpecies)
 (function () {
   const cs  = (DATA.traps && DATA.traps.catchesBySpecies) ? DATA.traps.catchesBySpecies : {};
@@ -769,18 +829,20 @@ document.getElementById('pill-weed-2324').textContent = fmt(DATA.stats.records_2
 
 const toArr = arr => (arr || []).map(v => v ?? 0);
 
-/* ── WEED SPECIES BY COUNT (bottom left — FY 24-25 only) ── */
+/* ── WEED SPECIES BY CATEGORY (bottom left — FY 24-25) ── */
 (function () {
-  const wc = DATA.weedByCount;
-  if (!wc.labels.length) return;
+  const wc = DATA.weedByCategory;
+  if (!wc || !wc.labels || !wc.labels.length) return;
+
+  const catColors = ['#6b4423', '#2a5898', '#c8a84b'];
 
   new Chart(document.getElementById('weedCountChart'), {
     type: 'bar',
     data: {
       labels: wc.labels,
       datasets: [{
-        data: toArr(wc.data_2425),
-        backgroundColor: gold,
+        data: wc.data,
+        backgroundColor: catColors.slice(0, wc.labels.length),
         borderRadius: 3,
       }]
     },
@@ -790,16 +852,22 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
       plugins: {
         legend: { display: false },
         tooltip: {
+          bodyFont:  { size: 9.5 },
+          titleFont: { size: 10 },
+          boxPadding: 3,
+          padding: 6,
           callbacks: {
             label: ctx => {
-              const sp  = ctx.label;
-              const val = ctx.parsed.x;
-              if (sp === 'Other') {
-                const others = wc.otherSpecies || [];
-                return [` ${val.toLocaleString()} locations`, '', ' Includes:']
-                  .concat(others.slice(0, 10).map(s => `   · ${s}`));
+              const cat  = ctx.label;
+              const val  = ctx.parsed.x;
+              const spp  = (wc.species && wc.species[cat]) ? wc.species[cat] : {};
+              const lines = [` ${val.toLocaleString()} locations`];
+              const sorted = Object.entries(spp).sort((a, b) => b[1] - a[1]);
+              if (sorted.length) {
+                lines.push('');
+                sorted.forEach(([sp, cnt]) => lines.push(`   · ${sp} (${cnt})`));
               }
-              return ` ${val.toLocaleString()} locations`;
+              return lines;
             }
           }
         }
@@ -838,7 +906,7 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
   const topStr = topSp.slice(0, 3).map(s => `${s.name} (${s.count})`).join(' · ');
   el.innerHTML =
     `<span style="font-size:13px;font-family:'Source Serif 4',serif;font-weight:600;color:var(--navy)">${total}</span>` +
-    ` <span style="color:var(--muted)">catches in FY ${DATA.fy}</span>` +
+    ` <span style="color:var(--muted)">trap catches (Fernbird Flat)</span>` +
     (topStr ? `<br><span style="color:var(--muted)">${topStr}</span>` : '');
 })();
 
@@ -943,6 +1011,10 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
           }
         },
         tooltip: {
+          bodyFont:  { size: 9.5 },
+          titleFont: { size: 10 },
+          boxPadding: 3,
+          padding: 6,
           callbacks: {
             label: ctx => {
               const val = ctx.parsed;
@@ -952,7 +1024,7 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
               if (lbl === 'Other') {
                 const others = bs.otherSpecies || [];
                 return [` ${val.toLocaleString()} sightings (${pct}%)`, '', ' Includes:']
-                  .concat(others.slice(0, 8).map(s => `   · ${s}`));
+                  .concat(others.map(s => `   · ${s}`));
               }
               return ` ${val.toLocaleString()} sightings (${pct}%)`;
             }
