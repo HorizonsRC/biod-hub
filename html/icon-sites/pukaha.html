@@ -586,9 +586,9 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
     data: {
       labels: oa.labels,
       datasets: [
-        { label: 'Adult',    data: toArr(oa.adults),    backgroundColor: forest,   borderRadius: 2, stack: 'age' },
-        { label: 'Juvenile', data: toArr(oa.juveniles), backgroundColor: forest2,  borderRadius: 2, stack: 'age' },
-        { label: 'Seedling', data: toArr(oa.seedlings), backgroundColor: forestLt, borderRadius: 2, stack: 'age' },
+        { label: 'Adult',    data: toArr(oa.adults),    backgroundColor: '#d00000', borderRadius: 2, stack: 'age' },
+        { label: 'Juvenile', data: toArr(oa.juveniles), backgroundColor: '#f79400', borderRadius: 2, stack: 'age' },
+        { label: 'Seedling', data: toArr(oa.seedlings), backgroundColor: '#00aa00', borderRadius: 2, stack: 'age' },
       ]
     },
     options: {
