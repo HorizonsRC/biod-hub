@@ -1226,8 +1226,9 @@ def process_pukaha(wp: pd.DataFrame, pl: pd.DataFrame, gis: GIS) -> dict:
 
     log.info(f"  {len(wp):,} waypoints, {len(pl):,} polylines for {SITE_NAME!r}")
 
-    # Keep site-filtered copy for multi-year by-FY charts (before FY filter below)
+    # Keep site-filtered copies for multi-year by-FY charts (before FY filter below)
     wp_site = wp.copy()
+    pl_site = pl.copy()
 
     # ── Filter to display FY ──────────────────────────────────────────────────
     if FY_COL in wp.columns:
@@ -1290,15 +1291,31 @@ def process_pukaha(wp: pd.DataFrame, pl: pd.DataFrame, gis: GIS) -> dict:
             species_data.append(other_total)
             other_species_list = list(sc.iloc[TOP_N:].index)
 
-    # ── Track km by month (FY order: Jul–Jun) ─────────────────────────────────
-    fy_months    = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6]
-    month_labels = ["Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-                    "Jan", "Feb", "Mar", "Apr", "May", "Jun"]
-    if "_month" in pl.columns and LEN_COL in pl.columns and not pl.empty:
-        km_by_month = (pl.groupby("_month")[LEN_COL].sum() / 1000).to_dict()
-        track_data  = [round(km_by_month.get(m, 0.0), 1) for m in fy_months]
-    else:
-        track_data = [None] * 12
+    # ── Track coverage by type × FY (all FYs, from pl_site) ─────────────────
+    # Notes field values set by user distinguish helicopter survey from ground
+    # control tracks. Anything matching HELI_KEYWORDS → helicopter; rest → ground.
+    NOTES_COL     = "Notes"
+    HELI_KEYWORDS = ["helicopter", "heli", "aerial"]
+    track_by_type: dict = {"labels": [], "helicopter": [], "ground": []}
+
+    if FY_COL in pl_site.columns and LEN_COL in pl_site.columns and not pl_site.empty:
+        if NOTES_COL in pl_site.columns:
+            unique_notes = pl_site[NOTES_COL].dropna().astype(str).unique()
+            log.info(f"  Polyline Notes values: {list(unique_notes)}")
+            notes_lower = pl_site[NOTES_COL].fillna("").astype(str).str.lower()
+            is_heli = notes_lower.str.contains("|".join(HELI_KEYWORDS), na=False)
+        else:
+            log.warning(f"  '{NOTES_COL}' not found in polylines — all km counted as ground")
+            is_heli = pd.Series([False] * len(pl_site), index=pl_site.index)
+
+        all_fy = sorted(pl_site[FY_COL].dropna().unique())
+        heli_km, ground_km = [], []
+        for fy in all_fy:
+            fy_mask = pl_site[FY_COL] == fy
+            heli_km.append(round(float(pl_site[fy_mask & is_heli][LEN_COL].sum()) / 1000, 1))
+            ground_km.append(round(float(pl_site[fy_mask & ~is_heli][LEN_COL].sum()) / 1000, 1))
+        track_by_type = {"labels": list(all_fy), "helicopter": heli_km, "ground": ground_km}
+        log.info(f"  Track by type: { {fy: (h, g) for fy, h, g in zip(all_fy, heli_km, ground_km)} }")
 
     # ── Trap data (Animal Pest Control layer) ─────────────────────────────────
     trap_total  = 0
@@ -1432,10 +1449,7 @@ def process_pukaha(wp: pd.DataFrame, pl: pd.DataFrame, gis: GIS) -> dict:
             "data":         species_data,
             "otherSpecies": other_species_list,
         },
-        "trackByMonth": {
-            "labels": month_labels,
-            "data":   track_data,
-        },
+        "trackByType": track_by_type,
         "summary": {
             "rpmpPct":      rpmp_pct,
             "kmTotal":      km_total,
