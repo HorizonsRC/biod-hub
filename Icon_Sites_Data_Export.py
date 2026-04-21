@@ -1210,6 +1210,12 @@ def process_pukaha(wp: pd.DataFrame, pl: pd.DataFrame, gis: GIS) -> dict:
     CATCH_SPECIES = ["Cat", "Ferret", "Hedgehog", "Mouse", "Rabbit",
                      "Rat", "Stoat", "Possum", "Weasel"]
 
+    # Species excluded from the composition chart and species count.
+    # One-off misidentifications / native Clematis confusion noted in OMB report.
+    PUKAHA_EXCLUDE_SPECIES = {
+        "Clematis spp.", "Clematis", "Darwin's Barberry", "Berberis darwinii",
+    }
+
     # ── Filter by site name ───────────────────────────────────────────────────
     if SITE_NAME_COL in wp.columns:
         wp = wp[wp[SITE_NAME_COL] == SITE_NAME].copy()
@@ -1246,7 +1252,7 @@ def process_pukaha(wp: pd.DataFrame, pl: pd.DataFrame, gis: GIS) -> dict:
     )
     total_records  = int(len(wp)) if not wp.empty else 0
     unique_species = (
-        int(wp[SPECIES_COL].nunique())
+        int(wp[~wp[SPECIES_COL].isin(PUKAHA_EXCLUDE_SPECIES)][SPECIES_COL].nunique())
         if SPECIES_COL in wp.columns and not wp.empty else None
     )
     rpmp_count = (
@@ -1271,7 +1277,7 @@ def process_pukaha(wp: pd.DataFrame, pl: pd.DataFrame, gis: GIS) -> dict:
     other_species_list: list = []
 
     if SPECIES_COL in wp.columns and not wp.empty:
-        sc  = wp[SPECIES_COL].value_counts()
+        sc  = wp[~wp[SPECIES_COL].isin(PUKAHA_EXCLUDE_SPECIES)][SPECIES_COL].value_counts()
         top = sc.head(TOP_N)
         species_labels = list(top.index)
         species_data   = [int(v) for v in top.values]
