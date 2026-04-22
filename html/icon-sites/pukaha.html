@@ -249,9 +249,9 @@
       <div class="panel-title">Programme at a Glance</div>
       <div class="panel-sub">2024–25 Financial Year</div>
       <div class="stat-grid">
-        <div class="stat-box">
-          <div class="s-val" id="val-visits">–</div>
-          <div class="s-key">Site Visits</div>
+        <div class="stat-box gold-box">
+          <div class="s-val" id="val-omb-adults">–</div>
+          <div class="s-key">OMB Adults Controlled</div>
         </div>
         <div class="stat-box">
           <div class="s-val" id="val-km">–</div>
@@ -270,8 +270,8 @@
           <div class="s-key">Weed Locations</div>
         </div>
         <div class="stat-box gold-box">
-          <div class="s-val" id="val-weed-species">–</div>
-          <div class="s-key">Weed Species Targeted</div>
+          <div class="s-val" id="val-omb-total">–</div>
+          <div class="s-key">OMB All Years</div>
         </div>
       </div>
     </div>
@@ -589,11 +589,18 @@ function fmt(v, suffix, decimals) {
 }
 
 // Stat boxes
-document.getElementById('val-visits').textContent       = fmt(DATA.stats.visits);
+(function () {
+  const oa     = DATA.ombByFyAge || { labels: [], adults: [], juveniles: [], seedlings: [] };
+  const fyIdx  = oa.labels.indexOf(DATA.fy);
+  const adults = fyIdx >= 0 ? oa.adults[fyIdx] : null;
+  const total  = [...(oa.adults||[]), ...(oa.juveniles||[]), ...(oa.seedlings||[])]
+                   .reduce((s, v) => s + v, 0);
+  document.getElementById('val-omb-adults').textContent = fmt(adults);
+  document.getElementById('val-omb-total').textContent  = fmt(total || null);
+})();
 document.getElementById('val-km').textContent           = fmt(DATA.stats.km);
 document.getElementById('val-trap-total').textContent   = fmt(DATA.stats.trapTotal);
 document.getElementById('val-weed-records').textContent = fmt(DATA.stats.records);
-document.getElementById('val-weed-species').textContent = fmt(DATA.stats.species);
 
 // Trap catches for primary FY
 (function () {
