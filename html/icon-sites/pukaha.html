@@ -70,7 +70,7 @@
   /* ── TOP ROW ──────────────────────────────── */
   .row-top {
     display: grid;
-    grid-template-columns: 210px 1fr 318px;
+    grid-template-columns: 210px 1fr 360px;
     gap: 8px;
     padding: 8px 0 4px;
     min-height: 0;
@@ -206,7 +206,10 @@
     color: var(--forest);
     border: 1px solid var(--forest-md);
   }
-  .pill.gold { background: var(--gold-lt); color: #8a6820; border-color: var(--gold-md); }
+  .pill.gold       { background: var(--gold-lt); color: #8a6820; border-color: var(--gold-md); }
+  .pill.rtci-good  { background: #e8f3ee; color: #2d6a4f; border-color: #b0d9c4; }
+  .pill.rtci-warn  { background: var(--gold-lt); color: #8a6820; border-color: var(--gold-md); }
+  .pill.rtci-alert { background: #fce8e6; color: #c0392b; border-color: #f5c6c2; }
 
   .contractor-row {
     margin-top: 4px;
@@ -290,7 +293,7 @@
         <div class="sum-heading">Pest Plant Control</div>
         <div class="sum-loc">Pukaha extension · 9 DOC management units (MU1–MU9)</div>
         <div class="sum-detail" id="weed-summary-detail">–</div>
-        <div class="sum-detail" style="margin-top:3px">Primary target: Old Man's Beard (OMB) · aerial survey · All old man's beard infestations encountered on the ground were controlled by cut stump, hedge trimming, or foliar spray control methods.</div>
+        <div class="sum-detail" style="margin-top:3px">Primary target: Old Man's Beard (OMB) · aerial survey + ground control. Control methods: cut stump, hedge trimming, or foliar spray.</div>
         <div style="margin-top:5px">
           <span class="contractor-label">Contractor</span>
           <div class="contractor-val">Kaitiaki o te Ngahere</div>
@@ -300,11 +303,12 @@
       <div class="summary-section">
         <div class="sum-heading navy">Predator Control</div>
         <div id="predator-stats" class="sum-detail">–</div>
+        <div id="rtci-pills" class="pill-row" style="margin-top:5px"></div>
       </div>
 
       <div class="contractor-row">
         <div class="contractor-label">Governance</div>
-        <div class="contractor-val">The sanctuary management is owned and governed by the charitable trust Pūkaha Mount Bruce Board; (board includes representatives) Rangitāne o Wairarapa, Rangitāne o Tamaki nui-a-Rua and DOC.</div>
+        <div class="contractor-val">Pūkaha Mount Bruce Board; Rangitāne o Wairarapa, Rangitāne o Tamaki nui-a-Rua, and DOC.</div>
       </div>
 
       <div style="margin-top:4px; padding-top:4px; border-top:1px solid var(--border); flex-shrink:0">
@@ -556,6 +560,11 @@ const DATA = {
       3,
       6
     ]
+  },
+  "pcoRtci": {
+    "labels": [],
+    "data": [],
+    "years": []
   }
 };
 /* ICON_SITE_DATA_END */
@@ -643,8 +652,6 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
   if (!el) return;
   const parts = [];
   if (s.records)         parts.push(`${s.records.toLocaleString()} locations recorded`);
-  if (s.speciesCount)    parts.push(`${s.speciesCount} species targeted`);
-  if (s.visits)          parts.push(`${s.visits} site visits`);
   if (s.kmTotal)         parts.push(`${s.kmTotal} km tracked`);
   if (s.rpmpPct != null) parts.push(`${s.rpmpPct}% RPMP species`);
   el.textContent = parts.join(' · ') || '–';
@@ -674,6 +681,23 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
     `<span style="font-size:13px;font-family:'Source Serif 4',serif;font-weight:600;color:var(--navy)">${total}</span>` +
     ` <span style="color:var(--muted)">trap catches</span>` +
     (topStr ? `<br><span style="color:var(--muted)">${topStr}</span>` : '');
+})();
+
+/* ── RTCI PILLS (predator control) ── */
+(function () {
+  const rtci = DATA.pcoRtci || { labels: [], data: [], years: [] };
+  const container = document.getElementById('rtci-pills');
+  if (!container || !rtci.labels.length) return;
+  rtci.labels.forEach((label, i) => {
+    const val  = rtci.data[i];
+    const yr   = rtci.years[i] || '';
+    const cls  = val < 5 ? 'rtci-good' : val < 10 ? 'rtci-warn' : 'rtci-alert';
+    const pill = document.createElement('span');
+    pill.className   = `pill ${cls}`;
+    pill.title       = yr ? `Latest result: FY ${yr}` : '';
+    pill.textContent = `${label} ${val}%`;
+    container.appendChild(pill);
+  });
 })();
 
 /* ── TRACK COVERAGE BY TYPE × FY (bottom left) ── */

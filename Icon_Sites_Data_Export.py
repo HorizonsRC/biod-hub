@@ -1317,6 +1317,45 @@ def process_pukaha(wp: pd.DataFrame, pl: pd.DataFrame, gis: GIS) -> dict:
         track_by_type = {"labels": list(all_fy), "helicopter": heli_km, "ground": ground_km}
         log.info(f"  Track by type: { {fy: (h, g) for fy, h, g in zip(all_fy, heli_km, ground_km)} }")
 
+    # ── PCO RTCI monitoring results ───────────────────────────────────────────
+    PUKAHA_PCO_RTCI_WHERE = "Label IN ('Eketahuna', 'Eketahuna South', 'Tararua Ground')"
+    RTCI_FY_FIELDS = [
+        "F24_25_Monitor_Results", "F23_24_Monitor_Results", "F22_23_Monitor_Results",
+        "F21_22_Monitor_Results", "F20_21_Monitor_Results", "F19_20_Monitor_Results",
+        "F18_19_Monitor_Results",
+    ]
+    pco_rtci: dict = {"labels": [], "data": [], "years": []}
+
+    if PCO_MONITORING_URL:
+        try:
+            pco_df = fetch_service_url_as_df(gis, PCO_MONITORING_URL, 0, where=PUKAHA_PCO_RTCI_WHERE)
+            log.info(f"  PCO monitoring columns: {sorted(pco_df.columns.tolist())}")
+            for _, row in pco_df.iterrows():
+                label = row.get("Label")
+                if label is None:
+                    continue
+                rtci_val, rtci_yr = None, None
+                for field in RTCI_FY_FIELDS:
+                    if field not in pco_df.columns:
+                        continue
+                    val = row.get(field)
+                    try:
+                        if val is not None and not pd.isna(val):
+                            rtci_val = round(float(val), 1)
+                            rtci_yr  = field.replace("F", "", 1).replace("_Monitor_Results", "").replace("_", "-")
+                            break
+                    except (TypeError, ValueError):
+                        continue
+                if rtci_val is not None:
+                    pco_rtci["labels"].append(str(label))
+                    pco_rtci["data"].append(rtci_val)
+                    pco_rtci["years"].append(rtci_yr)
+            log.info(f"  Pukaha PCO RTCI: {list(zip(pco_rtci['labels'], pco_rtci['data'], pco_rtci['years']))}")
+        except Exception as exc:
+            log.warning(f"  PCO monitoring query failed — skipping RTCI data. Error: {exc}")
+    else:
+        log.warning("  PCO_MONITORING_URL not set — skipping RTCI data.")
+
     # ── Trap data (Animal Pest Control layer) ─────────────────────────────────
     trap_total  = 0
     trap_types  = {"labels": [], "data": []}
@@ -1463,6 +1502,7 @@ def process_pukaha(wp: pd.DataFrame, pl: pd.DataFrame, gis: GIS) -> dict:
             "catchesBySpecies": catches_by_species,
         },
         "ombByFyAge": omb_by_fy_age,
+        "pcoRtci":    pco_rtci,
     }
 
 
