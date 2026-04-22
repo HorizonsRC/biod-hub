@@ -70,7 +70,7 @@
   /* ── TOP ROW ──────────────────────────────── */
   .row-top {
     display: grid;
-    grid-template-columns: 210px 1fr 360px;
+    grid-template-columns: 210px 1fr 385px;
     gap: 8px;
     padding: 8px 0 4px;
     min-height: 0;
@@ -664,9 +664,8 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
   const el = document.getElementById('weed-summary-detail');
   if (!el) return;
   const parts = [];
-  if (s.records)         parts.push(`${s.records.toLocaleString()} locations recorded`);
-  if (s.kmTotal)         parts.push(`${s.kmTotal} km tracked`);
-  if (s.rpmpPct != null) parts.push(`${s.rpmpPct}% RPMP species`);
+  if (s.records) parts.push(`${s.records.toLocaleString()} locations recorded`);
+  if (s.kmTotal) parts.push(`${s.kmTotal} km tracked`);
   el.textContent = parts.join(' · ') || '–';
 })();
 
