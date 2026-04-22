@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Ruahine Kiwi Project</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --forest:    #2d5a27;
+    --forest2:   #4a8a42;
+    --forest-lt: #e8f3e6;
+    --forest-md: #b0d4ac;
+    --gold:      #c8a84b;
+    --gold-lt:   #f6f0e4;
+    --gold-md:   #e8d9b5;
+    --navy:      #1f2e35;
+    --bg:        #f4f0ef;
+    --surface:   #ffffff;
+    --border:    #ddddd8;
+    --muted:     #5a5a52;
+    --label:     #8a8a82;
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    margin: 0; padding: 0;
+    background: var(--bg);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--navy);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  /* ── MASTER LAYOUT ─────────────────────────── */
+  .wrapper {
+    display: grid;
+    grid-template-rows: 58px 405px 1fr;
+    height: 806px;
+    width: 953px;
+    min-width: 953px;
+    padding: 0 10px 10px;
+    background: var(--bg);
+    transform-origin: top center;
+  }
+
+  /* ── TITLE STRIP ───────────────────────────── */
+  .title-strip {
+    background: var(--bg);
+    border-bottom: 2px solid var(--forest);
+    display: flex;
+    align-items: flex-end;
+    padding: 0 4px 8px;
+    gap: 12px;
+  }
+  .title-strip h1 {
+    font-family: 'Source Serif 4', serif;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--navy);
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+  .title-strip .partnership {
+    font-size: 11px;
+    color: var(--muted);
+    padding-bottom: 2px;
+  }
+
+  /* ── TOP ROW ──────────────────────────────── */
+  .row-top {
+    display: grid;
+    grid-template-columns: 210px 1fr 385px;
+    gap: 8px;
+    padding: 8px 0 4px;
+    min-height: 0;
+  }
+
+  /* ── BOTTOM ROW ─────────────────────────────── */
+  .row-bottom {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    padding: 4px 0 0;
+    min-height: 0;
+  }
+
+  /* ── PANELS ──────────────────────────────────── */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 13px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .panel-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--forest);
+    flex-shrink: 0;
+  }
+  .panel-sub {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: -4px;
+    flex-shrink: 0;
+  }
+  .chart-wrap {
+    flex: 1;
+    position: relative;
+    min-height: 0;
+  }
+
+  /* ── STAT PANEL ──────────────────────────────── */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: repeat(3, 1fr);
+    gap: 5px;
+    flex: 1;
+  }
+  .stat-box {
+    background: var(--forest-lt);
+    border: 1px solid var(--forest-md);
+    border-radius: 4px;
+    padding: 8px 10px 6px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .stat-box .s-val {
+    font-family: 'Source Serif 4', serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--forest);
+    line-height: 1;
+  }
+  .stat-box .s-val.sm { font-size: 17px; }
+  .stat-box .s-key {
+    font-size: 9.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+    margin-top: 5px;
+    line-height: 1.3;
+  }
+
+  /* ── SUMMARY PANEL ───────────────────────────── */
+  .summary-section { margin-bottom: 3px; }
+  .summary-section:last-child { margin-bottom: 0; }
+
+  .sum-heading {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--forest);
+    border-bottom: 1px solid var(--forest-md);
+    padding-bottom: 2px;
+    margin-bottom: 3px;
+  }
+  .sum-heading.navy { color: var(--navy); border-bottom: 1px solid #c8cdd0; }
+  .sum-detail {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.4;
+    margin-top: 1px;
+  }
+  .contractor-row {
+    margin-top: 4px;
+    padding-top: 5px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .contractor-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--navy);
+    margin-bottom: 2px;
+  }
+  .contractor-val {
+    font-size: 10.5px;
+    font-weight: 400;
+    line-height: 1.35;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- TITLE -->
+  <div class="title-strip">
+    <h1>Ruahine Kiwi Project</h1>
+    <span class="partnership">A partnership between Te Kāuru and Environment Network Manawatū</span>
+  </div>
+
+  <!-- TOP ROW -->
+  <div class="row-top">
+
+    <!-- Left: Stats at a glance -->
+    <div class="panel">
+      <div class="panel-title">Programme at a Glance</div>
+      <div class="panel-sub">Ruahine Kiwi Project · Trap.NZ live data</div>
+      <div class="stat-grid">
+        <div class="stat-box">
+          <div class="s-val" id="val-traps">–</div>
+          <div class="s-key">Traps Deployed</div>
+        </div>
+        <div class="stat-box">
+          <div class="s-val" id="val-stations">–</div>
+          <div class="s-key">Monitoring Stations</div>
+        </div>
+        <div class="stat-box">
+          <div class="s-val" id="val-installations">–</div>
+          <div class="s-key">Installations</div>
+        </div>
+        <div class="stat-box">
+          <div class="s-val" id="val-catches-all">–</div>
+          <div class="s-key">All-Time Catches</div>
+        </div>
+        <div class="stat-box">
+          <div class="s-val" id="val-catches-year">–</div>
+          <div class="s-key">Year-to-Date Catches</div>
+        </div>
+        <div class="stat-box">
+          <div class="s-val" id="val-catches-month">–</div>
+          <div class="s-key">Last 30 Days</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Middle: All-time catches by species -->
+    <div class="panel">
+      <div class="panel-title">All-Time Catches by Species</div>
+      <div class="panel-sub">Cumulative catch totals · Ruahine Kiwi Project</div>
+      <div class="chart-wrap">
+        <canvas id="allSpeciesChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Right: Activity summary -->
+    <div class="panel">
+      <div class="panel-title">Activity Summary</div>
+
+      <div class="summary-section">
+        <div class="sum-heading">Predator Control</div>
+        <div class="sum-detail">Large-scale predator control programme protecting kiwi in the Ruahine Range. Network of traps and bait stations targeting rats, possums, mustelids, and hedgehogs.</div>
+      </div>
+
+      <div class="summary-section" style="margin-top:4px">
+        <div class="sum-heading">Kiwi Monitoring</div>
+        <div class="sum-detail" id="monitoring-detail">–</div>
+      </div>
+
+      <div class="contractor-row">
+        <div class="contractor-label">Partners</div>
+        <div class="contractor-val">Te Kāuru · Environment Network Manawatū · Horizons Regional Council</div>
+      </div>
+
+      <div style="margin-top:4px; padding-top:4px; border-top:1px solid var(--border); flex-shrink:0">
+        <div class="contractor-label">Governance</div>
+        <div class="contractor-val">–</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM ROW -->
+  <div class="row-bottom">
+
+    <!-- Bottom left: Year-to-date by species -->
+    <div class="panel">
+      <div class="panel-title">Year-to-Date Catches by Species</div>
+      <div class="panel-sub">Catches recorded in the current year</div>
+      <div class="chart-wrap">
+        <canvas id="yearSpeciesChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Bottom middle: Last 30 days by species -->
+    <div class="panel">
+      <div class="panel-title">Last 30 Days by Species</div>
+      <div class="panel-sub">Recent catch activity</div>
+      <div class="chart-wrap">
+        <canvas id="monthSpeciesChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Bottom right: Period summary -->
+    <div class="panel">
+      <div class="panel-title">Catch Totals by Period</div>
+      <div class="panel-sub">All time · year-to-date · last 30 days</div>
+      <div class="chart-wrap">
+        <canvas id="periodChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+/* ── DATA ───────────────────────────────────────────────────────────────────
+   DATA — auto-updated by Icon_Sites_Data_Export.py
+   Source: Trap.NZ public project endpoint (trap.nz/project/5105689/killcount.json)
+   ───────────────────────────────────────────────────────────────────────── */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-23 11:22 */
+const DATA = {
+  "fy": "24-25",
+  "site": "Ruahine Kiwi Project",
+  "generated": "2026-04-23T11:22:53.275008",
+  "trapnz": {
+    "traps": 2079,
+    "monitoringStations": 309,
+    "installations": 2388,
+    "catchesAll": 11233,
+    "catchesYear": 1747,
+    "catchesMonth": 81,
+    "catchesBySpecies": {
+      "labels": [
+        "Rat",
+        "Possum",
+        "Mustelid",
+        "Hedgehog",
+        "Other"
+      ],
+      "all": [
+        5253,
+        1168,
+        822,
+        2324,
+        1666
+      ],
+      "year": [
+        1109,
+        81,
+        128,
+        332,
+        97
+      ],
+      "month": [
+        56,
+        0,
+        5,
+        19,
+        1
+      ]
+    }
+  }
+};
+/* ICON_SITE_DATA_END */
+
+/* ── HELPERS ── */
+function fmt(v) {
+  if (v == null) return '–';
+  return v.toLocaleString();
+}
+
+/* ── STAT BOXES ── */
+const tz = DATA.trapnz || {};
+document.getElementById('val-traps').textContent         = fmt(tz.traps);
+document.getElementById('val-stations').textContent      = fmt(tz.monitoringStations);
+document.getElementById('val-installations').textContent = fmt(tz.installations);
+document.getElementById('val-catches-all').textContent   = fmt(tz.catchesAll);
+document.getElementById('val-catches-year').textContent  = fmt(tz.catchesYear);
+document.getElementById('val-catches-month').textContent = fmt(tz.catchesMonth);
+
+/* ── MONITORING DETAIL ── */
+(function () {
+  const el = document.getElementById('monitoring-detail');
+  if (!el) return;
+  const parts = [];
+  if (tz.monitoringStations) parts.push(`${tz.monitoringStations.toLocaleString()} acoustic monitoring stations`);
+  el.textContent = parts.join(' · ') || '–';
+})();
+
+/* ── CHART COLOURS ── */
+const SP_COLOURS = {
+  'Rat':      '#5c3317',
+  'Possum':   '#7a7a7a',
+  'Mustelid': '#c8622a',
+  'Hedgehog': '#8b7355',
+  'Other':    '#5a8a7a',
+};
+
+const CHART_DEFAULTS = {
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { display: false },
+    tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.x ?? ctx.parsed.y ?? 0} catches` } },
+  },
+};
+
+/* ── ALL-TIME SPECIES CHART (horizontal bar) ── */
+(function () {
+  const cbs = (tz.catchesBySpecies || {});
+  const labels = cbs.labels || [];
+  const values = cbs.all || [];
+  if (!labels.length) return;
+
+  new Chart(document.getElementById('allSpeciesChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: labels.map(l => SP_COLOURS[l] || '#888'),
+        borderRadius: 3,
+      }]
+    },
+    options: {
+      ...CHART_DEFAULTS,
+      indexAxis: 'y',
+      plugins: {
+        ...CHART_DEFAULTS.plugins,
+        tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.x.toLocaleString()} catches` } },
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          ticks: { font: { size: 10 }, color: '#5a5a52' },
+          title: { display: true, text: 'Total catches', font: { size: 10 }, color: '#5a5a52' },
+        },
+        y: { ticks: { font: { size: 10 }, color: '#5a5a52' } },
+      },
+    },
+  });
+})();
+
+/* ── YEAR-TO-DATE SPECIES CHART (horizontal bar) ── */
+(function () {
+  const cbs = (tz.catchesBySpecies || {});
+  const labels = cbs.labels || [];
+  const values = cbs.year || [];
+  if (!labels.length) return;
+
+  new Chart(document.getElementById('yearSpeciesChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: labels.map(l => SP_COLOURS[l] || '#888'),
+        borderRadius: 3,
+      }]
+    },
+    options: {
+      ...CHART_DEFAULTS,
+      indexAxis: 'y',
+      plugins: {
+        ...CHART_DEFAULTS.plugins,
+        tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.x.toLocaleString()} catches` } },
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          ticks: { font: { size: 10 }, color: '#5a5a52' },
+          title: { display: true, text: 'Catches this year', font: { size: 10 }, color: '#5a5a52' },
+        },
+        y: { ticks: { font: { size: 10 }, color: '#5a5a52' } },
+      },
+    },
+  });
+})();
+
+/* ── LAST 30 DAYS SPECIES CHART (horizontal bar) ── */
+(function () {
+  const cbs = (tz.catchesBySpecies || {});
+  const labels = cbs.labels || [];
+  const values = cbs.month || [];
+  if (!labels.length) return;
+
+  new Chart(document.getElementById('monthSpeciesChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: labels.map(l => SP_COLOURS[l] || '#888'),
+        borderRadius: 3,
+      }]
+    },
+    options: {
+      ...CHART_DEFAULTS,
+      indexAxis: 'y',
+      plugins: {
+        ...CHART_DEFAULTS.plugins,
+        tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.x.toLocaleString()} catches` } },
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          ticks: { font: { size: 10 }, color: '#5a5a52' },
+          title: { display: true, text: 'Catches last 30 days', font: { size: 10 }, color: '#5a5a52' },
+        },
+        y: { ticks: { font: { size: 10 }, color: '#5a5a52' } },
+      },
+    },
+  });
+})();
+
+/* ── PERIOD SUMMARY CHART (vertical bar) ── */
+(function () {
+  const labels  = ['All Time', 'Year to Date', 'Last 30 Days'];
+  const values  = [tz.catchesAll, tz.catchesYear, tz.catchesMonth];
+  if (values.every(v => v == null)) return;
+
+  new Chart(document.getElementById('periodChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: values.map(v => v ?? 0),
+        backgroundColor: ['#2d5a27', '#4a8a42', '#b0d4ac'],
+        borderRadius: 3,
+      }]
+    },
+    options: {
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y.toLocaleString()} catches` } },
+      },
+      scales: {
+        x: { ticks: { font: { size: 10 }, color: '#5a5a52' } },
+        y: {
+          beginAtZero: true,
+          ticks: { font: { size: 10 }, color: '#5a5a52' },
+          title: { display: true, text: 'Total catches', font: { size: 10 }, color: '#5a5a52' },
+        },
+      },
+    },
+  });
+})();
+
+</script>
+</body>
+</html>
