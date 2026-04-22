@@ -73,8 +73,9 @@ TRAP_SERVICE_URL   = getattr(config, "TRAP_SERVICE_URL", None)
 TRAP_LAYER_ID      = getattr(config, "TRAP_LAYER_ID", 0)
 INSP_TABLE_ID      = getattr(config, "INSP_TABLE_ID", 1)
 
-PCO_MONITORING_URL = getattr(config, "PCO_MONITORING_URL", None)
-EBIRD_API_KEY      = getattr(config, "EBIRD_API_KEY", None)
+PCO_MONITORING_URL  = getattr(config, "PCO_MONITORING_URL", None)
+HRC_ICON_SITES_URL  = getattr(config, "HRC_ICON_SITES_URL", None)
+EBIRD_API_KEY       = getattr(config, "EBIRD_API_KEY", None)
 
 if not CONTRACTOR_ITEM_ID or not TRAP_SERVICE_URL:
     sys.exit(
@@ -1202,6 +1203,7 @@ def process_pukaha(wp: pd.DataFrame, pl: pd.DataFrame, gis: GIS) -> dict:
     SPECIES_COL   = "SpeciesID"
     AGE_COL       = "Age_class"
     RPMP_COL      = "RPMPspecies"
+    SIZE_COL      = "Size_sqm"
     LEN_COL       = "Shape__Length"
     SITE_NAME     = "Pukaha extension"
     FY_VAL        = "24-25"
@@ -1266,6 +1268,10 @@ def process_pukaha(wp: pd.DataFrame, pl: pd.DataFrame, gis: GIS) -> dict:
     rpmp_pct = (
         round(rpmp_count / total_records * 100)
         if rpmp_count is not None and total_records > 0 else None
+    )
+    area_sqm = (
+        int(round(float(wp[SIZE_COL].sum())))
+        if SIZE_COL in wp.columns and not wp.empty and wp[SIZE_COL].notna().any() else None
     )
 
     # ── Age class counts ──────────────────────────────────────────────────────
@@ -1471,17 +1477,46 @@ def process_pukaha(wp: pd.DataFrame, pl: pd.DataFrame, gis: GIS) -> dict:
             }
             log.info(f"  OMB by FY×age: { {fy: (a,j,s) for fy,a,j,s in zip(all_fy,adults,juveniles,seedlings)} }")
 
+    # ── Reserve and buffer zone polygon areas ─────────────────────────────────
+    PUKAHA_AREAS_WHERE = "SiteName IN ('Pūkaha Mt Bruce Northern Buffer', 'Pūkaha Mt Bruce')"
+    AREA_NAME_COL      = "SiteName"
+    AREA_HA_COL        = "Hectares"
+    buffer_ha  = None
+    reserve_ha = None
+
+    try:
+        areas_df = fetch_service_url_as_df(gis, HRC_ICON_SITES_URL, 0, where=PUKAHA_AREAS_WHERE)
+        log.info(f"  Pukaha areas columns: {sorted(areas_df.columns.tolist())}")
+        if AREA_HA_COL in areas_df.columns and AREA_NAME_COL in areas_df.columns:
+            for _, row in areas_df.iterrows():
+                name = str(row.get(AREA_NAME_COL, ""))
+                raw  = row.get(AREA_HA_COL)
+                try:
+                    ha = round(float(raw), 1) if raw is not None else None
+                except (TypeError, ValueError):
+                    ha = None
+                if "Northern Buffer" in name:
+                    buffer_ha = ha
+                elif name.strip() == "Pūkaha Mt Bruce":
+                    reserve_ha = ha
+        log.info(f"  Pukaha reserve_ha={reserve_ha}, buffer_ha={buffer_ha}")
+    except Exception as exc:
+        log.warning(f"  Pukaha polygon areas query failed — skipping. Error: {exc}")
+
     return {
         "fy":        FY_VAL,
         "site":      "Pukaha \u2013 Mount Bruce",
         "generated": datetime.datetime.now().isoformat(),
         "stats": {
-            "km":       km_total,
-            "visits":   unique_visits,
-            "records":  total_records or None,
-            "rpmp":     rpmp_count,
-            "species":  unique_species,
+            "km":        km_total,
+            "visits":    unique_visits,
+            "records":   total_records or None,
+            "rpmp":      rpmp_count,
+            "species":   unique_species,
             "trapTotal": trap_total or None,
+            "areaSqm":   area_sqm,
+            "bufferHa":  buffer_ha,
+            "reserveHa": reserve_ha,
         },
         "speciesComp": {
             "labels":       species_labels,
