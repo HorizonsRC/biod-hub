@@ -36,6 +36,9 @@ FEATURE_SERVICE_URL = "https://services1.arcgis.com/your-org-id/arcgis/rest/serv
 # Used by Manawatū Estuary dashboard (layer 0)
 PCO_MONITORING_URL = "https://services1.arcgis.com/VuN78wcRdq1Oj69W/arcgis/rest/services/PCO_Management_Dataset/FeatureServer"
 
+# HRC Icon Sites Projects layer — reserve and buffer zone polygon areas
+HRC_ICON_SITES_URL = "https://services1.arcgis.com/VuN78wcRdq1Oj69W/arcgis/rest/services/HRC_Icon_Sites_Projects/FeatureServer"
+
 # eBird API key — used to fetch recent bird sightings near icon sites
 # Keys do not expire. Generate or view yours at https://ebird.org/api/keygen
 EBIRD_API_KEY = "your-ebird-api-key"
