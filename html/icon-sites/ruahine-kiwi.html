@@ -302,12 +302,12 @@
       </div>
     </div>
 
-    <!-- Bottom right: Period summary -->
+    <!-- Bottom right: Trap network by type -->
     <div class="panel">
-      <div class="panel-title">Catch Totals by Period</div>
-      <div class="panel-sub">All time · year-to-date · last 30 days</div>
+      <div class="panel-title">Trap Network by Type</div>
+      <div class="panel-sub">Number of traps deployed · Ruahine Kiwi</div>
       <div class="chart-wrap">
-        <canvas id="periodChart"></canvas>
+        <canvas id="trapTypeChart"></canvas>
       </div>
     </div>
 
@@ -320,11 +320,11 @@
    DATA — auto-updated by Icon_Sites_Data_Export.py
    Source: Trap.NZ public project endpoint (trap.nz/project/5105689/killcount.json)
    ───────────────────────────────────────────────────────────────────────── */
-/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-23 11:22 */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-23 11:47 */
 const DATA = {
   "fy": "24-25",
   "site": "Ruahine Kiwi Project",
-  "generated": "2026-04-23T11:22:53.275008",
+  "generated": "2026-04-23T11:47:48.468141",
   "trapnz": {
     "traps": 2079,
     "monitoringStations": 309,
@@ -362,6 +362,36 @@ const DATA = {
         1
       ]
     }
+  },
+  "trapsByType": {
+    "labels": [
+      "DOC 200",
+      "DOC 250",
+      "BT 200",
+      "A24",
+      "SA Cat",
+      "AT220",
+      "Timms",
+      "Cage Trap",
+      "Trapinator",
+      "A12",
+      "BT 250",
+      "DOC 150"
+    ],
+    "data": [
+      1413,
+      323,
+      100,
+      94,
+      55,
+      21,
+      16,
+      10,
+      9,
+      4,
+      1,
+      1
+    ]
   }
 };
 /* ICON_SITE_DATA_END */
@@ -515,35 +545,35 @@ const CHART_DEFAULTS = {
   });
 })();
 
-/* ── PERIOD SUMMARY CHART (vertical bar) ── */
+/* ── TRAP NETWORK BY TYPE (horizontal bar) ── */
 (function () {
-  const labels  = ['All Time', 'Year to Date', 'Last 30 Days'];
-  const values  = [tz.catchesAll, tz.catchesYear, tz.catchesMonth];
-  if (values.every(v => v == null)) return;
+  const tt = DATA.trapsByType || { labels: [], data: [] };
+  if (!tt.labels.length) return;
 
-  new Chart(document.getElementById('periodChart'), {
+  new Chart(document.getElementById('trapTypeChart'), {
     type: 'bar',
     data: {
-      labels,
+      labels: tt.labels,
       datasets: [{
-        data: values.map(v => v ?? 0),
-        backgroundColor: ['#2d5a27', '#4a8a42', '#b0d4ac'],
+        data: tt.data,
+        backgroundColor: '#2d5a27',
         borderRadius: 3,
       }]
     },
     options: {
       maintainAspectRatio: false,
+      indexAxis: 'y',
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y.toLocaleString()} catches` } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.x.toLocaleString()} traps` } },
       },
       scales: {
-        x: { ticks: { font: { size: 10 }, color: '#5a5a52' } },
-        y: {
+        x: {
           beginAtZero: true,
           ticks: { font: { size: 10 }, color: '#5a5a52' },
-          title: { display: true, text: 'Total catches', font: { size: 10 }, color: '#5a5a52' },
+          title: { display: true, text: 'No. of traps', font: { size: 10 }, color: '#5a5a52' },
         },
+        y: { ticks: { font: { size: 10 }, color: '#5a5a52' } },
       },
     },
   });
