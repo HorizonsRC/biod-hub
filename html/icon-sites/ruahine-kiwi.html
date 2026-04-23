@@ -446,6 +446,27 @@ const DATA = {
 };
 /* ICON_SITE_DATA_END */
 
+(function scaleToFit() {
+  const BASE_W = 953, BASE_H = 806;
+  const wrapper = document.querySelector('.wrapper');
+  function resize() {
+    const scaleW = window.innerWidth  / BASE_W;
+    const scaleH = window.innerHeight / BASE_H;
+    const scale  = Math.min(scaleW, scaleH);
+    if (scaleW <= scaleH) {
+      wrapper.style.height = Math.round(window.innerHeight / scale) + 'px';
+    } else {
+      wrapper.style.height = BASE_H + 'px';
+    }
+    wrapper.style.transform = `scale(${scale})`;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+})();
+
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+Chart.defaults.color = '#5a5a52';
+
 /* ── HELPERS ── */
 function fmt(v) {
   if (v == null) return '–';
