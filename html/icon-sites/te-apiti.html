@@ -387,11 +387,11 @@ const border  = '#ddddd8';
    DATA — auto-updated by Icon_Sites_Data_Export.py
    Source: BioD Contractor Data feature layer (Palm05 / Manawatū Gorge)
    ───────────────────────────────────────────────────────────────── */
-/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-24 11:17 */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-24 11:32 */
 const DATA = {
   "fy": "24-25",
   "site": "Te Apiti \u2013 Manawatu Gorge",
-  "generated": "2026-04-24T11:17:48.901171",
+  "generated": "2026-04-24T11:32:11.663824",
   "stats": {
     "km": 1130,
     "visits": 26,
@@ -446,8 +446,8 @@ const DATA = {
     },
     "otherSpecies": [
       "Ivy",
-      "Licorice Plant",
       "Artillery Plant",
+      "Licorice Plant",
       "Peach"
     ]
   },
@@ -710,8 +710,8 @@ const DATA = {
             "Bio Te Apiti Buffer South": 1
           },
           "Rabbit": {
-            "Bio Te Apiti South": 4,
-            "Bio Te Apiti Buffer North": 4
+            "Bio Te Apiti Buffer North": 4,
+            "Bio Te Apiti South": 4
           },
           "Rat": {
             "Bio Te Apiti Buffer North": 40,
@@ -744,8 +744,8 @@ const DATA = {
           },
           "Mouse": {
             "Bio Te Apiti Buffer North": 33,
-            "Bio Te Apiti Buffer South": 1,
-            "Bio Te Apiti South": 1
+            "Bio Te Apiti South": 1,
+            "Bio Te Apiti Buffer South": 1
           },
           "Rabbit": {
             "Bio Te Apiti Buffer North": 3,
@@ -1067,7 +1067,7 @@ const _docPalette = {
 const _hrcDatasets = (_cs.species || [])
   .filter(sp => (_cs.data[sp] || []).some(v => v > 0))
   .map(sp => ({
-    label: sp + ' (HRC)',
+    label: sp,
     data: _cs.data[sp] || [],
     backgroundColor: _speciesPalette[sp] || teal2,
     borderRadius: 2,
@@ -1096,9 +1096,8 @@ new Chart(document.getElementById('catchesChart'), {
       tooltip: {
         callbacks: {
           label: ctx => {
-            const label = ctx.dataset.label;           // e.g. "Rat (HRC)" or "Rat (DoC)"
-            const isDoc = label.endsWith('(DoC)');
-            const sp    = label.replace(/ \(HRC\)| \(DoC\)/, '');
+            const isDoc = ctx.dataset.stack === 'doc';
+            const sp    = ctx.dataset.label.replace(/ \(DoC\)$/, '');
             const fy    = ctx.label;
             const val   = ctx.parsed.y;
             if (!val) return null;
@@ -1208,7 +1207,7 @@ new Chart(document.getElementById('trendsChart'), {
         {
           label: 'DoC (Trap.NZ)',
           data: allTypes.map(t => docTypeMap[t] || 0),
-          backgroundColor: navy,
+          backgroundColor: '#1f2e35',
           borderRadius: 3,
         },
       ]
