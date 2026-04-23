@@ -353,7 +353,7 @@
 
     <div class="panel">
       <div class="panel-title">Trap Catches by Area</div>
-      <div class="panel-sub">Aramahoe · Ohorea · Retaruke · Manganui o te Ao</div>
+      <div class="panel-sub">Year to date · Trap.NZ live data</div>
       <div class="chart-wrap">
         <canvas id="catchAreaChart"></canvas>
       </div>
@@ -406,10 +406,10 @@ const border  = '#ddddd8';
    DATA — auto-updated by Icon_Sites_Data_Export.py
    Source: Kia_Wharite_Project.gdb / PCO_Treatment_Area_ExportFeatures
    ───────────────────────────────────────────────────────────────── */
-/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-23 14:22 */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-23 16:15 */
 const DATA = {
   "site": "Kia Wharite",
-  "generated": "2026-04-23T14:22:43.250503",
+  "generated": "2026-04-23T16:15:16.509347",
   "pcoRtci": {
     "labels": [
       "Waimarino Pipipi",
@@ -464,6 +464,32 @@ const DATA = {
       "2023-24",
       "2024-25",
       "2024-25"
+    ]
+  },
+  "trapCatchesByArea": {
+    "areas": [
+      "Aramahoe",
+      "Ohorea",
+      "Retaruke",
+      "Manganui o te Ao"
+    ],
+    "rats": [
+      824,
+      163,
+      1684,
+      728
+    ],
+    "mustelids": [
+      56,
+      10,
+      250,
+      61
+    ],
+    "other": [
+      88,
+      185,
+      143,
+      135
     ]
   }
 };
@@ -640,74 +666,53 @@ new Chart(document.getElementById('weedChart'), {
   }
 });
 
-/* ── TRAP CATCHES BY AREA 2024–25 ── */
-// Source: KW_trap_captures_2425.csv
-// Species grouped as: Rats | Mustelids (stoat+weasel+ferret) | Other (hedgehog, cat, mouse, possum, rabbit, bird etc.)
-new Chart(document.getElementById('catchAreaChart'), {
-  type: 'bar',
-  data: {
-    labels: ['Aramahoe', 'Ohorea', 'Retaruke', 'Manganui o te Ao'],
-    datasets: [
-      {
-        label: 'Rats',
-        data: [1101, 237, 1400, 205],
-        backgroundColor: olive,
-        borderRadius: 2,
-      },
-      {
-        label: 'Mustelids',
-        data: [117, 12, 277, 31],
-        backgroundColor: gold,
-        borderRadius: 2,
-      },
-      {
-        label: 'Other',
-        data: [73, 58, 141, 59],
-        backgroundColor: oliveLt,
-        borderRadius: 2,
-      }
-    ]
-  },
-  options: {
-    indexAxis: 'y',
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: true,
-        position: 'bottom',
-        labels: { font: { size: 10 }, color: '#5a5a52', boxWidth: 10, padding: 10 }
-      },
-      tooltip: {
-        callbacks: {
-          label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.x.toLocaleString()}`,
-          afterLabel: ctx => {
-            if (ctx.dataset.label !== 'Other') return '';
-            const breakdown = [
-              'Hedgehog: 50  Rabbit: 14  Mouse: 5  Cat: 3  Possum: 1',
-              'Hedgehog: 56  Cat: 1  Rabbit: 1',
-              'Hedgehog: 87  Rabbit: 32  Mouse: 17  Cat: 5',
-              'Hedgehog: 38  Cat: 11  Mouse: 6  Possum: 2  Bird: 1',
-            ];
-            return breakdown[ctx.dataIndex] || '';
-          },
-          footer: items => {
-            const total = items.reduce((s, i) => s + i.parsed.x, 0);
-            return `Total: ${total.toLocaleString()}`;
+/* ── TRAP CATCHES BY AREA (year-to-date · Trap.NZ live) ── */
+(function () {
+  const tca = DATA.trapCatchesByArea || {
+    areas: ['Aramahoe', 'Ohorea', 'Retaruke', 'Manganui o te Ao'],
+    rats: [0, 0, 0, 0], mustelids: [0, 0, 0, 0], other: [0, 0, 0, 0],
+  };
+  new Chart(document.getElementById('catchAreaChart'), {
+    type: 'bar',
+    data: {
+      labels: tca.areas,
+      datasets: [
+        { label: 'Rats',      data: tca.rats,      backgroundColor: olive,   borderRadius: 2 },
+        { label: 'Mustelids', data: tca.mustelids, backgroundColor: gold,    borderRadius: 2 },
+        { label: 'Other',     data: tca.other,     backgroundColor: oliveLt, borderRadius: 2 },
+      ]
+    },
+    options: {
+      indexAxis: 'y',
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom',
+          labels: { font: { size: 10 }, color: '#5a5a52', boxWidth: 10, padding: 10 }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.x.toLocaleString()}`,
+            footer: items => {
+              const total = items.reduce((s, i) => s + i.parsed.x, 0);
+              return `Total: ${total.toLocaleString()}`;
+            }
           }
         }
-      }
-    },
-    scales: {
-      x: {
-        stacked: true,
-        grid: { color: border },
-        ticks: { font: { size: 10 }, color: '#5a5a52' },
-        title: { display: true, text: 'No. of catches', font: { size: 10 }, color: '#5a5a52' }
       },
-      y: { stacked: true, grid: { display: false }, ticks: { font: { size: 10.5 }, color: '#5a5a52' } }
+      scales: {
+        x: {
+          stacked: true,
+          grid: { color: border },
+          ticks: { font: { size: 10 }, color: '#5a5a52' },
+          title: { display: true, text: 'No. of catches', font: { size: 10 }, color: '#5a5a52' }
+        },
+        y: { stacked: true, grid: { display: false }, ticks: { font: { size: 10.5 }, color: '#5a5a52' } }
+      }
     }
-  }
-});
+  });
+})();
 </script>
 </body>
 </html>
