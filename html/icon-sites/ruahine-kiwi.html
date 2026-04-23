@@ -185,6 +185,20 @@
     border-top: 1px solid var(--border);
     flex-shrink: 0;
   }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
+  .pill {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 3px;
+    background: var(--forest-lt);
+    color: var(--forest);
+    border: 1px solid var(--forest-md);
+  }
+  .pill.rtci-good  { background: #e8f3ee; color: #2d6a4f; border-color: #b0d9c4; }
+  .pill.rtci-warn  { background: var(--gold-lt); color: #8a6820; border-color: var(--gold-md); }
+  .pill.rtci-alert { background: #fce8e6; color: #c0392b; border-color: #f5c6c2; }
+
   .contractor-label {
     font-size: 10px;
     font-weight: 700;
@@ -261,6 +275,8 @@
       <div class="summary-section">
         <div class="sum-heading">Predator Control</div>
         <div class="sum-detail">Large-scale predator control programme protecting kiwi in the Ruahine Range. Network of traps and bait stations targeting rats, possums, mustelids, and hedgehogs.</div>
+        <div class="contractor-label" style="margin-top:6px;font-size:8.5px;letter-spacing:0.07em">Horizons PCO Results</div>
+        <div id="rtci-pills" class="pill-row" style="margin-top:3px"></div>
       </div>
 
       <div class="summary-section" style="margin-top:4px">
@@ -320,11 +336,11 @@
    DATA — auto-updated by Icon_Sites_Data_Export.py
    Source: Trap.NZ public project endpoint (trap.nz/project/5105689/killcount.json)
    ───────────────────────────────────────────────────────────────────────── */
-/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-23 11:47 */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-23 14:23 */
 const DATA = {
   "fy": "24-25",
   "site": "Ruahine Kiwi Project",
-  "generated": "2026-04-23T11:47:48.468141",
+  "generated": "2026-04-23T14:23:19.797485",
   "trapnz": {
     "traps": 2079,
     "monitoringStations": 309,
@@ -391,6 +407,32 @@ const DATA = {
       4,
       1,
       1
+    ]
+  },
+  "pcoRtci": {
+    "labels": [
+      "Apiti",
+      "Matamau West",
+      "Norsewood",
+      "Ruaroa",
+      "South Mokai",
+      "Umutoi"
+    ],
+    "data": [
+      2.3,
+      4.0,
+      0.1,
+      4.0,
+      0.4,
+      8.8
+    ],
+    "years": [
+      "24-25",
+      "24-25",
+      "24-25",
+      "21-22",
+      "23-24",
+      "22-23"
     ]
   }
 };
@@ -550,12 +592,32 @@ const CHART_DEFAULTS = {
   const tt = DATA.trapsByType || { labels: [], data: [] };
   if (!tt.labels.length) return;
 
+  // Group types with fewer than 15 traps into "Other"
+  const THRESHOLD = 15;
+  const mainLabels = [], mainData = [], otherLines = [];
+  let otherTotal = 0;
+
+  tt.labels.forEach((label, i) => {
+    if (tt.data[i] >= THRESHOLD) {
+      mainLabels.push(label);
+      mainData.push(tt.data[i]);
+    } else {
+      otherTotal += tt.data[i];
+      otherLines.push(`  ${label}: ${tt.data[i]}`);
+    }
+  });
+
+  if (otherLines.length) {
+    mainLabels.push('Other');
+    mainData.push(otherTotal);
+  }
+
   new Chart(document.getElementById('trapTypeChart'), {
     type: 'bar',
     data: {
-      labels: tt.labels,
+      labels: mainLabels,
       datasets: [{
-        data: tt.data,
+        data: mainData,
         backgroundColor: '#2d5a27',
         borderRadius: 3,
       }]
@@ -565,7 +627,15 @@ const CHART_DEFAULTS = {
       indexAxis: 'y',
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.x.toLocaleString()} traps` } },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const lines = [` ${ctx.parsed.x.toLocaleString()} traps`];
+              if (ctx.label === 'Other') lines.push(...otherLines);
+              return lines;
+            }
+          }
+        },
       },
       scales: {
         x: {
@@ -576,6 +646,23 @@ const CHART_DEFAULTS = {
         y: { ticks: { font: { size: 10 }, color: '#5a5a52' } },
       },
     },
+  });
+})();
+
+/* ── RTCI PILLS (Horizons PCO results) ── */
+(function () {
+  const rtci = DATA.pcoRtci || { labels: [], data: [], years: [] };
+  const container = document.getElementById('rtci-pills');
+  if (!container || !rtci.labels.length) return;
+  rtci.labels.forEach((label, i) => {
+    const val = rtci.data[i];
+    const yr  = rtci.years[i] || '';
+    const cls = val < 5 ? 'rtci-good' : val < 10 ? 'rtci-warn' : 'rtci-alert';
+    const pill = document.createElement('span');
+    pill.className   = `pill ${cls}`;
+    pill.title       = yr ? `Latest result: FY ${yr}` : '';
+    pill.textContent = `${label} ${val}%`;
+    container.appendChild(pill);
   });
 })();
 
