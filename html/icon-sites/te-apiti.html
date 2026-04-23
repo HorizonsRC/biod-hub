@@ -343,7 +343,7 @@
 
     <div class="panel">
       <div class="panel-title">Pest Animal Catches by Year</div>
-      <div class="panel-sub">Catches recorded per species by financial year</div>
+      <div class="panel-sub">HRC PCO traps + DoC Trap.NZ · by financial year</div>
       <div class="chart-wrap">
         <canvas id="catchesChart"></canvas>
       </div>
@@ -351,7 +351,7 @@
 
     <div class="panel">
       <div class="panel-title">Trap Network by Type</div>
-      <div class="panel-sub">Number of traps deployed across all zones</div>
+      <div class="panel-sub">HRC PCO traps + DoC Trap.NZ traps</div>
       <div class="chart-wrap">
         <canvas id="trapTypeChart"></canvas>
       </div>
@@ -387,11 +387,11 @@ const border  = '#ddddd8';
    DATA — auto-updated by Icon_Sites_Data_Export.py
    Source: BioD Contractor Data feature layer (Palm05 / Manawatū Gorge)
    ───────────────────────────────────────────────────────────────── */
-/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-23 16:57 */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-24 11:17 */
 const DATA = {
   "fy": "24-25",
   "site": "Te Apiti \u2013 Manawatu Gorge",
-  "generated": "2026-04-23T16:57:05.592001",
+  "generated": "2026-04-24T11:17:48.901171",
   "stats": {
     "km": 1130,
     "visits": 26,
@@ -446,8 +446,8 @@ const DATA = {
     },
     "otherSpecies": [
       "Ivy",
-      "Artillery Plant",
       "Licorice Plant",
+      "Artillery Plant",
       "Peach"
     ]
   },
@@ -505,10 +505,11 @@ const DATA = {
     "contractor": "Kahikatea Contracting"
   },
   "traps": {
-    "total": 378,
+    "total": 500,
     "byType": {
       "labels": [
         "DOC200",
+        "Vespex Bait Station",
         "A24",
         "Other",
         "DOC250",
@@ -516,6 +517,7 @@ const DATA = {
       ],
       "data": [
         280,
+        122,
         81,
         10,
         6,
@@ -526,14 +528,18 @@ const DATA = {
       "labels": [
         "Bio Te Apiti Buffer South",
         "Bio Te Apiti Buffer North",
+        "Te Apiti Wasp Control",
         "Bio Te Apiti South",
+        "Te Apiti Wasp Control ",
         "Bio Te Apiti",
         "Bio Te Apiti Buffer"
       ],
       "data": [
         172,
         132,
+        109,
         64,
+        13,
         6,
         4
       ]
@@ -557,6 +563,10 @@ const DATA = {
         "Bio Te Apiti": 6,
         "Bio Te Apiti Buffer": 3,
         "Bio Te Apiti Buffer North": 1
+      },
+      "Vespex Bait Station": {
+        "Te Apiti Wasp Control": 109,
+        "Te Apiti Wasp Control ": 13
       }
     },
     "catchesBySpecies": {
@@ -700,8 +710,8 @@ const DATA = {
             "Bio Te Apiti Buffer South": 1
           },
           "Rabbit": {
-            "Bio Te Apiti Buffer North": 4,
-            "Bio Te Apiti South": 4
+            "Bio Te Apiti South": 4,
+            "Bio Te Apiti Buffer North": 4
           },
           "Rat": {
             "Bio Te Apiti Buffer North": 40,
@@ -734,8 +744,8 @@ const DATA = {
           },
           "Mouse": {
             "Bio Te Apiti Buffer North": 33,
-            "Bio Te Apiti South": 1,
-            "Bio Te Apiti Buffer South": 1
+            "Bio Te Apiti Buffer South": 1,
+            "Bio Te Apiti South": 1
           },
           "Rabbit": {
             "Bio Te Apiti Buffer North": 3,
@@ -818,6 +828,47 @@ const DATA = {
       }
     }
   },
+  "docTraps": {
+    "total": 235,
+    "byType": {
+      "labels": [
+        "DOC 200",
+        "Flipping Timmy",
+        "Sentinel",
+        "Trapinator"
+      ],
+      "data": [
+        112,
+        48,
+        45,
+        30
+      ]
+    },
+    "catchesByFy": {
+      "2023-24": {
+        "Possum": 42
+      },
+      "2024-25": {
+        "Rat": 205,
+        "Possum": 263,
+        "Mouse": 19,
+        "Weasel": 12,
+        "Rabbit": 7,
+        "Hedgehog": 39,
+        "Stoat": 8
+      },
+      "2025-26": {
+        "Weasel": 6,
+        "Rat": 127,
+        "Possum": 212,
+        "Mouse": 16,
+        "Hedgehog": 67,
+        "Stoat": 17,
+        "Rabbit": 6,
+        "Bird": 3
+      }
+    }
+  },
   "allYears": [
     {
       "site": "Palm05",
@@ -863,7 +914,7 @@ const DATA = {
       "fy": "23-24",
       "records": 1026,
       "km": 897,
-      "visits": 25,
+      "visits": 55,
       "species": 8,
       "rpmp": 941,
       "rpmp_pct": 92,
@@ -1000,20 +1051,44 @@ const _speciesPalette = {
   Rabbit:   '#e0bb6a',
   Cat:      '#1a6b7c',
 };
+// DoC palette: lighter/muted versions of same hues to distinguish visually
+const _docPalette = {
+  Rat:      '#c49a72',
+  Mouse:    '#d9bfa3',
+  Possum:   '#9a9a9a',
+  Stoat:    '#7ab89a',
+  Weasel:   '#9ecfb5',
+  Ferret:   '#c2e4d0',
+  Hedgehog: '#e8d080',
+  Rabbit:   '#f0d898',
+  Cat:      '#6dbdcd',
+};
 
-const _csDatasets = (_cs.species || [])
+const _hrcDatasets = (_cs.species || [])
   .filter(sp => (_cs.data[sp] || []).some(v => v > 0))
   .map(sp => ({
-    label: sp,
+    label: sp + ' (HRC)',
     data: _cs.data[sp] || [],
     backgroundColor: _speciesPalette[sp] || teal2,
     borderRadius: 2,
-    stack: 'catches',
+    stack: 'hrc',
+  }));
+
+// DoC datasets — aligned to HRC FY labels, zero-filled for years before Oct 2023
+const _docByFy = (DATA.docTraps && DATA.docTraps.catchesByFy) || {};
+const _docDatasets = (_cs.species || [])
+  .filter(sp => (_cs.labels || []).some(fy => _docByFy[fy] && _docByFy[fy][sp]))
+  .map(sp => ({
+    label: sp + ' (DoC)',
+    data: (_cs.labels || []).map(fy => (_docByFy[fy] && _docByFy[fy][sp]) || 0),
+    backgroundColor: _docPalette[sp] || tealLt,
+    borderRadius: 2,
+    stack: 'doc',
   }));
 
 new Chart(document.getElementById('catchesChart'), {
   type: 'bar',
-  data: { labels: _cs.labels, datasets: _csDatasets },
+  data: { labels: _cs.labels, datasets: [..._hrcDatasets, ..._docDatasets] },
   options: {
     maintainAspectRatio: false,
     plugins: {
@@ -1021,19 +1096,19 @@ new Chart(document.getElementById('catchesChart'), {
       tooltip: {
         callbacks: {
           label: ctx => {
-            const sp  = ctx.dataset.label;
-            const fy  = ctx.label;
-            const val = ctx.parsed.y;
+            const label = ctx.dataset.label;           // e.g. "Rat (HRC)" or "Rat (DoC)"
+            const isDoc = label.endsWith('(DoC)');
+            const sp    = label.replace(/ \(HRC\)| \(DoC\)/, '');
+            const fy    = ctx.label;
+            const val   = ctx.parsed.y;
             if (!val) return null;
-            const lines = [` ${sp}: ${val.toLocaleString()}`];
-            const pcoDet = (_cs.pcoDetail && _cs.pcoDetail[fy] && _cs.pcoDetail[fy][sp])
-              ? _cs.pcoDetail[fy][sp] : {};
-            const pcoRows = Object.entries(pcoDet).sort((a, b) => b[1] - a[1]);
-            pcoRows.forEach(([pco, n]) => {
-              // Strip common "Bio Te Apiti " prefix to save space
-              const shortPCO = pco.replace(/^Bio Te Apiti\s*/i, '') || pco;
-              lines.push(`    ${shortPCO}: ${n}`);
-            });
+            const lines = [` ${sp} ${isDoc ? '· DoC (Trap.NZ)' : '· HRC (PCO)'}: ${val.toLocaleString()}`];
+            if (!isDoc) {
+              const pcoDet = (_cs.pcoDetail && _cs.pcoDetail[fy] && _cs.pcoDetail[fy][sp]) || {};
+              Object.entries(pcoDet).sort((a, b) => b[1] - a[1]).forEach(([pco, n]) => {
+                lines.push(`    ${pco.replace(/^Bio Te Apiti\s*/i, '') || pco}: ${n}`);
+              });
+            }
             return lines;
           },
           footer: items => {
@@ -1100,57 +1175,85 @@ new Chart(document.getElementById('trendsChart'), {
   }
 });
 
-/* ── TRAP TYPE CHART (bottom middle) ── */
-const _traps = DATA.traps || {};
-const _ttRaw    = (_traps.byType && _traps.byType.labels) ? _traps.byType.labels.reduce(
-  (acc, lbl, i) => { if ((_traps.byType.data[i] || 0) >= 5) { acc.labels.push(lbl); acc.data.push(_traps.byType.data[i]); } return acc; },
-  { labels: [], data: [] }
-) : { labels: [], data: [] };
-const _ttLabels = _ttRaw.labels;
-const _ttData   = _ttRaw.data;
-const _ttByZone = _traps.byTypeByZone || {};
-const _ttColors = [teal, teal2, tealLt, green, green2, greenLt, gold];
-new Chart(document.getElementById('trapTypeChart'), {
-  type: 'bar',
-  data: {
-    labels: _ttLabels,
-    datasets: [{
-      label: 'Traps',
-      data: _ttData,
-      backgroundColor: _ttColors.slice(0, _ttLabels.length),
-      borderRadius: 3,
-    }]
-  },
-  options: {
-    indexAxis: 'y',
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: ctx => ` ${ctx.parsed.x.toLocaleString()} traps`,
-          afterBody: items => {
-            const ttype = items[0].label;
-            const zones = _ttByZone[ttype] || {};
-            const rows  = Object.entries(zones).sort((a, b) => b[1] - a[1]);
-            if (!rows.length) return [];
-            return ['', 'By PCO:'].concat(
-              rows.map(([z, n]) => `  ${n.toLocaleString()} – ${z}`)
-            );
+/* ── TRAP TYPE CHART — HRC + DoC grouped (bottom right) ── */
+(function () {
+  const _traps  = DATA.traps    || {};
+  const _doc    = DATA.docTraps || {};
+  const _ttByZone = _traps.byTypeByZone || {};
+
+  // Build merged label set: HRC types first, then any DoC-only types
+  const hrcTypeMap = {};
+  (_traps.byType && _traps.byType.labels || []).forEach((lbl, i) => {
+    if ((_traps.byType.data[i] || 0) >= 5) hrcTypeMap[lbl] = _traps.byType.data[i];
+  });
+  const docTypeMap = {};
+  (_doc.byType && _doc.byType.labels || []).forEach((lbl, i) => {
+    docTypeMap[lbl] = _doc.byType.data[i] || 0;
+  });
+
+  // Union of all types that appear in either source
+  const allTypes = [...new Set([...Object.keys(hrcTypeMap), ...Object.keys(docTypeMap)])];
+
+  new Chart(document.getElementById('trapTypeChart'), {
+    type: 'bar',
+    data: {
+      labels: allTypes,
+      datasets: [
+        {
+          label: 'HRC (PCO)',
+          data: allTypes.map(t => hrcTypeMap[t] || 0),
+          backgroundColor: teal,
+          borderRadius: 3,
+        },
+        {
+          label: 'DoC (Trap.NZ)',
+          data: allTypes.map(t => docTypeMap[t] || 0),
+          backgroundColor: navy,
+          borderRadius: 3,
+        },
+      ]
+    },
+    options: {
+      indexAxis: 'y',
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom',
+          labels: { font: { size: 10 }, boxWidth: 10, padding: 8 }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const n = ctx.parsed.x;
+              if (!n) return null;
+              return ` ${ctx.dataset.label}: ${n.toLocaleString()} traps`;
+            },
+            afterBody: items => {
+              const hrcItem = items.find(i => i.dataset.label === 'HRC (PCO)');
+              if (!hrcItem || !hrcItem.parsed.x) return [];
+              const ttype = hrcItem.label;
+              const zones = _ttByZone[ttype] || {};
+              const rows  = Object.entries(zones).sort((a, b) => b[1] - a[1]);
+              if (!rows.length) return [];
+              return ['', 'By PCO zone:'].concat(
+                rows.map(([z, n]) => `  ${n.toLocaleString()} – ${z}`)
+              );
+            }
           }
         }
-      }
-    },
-    scales: {
-      x: {
-        grid: { color: border },
-        ticks: { font: { size: 10 } },
-        title: { display: true, text: 'No. of traps', font: { size: 10 }, color: '#8a8a82' }
       },
-      y: { grid: { display: false }, ticks: { font: { size: 10.5 } } }
+      scales: {
+        x: {
+          grid: { color: border },
+          ticks: { font: { size: 10 } },
+          title: { display: true, text: 'No. of traps', font: { size: 10 }, color: '#8a8a82' }
+        },
+        y: { grid: { display: false }, ticks: { font: { size: 10 } } }
+      }
     }
-  }
-});
+  });
+})();
 
 /* ── SCALE TO FIT VIEWPORT ───────────────────────────────────────────────────
    Keeps the 953×806 reference canvas and scales it proportionally so the
