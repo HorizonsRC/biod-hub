@@ -27,7 +27,9 @@ biod-hub/
 │   │   ├── bushy-park.html
 │   │   ├── te-apiti.html                        # Auto-updated by Icon_Sites_Data_Export.py
 │   │   ├── kia-wharite.html                     # Auto-updated by Icon_Sites_Data_Export.py (PCO RTCI from local GDB)
-│   │   └── manawatu-estuary.html                # Auto-updated by Icon_Sites_Data_Export.py
+│   │   ├── manawatu-estuary.html                # Auto-updated by Icon_Sites_Data_Export.py
+│   │   ├── pukaha.html                          # Auto-updated by Icon_Sites_Data_Export.py
+│   │   └── ruahine-kiwi.html                   # Auto-updated by Icon_Sites_Data_Export.py (Trap.NZ + local GDB)
 │   └── totara-reserve/                          # Placeholder for future content
 ├── Pressure_Management_Data_Join.py             # Pressure Management data pipeline
 ├── PM_Dashboard_Export.py                       # Builds dashboard_data.json and pushes to GitHub
@@ -59,7 +61,11 @@ HTML files are served via GitHub Pages at `https://HorizonsRC.github.io/biod-hub
 |---|---|---|
 | BioD Contractor Data feature layer (AGOL) | Waypoints (weed locations) and polylines (track coverage) | `CONTRACTOR_ITEM_ID` |
 | Animal Pest Control Layer New (AGOL FeatureServer) | Trap network features and related inspection/catch records | `TRAP_SERVICE_URL` |
-| Kia Whārite Project GDB (local network path) | PCO treatment area polygons with Residual Trap Catch Index (RTCI) results | `KIA_WHARITE_GDB` |
+| Kia Whārite Project GDB (local network path) | PCO treatment area polygons with RTCI results | `KIA_WHARITE_GDB` |
+| PCO Management Dataset (AGOL FeatureServer) | Horizons PCO zone RTCI monitoring results — used for RTCI pills | `PCO_MONITORING_URL` |
+| HRC Icon Sites Projects layer (AGOL FeatureServer) | Reserve and buffer zone polygon areas | `HRC_ICON_SITES_URL` |
+| Trap.NZ public killcount endpoint | Ruahine Kiwi Project catch totals by species and period (no auth required) | `TRAPNZ_RUAHINE_URL` |
+| Ruahine Kiwi traps GDB (local network path) | Trap locations with type attributes — used for trap type breakdown chart | `RUAHINE_TRAPS_LAYER` |
 
 ### Per-site outputs
 
@@ -68,6 +74,8 @@ HTML files are served via GitHub Pages at `https://HorizonsRC.github.io/biod-hub
 | Te Āpiti – Manawatū Gorge | `html/icon-sites/te-apiti.html` | AGOL (BioD Contractor Data + Animal Pest Control) | Pest plant and trap catch data; all-years summary CSV written to `ICON_SITES_OUTPUT_DIR` |
 | Kia Whārite | `html/icon-sites/kia-wharite.html` | Local GDB (`KIA_WHARITE_GDB`) | PCO RTCI values from `PCO_Treatment_Area_ExportFeatures`; trap catch and weed data are static (from annual reports) |
 | Manawatū Estuary | `html/icon-sites/manawatu-estuary.html` | AGOL (BioD Contractor Data + Animal Pest Control) | Weed count + area by species (FY 23-24 and 24-25); trap catches by species; SiteID `Horo34W` |
+| Pukaha | `html/icon-sites/pukaha.html` | AGOL (PCO Management Dataset + HRC Icon Sites Projects) | OMB pest control and monitoring metrics; RTCI pills per PCO zone; reserve/buffer polygon areas from HRC Icon Sites Projects layer |
+| Ruahine Kiwi | `html/icon-sites/ruahine-kiwi.html` | Trap.NZ public API + Local GDB + AGOL (PCO Management Dataset) | Catch totals and species breakdown from Trap.NZ; trap type chart from local GDB; Horizons PCO RTCI pills for adjacent zones |
 
 ### Setup
 
@@ -75,6 +83,10 @@ HTML files are served via GitHub Pages at `https://HorizonsRC.github.io/biod-hub
    - `CONTRACTOR_ITEM_ID` — AGOL item ID for the BioD Contractor Data feature layer
    - `TRAP_SERVICE_URL` — FeatureServer URL for the Animal Pest Control layer
    - `KIA_WHARITE_GDB` — network path to the Kia Whārite Project File Geodatabase
+   - `PCO_MONITORING_URL` — FeatureServer URL for the PCO Management Dataset (RTCI results)
+   - `HRC_ICON_SITES_URL` — FeatureServer URL for the HRC Icon Sites Projects layer
+   - `TRAPNZ_RUAHINE_URL` — Trap.NZ public killcount endpoint for the Ruahine Kiwi Project
+   - `RUAHINE_TRAPS_LAYER` — network path to the Ruahine Kiwi trap locations GDB feature class
    - `ICON_SITES_OUTPUT_DIR` — local folder for per-site summary CSVs (gitignored)
 2. Run from the ArcGIS Pro Python environment (`arcgispro-py3`):
 

@@ -39,6 +39,12 @@ PCO_MONITORING_URL = "https://services1.arcgis.com/VuN78wcRdq1Oj69W/arcgis/rest/
 # HRC Icon Sites Projects layer — reserve and buffer zone polygon areas
 HRC_ICON_SITES_URL = "https://services1.arcgis.com/VuN78wcRdq1Oj69W/arcgis/rest/services/HRC_Icon_Sites_Projects/FeatureServer"
 
+# Trap.NZ public killcount endpoint — Ruahine Kiwi Project (no auth required)
+TRAPNZ_RUAHINE_URL = "https://trap.nz/project/5105689/killcount.json"
+
+# Local GDB feature class — Ruahine Kiwi trap locations (exported from Trap.NZ)
+RUAHINE_TRAPS_LAYER = r"\\your-server\your-share\IconSite_project\IconSite_project.gdb\RuahineKiwi_trapsLocations"
+
 # eBird API key — used to fetch recent bird sightings near icon sites
 # Keys do not expire. Generate or view yours at https://ebird.org/api/keygen
 EBIRD_API_KEY = "your-ebird-api-key"

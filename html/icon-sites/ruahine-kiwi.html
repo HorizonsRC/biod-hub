@@ -124,37 +124,41 @@
   }
 
   /* ── STAT PANEL ──────────────────────────────── */
+  .panel-stat { padding-left: 8px; padding-right: 8px; }
   .stat-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     grid-template-rows: repeat(3, 1fr);
     gap: 5px;
     flex: 1;
+    min-width: 0;
   }
   .stat-box {
     background: var(--forest-lt);
     border: 1px solid var(--forest-md);
     border-radius: 4px;
-    padding: 8px 10px 6px;
+    padding: 8px 7px 6px;
     display: flex;
     flex-direction: column;
     justify-content: center;
+    min-width: 0;
+    overflow: hidden;
   }
   .stat-box .s-val {
     font-family: 'Source Serif 4', serif;
-    font-size: 22px;
+    font-size: 19px;
     font-weight: 600;
     color: var(--forest);
     line-height: 1;
   }
-  .stat-box .s-val.sm { font-size: 17px; }
+  .stat-box .s-val.sm { font-size: 15px; }
   .stat-box .s-key {
-    font-size: 9.5px;
+    font-size: 9px;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.07em;
+    letter-spacing: 0.06em;
     color: var(--muted);
-    margin-top: 5px;
+    margin-top: 4px;
     line-height: 1.3;
   }
 
@@ -221,14 +225,13 @@
   <!-- TITLE -->
   <div class="title-strip">
     <h1>Ruahine Kiwi Project</h1>
-    <span class="partnership">A partnership between Te Kāuru and Environment Network Manawatū</span>
   </div>
 
   <!-- TOP ROW -->
   <div class="row-top">
 
     <!-- Left: Stats at a glance -->
-    <div class="panel">
+    <div class="panel panel-stat">
       <div class="panel-title">Programme at a Glance</div>
       <div class="panel-sub">Ruahine Kiwi Project · Trap.NZ live data</div>
       <div class="stat-grid">
@@ -254,7 +257,7 @@
         </div>
         <div class="stat-box">
           <div class="s-val" id="val-catches-month">–</div>
-          <div class="s-key">Last 30 Days</div>
+          <div class="s-key">Catches Last 30 Days</div>
         </div>
       </div>
     </div>
@@ -286,12 +289,17 @@
 
       <div class="contractor-row">
         <div class="contractor-label">Partners</div>
-        <div class="contractor-val">Te Kāuru · Environment Network Manawatū · Horizons Regional Council</div>
+        <div class="contractor-val">Te Kāuru · Environment Network Manawatū</div>
+      </div>
+
+      <div style="margin-top:4px; padding-top:4px; border-top:1px solid var(--border); flex-shrink:0">
+        <div class="contractor-label">HRC Support</div>
+        <div class="contractor-val">Annual grant funding from 2024–25 following Long-term Plan submission. HRC also manages PCO zones in the adjacent Ruahine landscape (see results above).</div>
       </div>
 
       <div style="margin-top:4px; padding-top:4px; border-top:1px solid var(--border); flex-shrink:0">
         <div class="contractor-label">Governance</div>
-        <div class="contractor-val">–</div>
+        <div class="contractor-val">Currently operating under ENM's auspices while working towards establishing a standalone legal entity. A governance group including iwi and community stakeholders meets every two months.</div>
       </div>
     </div>
 

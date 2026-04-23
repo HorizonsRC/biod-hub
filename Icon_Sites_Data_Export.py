@@ -74,7 +74,10 @@ TRAP_LAYER_ID      = getattr(config, "TRAP_LAYER_ID", 0)
 INSP_TABLE_ID      = getattr(config, "INSP_TABLE_ID", 1)
 
 PCO_MONITORING_URL  = getattr(config, "PCO_MONITORING_URL", None)
-HRC_ICON_SITES_URL  = getattr(config, "HRC_ICON_SITES_URL", None)
+HRC_ICON_SITES_URL      = getattr(config, "HRC_ICON_SITES_URL", None)
+TRAPNZ_RUAHINE_URL      = getattr(config, "TRAPNZ_RUAHINE_URL",
+                                  "https://trap.nz/project/5105689/killcount.json")
+RUAHINE_TRAPS_LAYER     = getattr(config, "RUAHINE_TRAPS_LAYER", None)
 EBIRD_API_KEY       = getattr(config, "EBIRD_API_KEY", None)
 
 if not CONTRACTOR_ITEM_ID or not TRAP_SERVICE_URL:
@@ -125,6 +128,7 @@ ICON_SITE_HTML = {
     "kia-wharite":       HTML_DIR / "kia-wharite.html",
     "manawatu-estuary":  HTML_DIR / "manawatu-estuary.html",
     "pukaha":            HTML_DIR / "pukaha.html",
+    "ruahine-kiwi":      HTML_DIR / "ruahine-kiwi.html",
     # Add further sites here as they are developed:
     # "bushy-park": HTML_DIR / "bushy-park.html",
 }
@@ -1541,6 +1545,137 @@ def process_pukaha(wp: pd.DataFrame, pl: pd.DataFrame, gis: GIS) -> dict:
     }
 
 
+# ── Ruahine Kiwi ──────────────────────────────────────────────────────────────
+
+def process_ruahine_kiwi(gis) -> dict:
+    """
+    Derive the DATA object for ruahine-kiwi.html.
+
+    Primary data source: Trap.NZ public project killcount endpoint (no auth required).
+    Project: Ruahine Kiwi Project (ID 5105689), a partnership between
+    Te Kāuru and Environment Network Manawatū.
+    """
+    log.info("Processing Ruahine Kiwi Project...")
+
+    SPECIES_ORDER = ["Rat", "Possum", "Mustelid", "Hedgehog", "Other"]
+
+    trapnz: dict = {
+        "traps":              None,
+        "monitoringStations": None,
+        "installations":      None,
+        "catchesAll":         None,
+        "catchesYear":        None,
+        "catchesMonth":       None,
+        "catchesBySpecies": {
+            "labels": SPECIES_ORDER,
+            "all":    [],
+            "year":   [],
+            "month":  [],
+        },
+    }
+
+    try:
+        resp = requests.get(TRAPNZ_RUAHINE_URL, timeout=30)
+        resp.raise_for_status()
+        data = resp.json()
+
+        trapnz["traps"]              = data.get("traps")
+        trapnz["monitoringStations"] = data.get("monitoring_stations")
+        trapnz["installations"]      = data.get("installations")
+
+        catches = data.get("catches", {})
+        for period in ("all", "year", "month"):
+            c  = catches.get(period, {})
+            sp = c.get("species", {})
+            if period == "all":
+                trapnz["catchesAll"]   = c.get("total")
+            elif period == "year":
+                trapnz["catchesYear"]  = c.get("total")
+            elif period == "month":
+                trapnz["catchesMonth"] = c.get("total")
+            trapnz["catchesBySpecies"][period] = [sp.get(s, 0) for s in SPECIES_ORDER]
+
+        log.info(
+            f"  Trap.NZ: {trapnz['traps']} traps, "
+            f"{trapnz['catchesAll']} all-time catches, "
+            f"{trapnz['catchesYear']} this year"
+        )
+    except Exception as exc:
+        log.warning(f"  Trap.NZ killcount query failed — skipping. Error: {exc}")
+
+    # ── PCO RTCI monitoring results (Horizons-managed zones) ─────────────────
+    RUAHINE_PCO_RTCI_WHERE = (
+        "Label IN ('Apiti', 'Matamau West', 'Norsewood', 'Ruaroa', 'South Mokai', 'Umutoi')"
+    )
+    RTCI_FY_FIELDS = [
+        "F24_25_Monitor_Results", "F23_24_Monitor_Results", "F22_23_Monitor_Results",
+        "F21_22_Monitor_Results", "F20_21_Monitor_Results", "F19_20_Monitor_Results",
+        "F18_19_Monitor_Results",
+    ]
+    pco_rtci: dict = {"labels": [], "data": [], "years": []}
+
+    if PCO_MONITORING_URL:
+        try:
+            pco_df = fetch_service_url_as_df(gis, PCO_MONITORING_URL, 0, where=RUAHINE_PCO_RTCI_WHERE)
+            log.info(f"  PCO monitoring columns: {sorted(pco_df.columns.tolist())}")
+            for _, row in pco_df.iterrows():
+                label = row.get("Label")
+                if label is None:
+                    continue
+                rtci_val, rtci_yr = None, None
+                for field in RTCI_FY_FIELDS:
+                    if field not in pco_df.columns:
+                        continue
+                    val = row.get(field)
+                    try:
+                        if val is not None and not pd.isna(val):
+                            rtci_val = round(float(val), 1)
+                            rtci_yr  = field.replace("F", "", 1).replace("_Monitor_Results", "").replace("_", "-")
+                            break
+                    except (TypeError, ValueError):
+                        continue
+                if rtci_val is not None:
+                    pco_rtci["labels"].append(str(label))
+                    pco_rtci["data"].append(rtci_val)
+                    pco_rtci["years"].append(rtci_yr)
+            log.info(f"  Ruahine PCO RTCI: {list(zip(pco_rtci['labels'], pco_rtci['data'], pco_rtci['years']))}")
+        except Exception as exc:
+            log.warning(f"  PCO monitoring query failed — skipping RTCI data. Error: {exc}")
+    else:
+        log.warning("  PCO_MONITORING_URL not set — skipping RTCI data.")
+
+    # ── Trap network by type (local GDB export from Trap.NZ) ─────────────────
+    traps_by_type: dict = {"labels": [], "data": []}
+
+    if RUAHINE_TRAPS_LAYER:
+        try:
+            import arcpy
+            import collections as _collections
+            counts = _collections.Counter()
+            with arcpy.da.SearchCursor(RUAHINE_TRAPS_LAYER, ["Trap_type"]) as cur:
+                for (trap_type,) in cur:
+                    counts[trap_type or "Unknown"] += 1
+            ordered = counts.most_common()
+            traps_by_type = {
+                "labels": [t for t, _ in ordered],
+                "data":   [c for _, c in ordered],
+            }
+            log.info(f"  Trap types: {dict(ordered)}")
+        except Exception as exc:
+            log.warning(f"  Ruahine trap GDB query failed — skipping. Error: {exc}")
+    else:
+        log.warning("  RUAHINE_TRAPS_LAYER not set — skipping trap type breakdown.")
+
+    return {
+        "fy":          "24-25",
+        "site":        "Ruahine Kiwi Project",
+        "generated":   datetime.datetime.now().isoformat(),
+        "trapnz":      trapnz,
+        "trapsByType": traps_by_type,
+        "pcoRtci":     pco_rtci,
+    }
+
+
 # ── Git push ──────────────────────────────────────────────────────────────────
 
 def git_commit_and_push(html_paths: list[Path]) -> None:
@@ -1597,6 +1732,8 @@ def main():
             data = process_manawatu_estuary(wp_all.copy(), gis)
         elif site_key == "pukaha":
             data = process_pukaha(wp_all.copy(), pl_all.copy(), gis)
+        elif site_key == "ruahine-kiwi":
+            data = process_ruahine_kiwi(gis)
         else:
             log.warning(f"No processor defined for '{site_key}' — skipping.")
             continue
