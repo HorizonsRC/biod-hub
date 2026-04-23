@@ -276,11 +276,11 @@
           <div class="s-key">Trap Checks (Annual)</div>
         </div>
         <div class="stat-box">
-          <div class="s-val sm">3,711</div>
+          <div class="s-val sm" id="val-total-catches">–</div>
           <div class="s-key">Pest Animals Dispatched</div>
         </div>
         <div class="stat-box">
-          <div class="s-val">437</div>
+          <div class="s-val" id="val-mustelids">–</div>
           <div class="s-key">Mustelids Caught</div>
         </div>
         <div class="stat-box">
@@ -309,11 +309,11 @@
 
       <div class="summary-section">
         <div class="sum-heading">Predator Trapping</div>
-        <div><span class="sum-hero">3,711</span> <span class="sum-unit">pest animals dispatched across 4 areas</span></div>
+        <div><span class="sum-hero" id="sum-hero-catches">–</span> <span class="sum-unit">pest animals dispatched across 4 areas</span></div>
         <div class="sum-detail">Trapping conducted across Aramahoe, Ohorea, Retaruke and Manganui o te Ao catchments, targeting rats, stoats, weasels and ferrets to protect kiwi and whio populations.</div>
         <div class="pill-row">
-          <span class="pill">2,943 rats</span>
-          <span class="pill">437 mustelids</span>
+          <span class="pill" id="pill-rats">–</span>
+          <span class="pill" id="pill-mustelids">–</span>
           <span class="pill">24,950 trap checks</span>
         </div>
       </div>
@@ -345,7 +345,7 @@
 
     <div class="panel">
       <div class="panel-title">Pest Animals Dispatched</div>
-      <div class="panel-sub">4 trapping areas</div>
+      <div class="panel-sub">Year to date · Trap.NZ live data</div>
       <div class="chart-wrap">
         <canvas id="catchChart"></canvas>
       </div>
@@ -406,10 +406,10 @@ const border  = '#ddddd8';
    DATA — auto-updated by Icon_Sites_Data_Export.py
    Source: Kia_Wharite_Project.gdb / PCO_Treatment_Area_ExportFeatures
    ───────────────────────────────────────────────────────────────── */
-/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-23 16:15 */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-23 16:57 */
 const DATA = {
   "site": "Kia Wharite",
-  "generated": "2026-04-23T16:15:16.509347",
+  "generated": "2026-04-23T16:57:15.190198",
   "pcoRtci": {
     "labels": [
       "Waimarino Pipipi",
@@ -495,48 +495,66 @@ const DATA = {
 };
 /* ICON_SITE_DATA_END */
 
-/* ── PEST CATCH BREAKDOWN (FY 2024-25 annual) ── */
-new Chart(document.getElementById('catchChart'), {
-  type: 'bar',
-  data: {
-    labels: ['Rats', 'Mustelids', 'Other'],
-    datasets: [{
-      label: 'Animals dispatched',
-      data: [2943, 437, 331],
-      backgroundColor: [olive, gold, oliveLt],
-      borderRadius: 4,
-      barThickness: 52,
-    }]
-  },
-  options: {
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: ctx => ` ${ctx.parsed.y.toLocaleString()} animals`,
-          afterLabel: ctx => {
-            const notes = [
-              'Across all 4 trapping areas',
-              'Stoats, weasels, ferrets',
-              'Hedgehog, cat, mouse, possum, rabbit'
-            ];
-            return notes[ctx.dataIndex];
+/* ── LIVE TOTALS FROM TRAP.NZ ── */
+(function () {
+  const tca  = DATA.trapCatchesByArea || { rats: [], mustelids: [], other: [] };
+  const sum  = arr => (arr || []).reduce((a, b) => a + b, 0);
+  const rats      = sum(tca.rats);
+  const mustelids = sum(tca.mustelids);
+  const other     = sum(tca.other);
+  const total     = rats + mustelids + other;
+  const fmt = n => n.toLocaleString();
+
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  set('val-total-catches',  fmt(total));
+  set('val-mustelids',      fmt(mustelids));
+  set('sum-hero-catches',   fmt(total));
+  set('pill-rats',          `${fmt(rats)} rats`);
+  set('pill-mustelids',     `${fmt(mustelids)} mustelids`);
+
+  /* ── PEST ANIMALS DISPATCHED (year-to-date · Trap.NZ live) ── */
+  new Chart(document.getElementById('catchChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Rats', 'Mustelids', 'Other'],
+      datasets: [{
+        label: 'Animals dispatched',
+        data: [rats, mustelids, other],
+        backgroundColor: [olive, gold, oliveLt],
+        borderRadius: 4,
+        barThickness: 52,
+      }]
+    },
+    options: {
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.parsed.y.toLocaleString()} animals`,
+            afterLabel: ctx => {
+              const notes = [
+                'Across all 4 trapping areas',
+                'Stoats, weasels, ferrets',
+                'Hedgehog, possum and other species'
+              ];
+              return notes[ctx.dataIndex];
+            }
           }
         }
-      }
-    },
-    scales: {
-      x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#5a5a52' } },
-      y: {
-        grid: { color: border },
-        beginAtZero: true,
-        ticks: { font: { size: 10 }, color: '#5a5a52' },
-        title: { display: true, text: 'No. dispatched', font: { size: 10 }, color: '#5a5a52' }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#5a5a52' } },
+        y: {
+          grid: { color: border },
+          beginAtZero: true,
+          ticks: { font: { size: 10 }, color: '#5a5a52' },
+          title: { display: true, text: 'No. dispatched', font: { size: 10 }, color: '#5a5a52' }
+        }
       }
     }
-  }
-});
+  });
+})();
 
 /* ── POSSUM RTCI BY PCO AREA ── */
 (function buildRtciChart() {
