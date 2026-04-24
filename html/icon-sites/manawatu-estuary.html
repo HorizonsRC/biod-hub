@@ -383,6 +383,7 @@
       <div class="summary-section">
         <div class="sum-heading navy">Predator Control</div>
         <div id="predator-stats" class="sum-detail">–</div>
+        <div id="trapnz-stats" class="sum-detail" style="margin-top:4px">–</div>
       </div>
 
       <div class="summary-section">
@@ -411,7 +412,7 @@
 
     <div class="panel">
       <div class="panel-title">Pest Animal Catches by Year</div>
-      <div class="panel-sub">HRC + Trap.NZ · Fernbird Flat · by financial year</div>
+      <div class="panel-sub">HRC · Fernbird Flat · by financial year</div>
       <div class="chart-wrap">
         <canvas id="catchesChart"></canvas>
       </div>
@@ -464,23 +465,83 @@ const border  = '#ddddd8';
    Source: BioD Contractor Data feature layer (Horo34W / Manawatū Estuary)
            Animal Pest Control feature layer (PCOName: Manawatu Estuaries variants)
    ───────────────────────────────────────────────────────────────── */
-/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-24 15:00 */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-24 15:10 */
 const DATA = {
-  "fy": "25-26",
+  "fy": "24-25",
   "site": "Manaw\u0101t\u016b Estuary",
-  "generated": "2026-04-24T15:00:26.418382",
+  "generated": "2026-04-24T15:10:51.851723",
   "stats": {
-    "records_2425": null,
-    "records_2324": null,
-    "area_sqm_2425": null,
-    "species_2425": null,
+    "records_2425": 925,
+    "records_2324": 116,
+    "area_sqm_2425": 11022,
+    "species_2425": 36,
     "trapTotal": 43
   },
   "weedByCount": {
-    "labels": [],
-    "data_2425": [],
-    "data_2324": [],
-    "otherSpecies": []
+    "labels": [
+      "Climbing Dock",
+      "Goat's Rue",
+      "Fleabane",
+      "Everlasting Pea",
+      "Caper Spurge",
+      "Other"
+    ],
+    "data_2425": [
+      100,
+      107,
+      97,
+      85,
+      76,
+      460
+    ],
+    "data_2324": [
+      25,
+      0,
+      1,
+      0,
+      3,
+      87
+    ],
+    "otherSpecies": [
+      "Japanese Honeysuckle",
+      "Pampas Grass",
+      "Sydney Golden Wattle",
+      "Tree Lupin",
+      "Poplar",
+      "Gorse",
+      "Smilax spp.",
+      "Periwinkle",
+      "Osteospermum (African Daisy)",
+      "Senecio (Pink Ragwort)",
+      "English Ivy",
+      "Agapanthus",
+      "Japanese honeysuckle",
+      "African Iceplant",
+      "Convolvulus",
+      "Pampas",
+      "Boxthorn",
+      "Karo",
+      "Montbretia",
+      "Lily of the Valley Vine",
+      "Yucca",
+      "German Ivy",
+      "Fennel",
+      "Elaeagnus",
+      "Inkweed",
+      "Broom",
+      "Unknown",
+      "Arum Lily",
+      "Tradescantia",
+      "Boneseed",
+      "Stinking Iris",
+      "Sea Bindweed",
+      "Brush Wattle",
+      "Old man's beard",
+      "Radinosiphon leptostachya",
+      "Cape Ivy",
+      "Formosa Lily",
+      "Japanese Holly Fern"
+    ]
   },
   "weedByCategory": {
     "labels": [
@@ -489,14 +550,49 @@ const DATA = {
       "Climbing Pests"
     ],
     "data": [
-      0,
-      0,
-      0
+      179,
+      422,
+      320
     ],
     "species": {
-      "Woody Pests": {},
-      "Ground Cover Pests": {},
-      "Climbing Pests": {}
+      "Woody Pests": {
+        "Poplar": 50,
+        "Sydney Golden Wattle": 45,
+        "Tree Lupin": 37,
+        "Gorse": 32,
+        "Boxthorn": 8,
+        "Yucca": 2,
+        "Karo": 1,
+        "Boneseed": 1,
+        "Brush Wattle": 1,
+        "Inkweed": 1,
+        "Elaeagnus": 1
+      },
+      "Ground Cover Pests": {
+        "Goat's Rue": 107,
+        "Fleabane": 97,
+        "Caper Spurge": 76,
+        "Pampas Grass": 64,
+        "Periwinkle": 24,
+        "Osteospermum (African Daisy)": 21,
+        "Senecio (Pink Ragwort)": 18,
+        "Agapanthus": 9,
+        "African Iceplant": 2,
+        "Arum Lily": 1,
+        "Japanese Holly Fern": 1,
+        "Stinking Iris": 1,
+        "Formosa Lily": 1
+      },
+      "Climbing Pests": {
+        "Climbing Dock": 100,
+        "Everlasting Pea": 85,
+        "Japanese Honeysuckle": 76,
+        "Smilax spp.": 30,
+        "English Ivy": 16,
+        "Convolvulus": 10,
+        "German Ivy": 2,
+        "Cape Ivy": 1
+      }
     }
   },
   "pcoRtci": {
@@ -640,7 +736,8 @@ const DATA = {
     },
     "catchesBySpecies": {
       "labels": [
-        "25-26"
+        "23-24",
+        "24-25"
       ],
       "species": [
         "Cat",
@@ -655,44 +752,53 @@ const DATA = {
       ],
       "data": {
         "Cat": [
+          0,
           0
         ],
         "Ferret": [
+          1,
           0
         ],
         "Hedgehog": [
-          11
+          9,
+          17
         ],
         "Mouse": [
-          3
+          0,
+          1
         ],
         "Rabbit": [
+          0,
           0
         ],
         "Rat": [
-          9
+          10,
+          14
         ],
         "Stoat": [
-          23
+          25,
+          11
         ],
         "Possum": [
+          0,
           0
         ],
         "Weasel": [
-          5
+          3,
+          4
         ]
       }
     }
   },
   "trapnzCatches": {
-    "fy": "25-26",
     "bySpecies": {
       "Mustelid": 10,
       "Rat": 76,
       "Other": 161,
       "Possum": 45,
       "Hedgehog": 43
-    }
+    },
+    "trapsDeployed": 171
   }
 };
 /* ICON_SITE_DATA_END */
@@ -803,8 +909,30 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
   const topStr = topSp.slice(0, 3).map(s => `${s.name} (${s.count})`).join(' · ');
   el.innerHTML =
     `<span style="font-size:13px;font-family:'Source Serif 4',serif;font-weight:600;color:var(--navy)">${total}</span>` +
-    ` <span style="color:var(--muted)">trap catches (Fernbird Flat)</span>` +
+    ` <span style="color:var(--muted)">trap catches · HRC (Fernbird Flat)</span>` +
     (topStr ? `<br><span style="color:var(--muted)">${topStr}</span>` : '');
+
+  // Trap.NZ community network stats
+  const tz  = DATA.trapnzCatches || {};
+  const tzEl = document.getElementById('trapnz-stats');
+  if (tzEl) {
+    const tzTotal  = Object.values(tz.bySpecies || {}).reduce((s, v) => s + v, 0);
+    const tzTraps  = tz.trapsDeployed || 0;
+    const tzTopSp  = Object.entries(tz.bySpecies || {})
+      .filter(([, v]) => v > 0)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 3)
+      .map(([sp, v]) => `${sp} (${v})`).join(' · ');
+    if (tzTotal > 0) {
+      tzEl.innerHTML =
+        `<span style="font-size:13px;font-family:'Source Serif 4',serif;font-weight:600;color:var(--navy)">${tzTotal}</span>` +
+        ` <span style="color:var(--muted)">trap catches · Trap.NZ community (current year)</span>` +
+        (tzTraps ? ` <span style="color:var(--muted)">· ${tzTraps} traps</span>` : '') +
+        (tzTopSp ? `<br><span style="color:var(--muted)">${tzTopSp}</span>` : '');
+    } else {
+      tzEl.textContent = '';
+    }
+  }
 })();
 
 /* ── POSSUM RTCI PILLS (activity summary) ── */
@@ -936,39 +1064,19 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
 (function () {
   const _cs = (DATA.traps && DATA.traps.catchesBySpecies)
     ? DATA.traps.catchesBySpecies : { labels: [], species: [], data: {} };
-  const _tz = DATA.trapnzCatches || { fy: null, bySpecies: {} };
-
-  // HRC FY labels + Trap.NZ FY (appended if it's a new FY)
-  const _hrcFYs = _cs.labels || [];
-  const _tzFY   = _tz.fy;
-  const _allFYs = _tzFY && !_hrcFYs.includes(_tzFY)
-    ? [..._hrcFYs, _tzFY + '*'] : _hrcFYs;
-  const _tzLabel = _tzFY ? _tzFY + '*' : null;
+  const _fys = _cs.labels || [];
 
   const _palette = {
     Rat:      '#6b4423', Mouse:    '#b89271', Possum:   '#4a4a4a',
     Stoat:    '#2a5898', Weasel:   '#4a85c4', Ferret:   '#7aaee8',
     Hedgehog: '#c8a84b', Rabbit:   '#e0bb6a', Cat:      '#1a5c7c',
-    Mustelid: '#2d6a4f', Other:    '#9a9a9a',
   };
 
-  const _hrcSp = new Set(_cs.species || []);
-  const _tzSp  = new Set(Object.keys(_tz.bySpecies || {}));
-  const _allSp = [...new Set([..._hrcSp, ..._tzSp])];
-
-  const _datasets = _allSp
-    .filter(sp => {
-      const hrcHas = _hrcFYs.some((fy, i) => ((_cs.data[sp] || [])[i] || 0) > 0);
-      const tzHas  = (_tz.bySpecies[sp] || 0) > 0;
-      return hrcHas || tzHas;
-    })
+  const _datasets = (_cs.species || [])
+    .filter(sp => _fys.some((_, i) => ((_cs.data[sp] || [])[i] || 0) > 0))
     .map(sp => ({
       label: sp,
-      data: _allFYs.map((fyLbl) => {
-        if (fyLbl === _tzLabel) return _tz.bySpecies[sp] || 0;
-        const i = _hrcFYs.indexOf(fyLbl);
-        return i >= 0 ? ((_cs.data[sp] || [])[i] || 0) : 0;
-      }),
+      data: _fys.map((_, i) => (_cs.data[sp] || [])[i] || 0),
       backgroundColor: _palette[sp] || slate2,
       borderRadius: 2,
       stack: 'catches',
@@ -976,7 +1084,7 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
 
   new Chart(document.getElementById('catchesChart'), {
     type: 'bar',
-    data: { labels: _allFYs, datasets: _datasets },
+    data: { labels: _fys, datasets: _datasets },
     options: {
       maintainAspectRatio: false,
       plugins: {
@@ -989,14 +1097,11 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
             label: ctx => {
               const val = ctx.parsed.y;
               if (!val) return null;
-              const isTZ = ctx.label === _tzLabel;
-              return ` ${ctx.dataset.label}: ${val.toLocaleString()} (${isTZ ? 'Trap.NZ' : 'HRC'})`;
+              return ` ${ctx.dataset.label}: ${val.toLocaleString()}`;
             },
             footer: items => {
               const total = items.reduce((s, i) => s + (i.parsed.y || 0), 0);
-              if (!total) return '';
-              const isTZ = items[0]?.label === _tzLabel;
-              return `Total: ${total.toLocaleString()} catches${isTZ ? ' · Trap.NZ YTD' : ' · HRC'}`;
+              return total ? `Total: ${total.toLocaleString()} catches` : '';
             }
           }
         }
