@@ -47,6 +47,9 @@ TRAPNZ_RUAHINE_URL = "https://trap.nz/project/5105689/killcount.json"
 TRAPNZ_API_KEY        = "your-trapnz-api-key"
 TRAPNZ_TE_APITI_NODE  = "20690899"
 
+# Trap.NZ public killcount endpoint — Manawatū Estuary community project (no auth required)
+TRAPNZ_ME_URL = "https://trap.nz/project/32658221/killcount.json"
+
 # Trap.NZ public killcount endpoints — Kia Whārite trapping areas (no auth required)
 TRAPNZ_KW_ARAMAHOE_URL  = "https://trap.nz/project/9011553/killcount.json"
 TRAPNZ_KW_OHOREA_URL    = "https://trap.nz/project/9011957/killcount.json"

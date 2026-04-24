@@ -172,7 +172,7 @@
   }
 
   /* ── SUMMARY PANEL ───────────────────────────── */
-  .summary-section { margin-bottom: 3px; }
+  .summary-section { margin-bottom: 2px; }
   .summary-section:last-child { margin-bottom: 0; }
 
   .sum-heading {
@@ -384,7 +384,7 @@
       <div class="summary-section">
         <div class="sum-heading navy">Predator Control</div>
         <div id="predator-stats" class="sum-detail">–</div>
-        <div id="trapnz-stats" class="sum-detail" style="margin-top:4px">–</div>
+        <div id="trapnz-stats" class="sum-detail" style="margin-top:2px">–</div>
       </div>
 
       <div class="summary-section">
@@ -932,13 +932,15 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
     const tzTopSp  = Object.entries(tz.bySpecies || {})
       .filter(([, v]) => v > 0)
       .sort(([, a], [, b]) => b - a)
-      .slice(0, 3)
       .map(([sp, v]) => `${sp} (${v})`).join(' · ');
     if (tzTotal > 0) {
+      const tzTrapsStr = tzTraps
+        ? `<span style="font-size:13px;font-family:'Source Serif 4',serif;font-weight:600;color:var(--navy)">${tzTraps}</span> <span style="color:var(--muted)">traps</span> · `
+        : '';
       tzEl.innerHTML =
         `<span style="font-size:13px;font-family:'Source Serif 4',serif;font-weight:600;color:var(--navy)">${tzTotal}</span>` +
-        ` <span style="color:var(--muted)">trap catches · Trap.NZ community (current year)</span>` +
-        (tzTraps ? ` <span style="color:var(--muted)">· ${tzTraps} traps</span>` : '') +
+        ` <span style="color:var(--muted)">catches · </span>${tzTrapsStr}` +
+        `<span style="color:var(--muted)">Trap.NZ (current year)</span>` +
         (tzTopSp ? `<br><span style="color:var(--muted)">${tzTopSp}</span>` : '');
     } else {
       tzEl.textContent = '';
