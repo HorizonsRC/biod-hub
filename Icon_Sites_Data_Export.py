@@ -627,6 +627,46 @@ def process_te_apiti(wp: pd.DataFrame, pl: pd.DataFrame, gis: GIS) -> dict:
     else:
         log.info("  TRAPNZ_API_KEY not set — skipping DoC trap data.")
 
+    # -- PCO RTCI monitoring results --------------------------------------------------
+    TE_APITI_PCO_RTCI_WHERE = (
+        "Label IN ('Bio Te Apiti Buffer', 'Bio Te Apiti North', 'Bio Te Apiti South',"
+        " 'Whakarongo', 'Woodville')"
+    )
+    RTCI_FY_FIELDS = [
+        "F24_25_Monitor_Results",
+        "F23_24_Monitor_Results",
+        "F22_23_Monitor_Results",
+        "F21_22_Monitor_Results",
+        "F20_21_Monitor_Results",
+        "F19_20_Monitor_Results",
+        "F18_19_Monitor_Results",
+    ]
+    pco_rtci: dict = {"labels": [], "data": [], "years": []}
+    if PCO_MONITORING_URL:
+        try:
+            pco_df = fetch_service_url_as_df(gis, PCO_MONITORING_URL, 0, where=TE_APITI_PCO_RTCI_WHERE)
+            for _, row in pco_df.iterrows():
+                label = row.get("Label")
+                rtci_val, rtci_yr = None, None
+                for field in RTCI_FY_FIELDS:
+                    val = row.get(field)
+                    if val is not None and str(val).strip() not in ("", "None", "null"):
+                        try:
+                            rtci_val = round(float(val), 1)
+                            rtci_yr  = field.replace("F", "", 1).replace("_Monitor_Results", "").replace("_", "-")
+                            break
+                        except (TypeError, ValueError):
+                            continue
+                if rtci_val is not None:
+                    pco_rtci["labels"].append(str(label))
+                    pco_rtci["data"].append(rtci_val)
+                    pco_rtci["years"].append(rtci_yr)
+            log.info(f"  Te Apiti PCO RTCI: {list(zip(pco_rtci['labels'], pco_rtci['data'], pco_rtci['years']))}")
+        except Exception as exc:
+            log.warning(f"  PCO monitoring query failed -- skipping RTCI data. Error: {exc}")
+    else:
+        log.warning("  PCO_MONITORING_URL not set -- skipping RTCI data.")
+
     return {
         "fy":        FY_VAL,
         "site":      "Te Apiti \u2013 Manawatu Gorge",
@@ -673,6 +713,7 @@ def process_te_apiti(wp: pd.DataFrame, pl: pd.DataFrame, gis: GIS) -> dict:
         },
         "docTraps": doc_traps,
         "allYears": all_years_rows,
+        "pcoRtci":  pco_rtci,
     }
 
 
