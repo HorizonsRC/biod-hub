@@ -39,8 +39,19 @@ PCO_MONITORING_URL = "https://services1.arcgis.com/VuN78wcRdq1Oj69W/arcgis/rest/
 # HRC Icon Sites Projects layer — reserve and buffer zone polygon areas
 HRC_ICON_SITES_URL = "https://services1.arcgis.com/VuN78wcRdq1Oj69W/arcgis/rest/services/HRC_Icon_Sites_Projects/FeatureServer"
 
-# Trap.NZ public killcount endpoint — Ruahine Kiwi Project (no auth required)
+# Trap.NZ public killcount endpoints — Ruahine Kiwi Project (no auth required)
 TRAPNZ_RUAHINE_URL = "https://trap.nz/project/5105689/killcount.json"
+
+# Trap.NZ authenticated API — Te Āpiti (DoC-managed project, HRC has member access)
+# Generate your API key at https://trap.nz/user/{your-uid}/api-keys
+TRAPNZ_API_KEY        = "your-trapnz-api-key"
+TRAPNZ_TE_APITI_NODE  = "20690899"
+
+# Trap.NZ public killcount endpoints — Kia Whārite trapping areas (no auth required)
+TRAPNZ_KW_ARAMAHOE_URL  = "https://trap.nz/project/9011553/killcount.json"
+TRAPNZ_KW_OHOREA_URL    = "https://trap.nz/project/9011957/killcount.json"
+TRAPNZ_KW_RETARUKE_URL  = "https://trap.nz/project/8958164/killcount.json"
+TRAPNZ_KW_MANGANUI_URL  = "https://trap.nz/project/9011797/killcount.json"
 
 # Local GDB feature class — Ruahine Kiwi trap locations (exported from Trap.NZ)
 RUAHINE_TRAPS_LAYER = r"\\your-server\your-share\IconSite_project\IconSite_project.gdb\RuahineKiwi_trapsLocations"
