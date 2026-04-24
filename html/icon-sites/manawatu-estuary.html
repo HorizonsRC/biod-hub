@@ -40,7 +40,7 @@
   /* ── MASTER LAYOUT ─────────────────────────── */
   .wrapper {
     display: grid;
-    grid-template-rows: 58px 405px 1fr;
+    grid-template-rows: 58px 435px 1fr;
     height: 806px;
     width: 953px;
     min-width: 953px;
@@ -210,6 +210,7 @@
     margin-top: 1px;
   }
   .pill-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
+  #rtci-pills .pill { font-size: 9px; padding: 2px 5px; }
   .pill {
     font-size: 10px;
     font-weight: 600;
@@ -465,11 +466,11 @@ const border  = '#ddddd8';
    Source: BioD Contractor Data feature layer (Horo34W / Manawatū Estuary)
            Animal Pest Control feature layer (PCOName: Manawatu Estuaries variants)
    ───────────────────────────────────────────────────────────────── */
-/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-24 15:10 */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-24 15:19 */
 const DATA = {
   "fy": "24-25",
   "site": "Manaw\u0101t\u016b Estuary",
-  "generated": "2026-04-24T15:10:51.851723",
+  "generated": "2026-04-24T15:19:52.677075",
   "stats": {
     "records_2425": 925,
     "records_2324": 116,
@@ -564,9 +565,9 @@ const DATA = {
         "Yucca": 2,
         "Karo": 1,
         "Boneseed": 1,
-        "Brush Wattle": 1,
         "Inkweed": 1,
-        "Elaeagnus": 1
+        "Elaeagnus": 1,
+        "Brush Wattle": 1
       },
       "Ground Cover Pests": {
         "Goat's Rue": 107,
@@ -578,10 +579,10 @@ const DATA = {
         "Senecio (Pink Ragwort)": 18,
         "Agapanthus": 9,
         "African Iceplant": 2,
-        "Arum Lily": 1,
         "Japanese Holly Fern": 1,
-        "Stinking Iris": 1,
-        "Formosa Lily": 1
+        "Arum Lily": 1,
+        "Formosa Lily": 1,
+        "Stinking Iris": 1
       },
       "Climbing Pests": {
         "Climbing Dock": 100,
@@ -737,7 +738,8 @@ const DATA = {
     "catchesBySpecies": {
       "labels": [
         "23-24",
-        "24-25"
+        "24-25",
+        "25-26"
       ],
       "species": [
         "Cat",
@@ -753,39 +755,48 @@ const DATA = {
       "data": {
         "Cat": [
           0,
+          0,
           0
         ],
         "Ferret": [
           1,
+          0,
           0
         ],
         "Hedgehog": [
           9,
-          17
+          17,
+          11
         ],
         "Mouse": [
           0,
-          1
+          1,
+          3
         ],
         "Rabbit": [
+          0,
           0,
           0
         ],
         "Rat": [
           10,
-          14
+          14,
+          9
         ],
         "Stoat": [
           25,
-          11
+          11,
+          23
         ],
         "Possum": [
+          0,
           0,
           0
         ],
         "Weasel": [
           3,
-          4
+          4,
+          5
         ]
       }
     }
