@@ -221,9 +221,13 @@
     color: var(--teal);
     border: 1px solid var(--teal-md);
   }
-  .pill.green { background: var(--green-lt); color: var(--green); border-color: var(--green-md); }
-  .pill.gold  { background: var(--gold-lt);  color: #8a6820; border-color: #e8d9b5; }
-  .pill.navy  { background: #e9ecee; color: var(--navy); border-color: #c8cdd0; }
+  .pill.green     { background: var(--green-lt); color: var(--green); border-color: var(--green-md); }
+  .pill.gold      { background: var(--gold-lt);  color: #8a6820; border-color: #e8d9b5; }
+  .pill.navy      { background: #e9ecee; color: var(--navy); border-color: #c8cdd0; }
+  .pill.rtci-good { background: #e8f3ee; color: #2d6a4f; border-color: #b0d9c4; }
+  .pill.rtci-warn { background: var(--gold-lt); color: #8a6820; border-color: #e8d9b5; }
+  .pill.rtci-alert{ background: #fce8e6; color: #c0392b; border-color: #f5c6c2; }
+  #rtci-pills .pill { font-size: 9px; padding: 2px 5px; }
 
   .contractor-row {
     margin-top: 4px;
@@ -330,8 +334,8 @@
       </div>
 
       <div class="summary-section">
-        <div class="sum-heading">Predator Control</div>
-        <div class="sum-detail">DOC added 54 bait stations in the Southern Scenic Reserve (+7%). Oct monitoring returned 4.6% RTCI (Residual Trap Catch Index) for possums and 28% TTI (Tracking Tunnel Index) for rat relative abundance.</div>
+        <div class="sum-heading">Possum RTCI</div>
+        <div class="pill-row" id="rtci-pills"></div>
       </div>
 
     </div>
@@ -387,14 +391,14 @@ const border  = '#ddddd8';
    DATA — auto-updated by Icon_Sites_Data_Export.py
    Source: BioD Contractor Data feature layer (Palm05 / Manawatū Gorge)
    ───────────────────────────────────────────────────────────────── */
-/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-24 15:19 */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-04-24 15:46 */
 const DATA = {
   "fy": "24-25",
   "site": "Te Apiti \u2013 Manawatu Gorge",
-  "generated": "2026-04-24T15:19:34.710172",
+  "generated": "2026-04-24T15:46:10.843225",
   "stats": {
     "km": 1130,
-    "visits": 53,
+    "visits": 26,
     "records": 986,
     "rpmp": 858,
     "species": 9,
@@ -496,7 +500,7 @@ const DATA = {
   "summary": {
     "rpmpPct": 87,
     "kmTotal": 1130,
-    "visits": 53,
+    "visits": 26,
     "speciesCount": 9,
     "records": 986,
     "adults": 642,
@@ -710,8 +714,8 @@ const DATA = {
             "Bio Te Apiti Buffer South": 1
           },
           "Rabbit": {
-            "Bio Te Apiti Buffer North": 4,
-            "Bio Te Apiti South": 4
+            "Bio Te Apiti South": 4,
+            "Bio Te Apiti Buffer North": 4
           },
           "Rat": {
             "Bio Te Apiti Buffer North": 40,
@@ -901,7 +905,7 @@ const DATA = {
       "fy": "22-23",
       "records": 1198,
       "km": 1191,
-      "visits": 50,
+      "visits": 26,
       "species": 8,
       "rpmp": 1157,
       "rpmp_pct": 97,
@@ -914,7 +918,7 @@ const DATA = {
       "fy": "23-24",
       "records": 1026,
       "km": 897,
-      "visits": 25,
+      "visits": 55,
       "species": 8,
       "rpmp": 941,
       "rpmp_pct": 92,
@@ -927,7 +931,7 @@ const DATA = {
       "fy": "24-25",
       "records": 986,
       "km": 1130,
-      "visits": 53,
+      "visits": 26,
       "species": 9,
       "rpmp": 858,
       "rpmp_pct": 87,
@@ -935,7 +939,21 @@ const DATA = {
       "juveniles": 325,
       "seedlings": 18
     }
-  ]
+  ],
+  "pcoRtci": {
+    "labels": [
+      "Whakarongo",
+      "Woodville"
+    ],
+    "data": [
+      0.1,
+      0.4
+    ],
+    "years": [
+      "23-24",
+      "23-24"
+    ]
+  }
 };
 /* ICON_SITE_DATA_END */
 
@@ -963,6 +981,27 @@ document.getElementById('val-rpmp-pct').textContent  = fmt(DATA.summary.rpmpPct,
 document.getElementById('val-contractor').textContent = DATA.summary.contractor || '–';
 document.getElementById('pill-records').textContent  = fmt(DATA.summary.records, 'weed locations');
 document.getElementById('pill-km').textContent       = fmt(DATA.summary.kmTotal, 'km tracked', 0);
+
+// Possum RTCI pills
+(function () {
+  const rtci     = DATA.pcoRtci || { labels: [], data: [], years: [] };
+  const container = document.getElementById('rtci-pills');
+  if (!container) return;
+  if (!rtci.labels.length) {
+    container.innerHTML = '<span style="font-size:10px;color:var(--muted)">No RTCI data available</span>';
+    return;
+  }
+  rtci.labels.forEach((label, i) => {
+    const val  = rtci.data[i];
+    const yr   = rtci.years[i] || '';
+    const cls  = val < 5 ? 'rtci-good' : val < 10 ? 'rtci-warn' : 'rtci-alert';
+    const pill = document.createElement('span');
+    pill.className   = `pill ${cls}`;
+    pill.title       = yr ? `Latest result: ${yr}` : '';
+    pill.textContent = `${label} ${val}%`;
+    container.appendChild(pill);
+  });
+})();
 
 // Stat grid — trap catches for the current FY
 (function () {
