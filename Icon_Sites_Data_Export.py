@@ -89,6 +89,8 @@ TRAPNZ_KW_MANGANUI_URL  = getattr(config, "TRAPNZ_KW_MANGANUI_URL",
 EBIRD_API_KEY         = getattr(config, "EBIRD_API_KEY", None)
 TRAPNZ_API_KEY        = getattr(config, "TRAPNZ_API_KEY", None)
 TRAPNZ_TE_APITI_NODE  = getattr(config, "TRAPNZ_TE_APITI_NODE", "20690899")
+TRAPNZ_ME_URL         = getattr(config, "TRAPNZ_ME_URL",
+                                "https://trap.nz/project/32658221/killcount.json")
 
 if not CONTRACTOR_ITEM_ID or not TRAP_SERVICE_URL:
     sys.exit(
@@ -798,6 +800,7 @@ def process_manawatu_estuary(wp: pd.DataFrame, gis: GIS) -> dict:
     SITE_ID     = "Horo34W"
     FY_PRIMARY  = "24-25"
     FY_PRIOR    = "23-24"
+    FY_CURRENT  = date_to_fy(datetime.datetime.today())
     TOP_N       = 5
 
     CATCH_SPECIES = ["Cat", "Ferret", "Hedgehog", "Mouse", "Rabbit",
@@ -958,8 +961,9 @@ def process_manawatu_estuary(wp: pd.DataFrame, gis: GIS) -> dict:
                             .size()
                             .unstack(fill_value=0)
                         )
-                        # Prefer the two display FYs; fall back to all available
-                        desired = [fy for fy in [FY_PRIOR, FY_PRIMARY] if fy in pivot.index]
+                        # Show prior + primary + current FY (deduplicated, in order)
+                        _wanted = list(dict.fromkeys([FY_PRIOR, FY_PRIMARY, FY_CURRENT]))
+                        desired = [fy for fy in _wanted if fy in pivot.index]
                         fy_order = desired if desired else sorted(
                             [fy for fy in pivot.index if fy]
                         )
@@ -1290,6 +1294,29 @@ def process_manawatu_estuary(wp: pd.DataFrame, gis: GIS) -> dict:
         }
         log.info(f"  Combined bird sightings top species: {list(zip(labels[:5], data[:5]))}")
 
+    # ── Trap.NZ public killcount (Manawatū Estuary community project) ──────────
+    # "year" = current calendar year catches; mapped to current NZ FY as a YTD approximation.
+    trapnz_me_catches: dict = {}
+    trapnz_me_traps: int   = 0
+    trapnz_me_fy = date_to_fy(datetime.datetime.today())
+    if TRAPNZ_ME_URL:
+        try:
+            resp = requests.get(TRAPNZ_ME_URL, timeout=30)
+            resp.raise_for_status()
+            kc = resp.json()
+            # Structure: catches.year.species = {Rat: 76, Possum: 45, ...}
+            species_data = (
+                kc.get("catches", {}).get("year", {}).get("species", {})
+            )
+            trapnz_me_traps = int(kc.get("traps") or 0)
+            log.info(f"  Trap.NZ ME traps: {trapnz_me_traps}, year species: {species_data}")
+            for name, val in species_data.items():
+                if name and val and int(val) > 0:
+                    trapnz_me_catches[name] = int(val)
+            log.info(f"  Trap.NZ ME catches (FY {trapnz_me_fy}): {trapnz_me_catches}")
+        except Exception as exc:
+            log.warning(f"  Trap.NZ ME fetch failed — skipping. Error: {exc}")
+
     return {
         "fy":        FY_PRIMARY,
         "site":      "Manaw\u0101t\u016b Estuary",
@@ -1314,6 +1341,10 @@ def process_manawatu_estuary(wp: pd.DataFrame, gis: GIS) -> dict:
             "total":            trap_total or None,
             "byType":           trap_types,
             "catchesBySpecies": catches_by_species,
+        },
+        "trapnzCatches": {
+            "bySpecies":     trapnz_me_catches,
+            "trapsDeployed": trapnz_me_traps if TRAPNZ_ME_URL else 0,
         },
     }
 
@@ -1821,6 +1852,8 @@ def git_commit_and_push(html_paths: list[Path]) -> None:
         log.info("Git: nothing to commit — HTML data blocks unchanged.")
         return
     subprocess.run(["git", "commit", "-m", msg], cwd=REPO_ROOT, check=True)
+    log.info("Git: pulling remote changes before push...")
+    subprocess.run(["git", "pull", "--rebase", "--autostash", "origin", "HEAD"], cwd=REPO_ROOT, check=True)
     log.info("Git: pushing to origin...")
     subprocess.run(["git", "push", "--set-upstream", "origin", "HEAD"], cwd=REPO_ROOT, check=True)
     log.info("Git: push complete.")
