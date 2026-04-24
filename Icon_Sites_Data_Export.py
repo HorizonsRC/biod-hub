@@ -78,7 +78,17 @@ HRC_ICON_SITES_URL      = getattr(config, "HRC_ICON_SITES_URL", None)
 TRAPNZ_RUAHINE_URL      = getattr(config, "TRAPNZ_RUAHINE_URL",
                                   "https://trap.nz/project/5105689/killcount.json")
 RUAHINE_TRAPS_LAYER     = getattr(config, "RUAHINE_TRAPS_LAYER", None)
-EBIRD_API_KEY       = getattr(config, "EBIRD_API_KEY", None)
+TRAPNZ_KW_ARAMAHOE_URL  = getattr(config, "TRAPNZ_KW_ARAMAHOE_URL",
+                                  "https://trap.nz/project/9011553/killcount.json")
+TRAPNZ_KW_OHOREA_URL    = getattr(config, "TRAPNZ_KW_OHOREA_URL",
+                                  "https://trap.nz/project/9011957/killcount.json")
+TRAPNZ_KW_RETARUKE_URL  = getattr(config, "TRAPNZ_KW_RETARUKE_URL",
+                                  "https://trap.nz/project/8958164/killcount.json")
+TRAPNZ_KW_MANGANUI_URL  = getattr(config, "TRAPNZ_KW_MANGANUI_URL",
+                                  "https://trap.nz/project/9011797/killcount.json")
+EBIRD_API_KEY         = getattr(config, "EBIRD_API_KEY", None)
+TRAPNZ_API_KEY        = getattr(config, "TRAPNZ_API_KEY", None)
+TRAPNZ_TE_APITI_NODE  = getattr(config, "TRAPNZ_TE_APITI_NODE", "20690899")
 
 if not CONTRACTOR_ITEM_ID or not TRAP_SERVICE_URL:
     sys.exit(
@@ -94,7 +104,7 @@ TE_APITI_PCO_WHERE = (
     "PCOName IN ("
     "'Bio Te Apiti', 'Bio Te Apiti Buffer', "
     "'Bio Te Apiti Buffer North', 'Bio Te Apiti Buffer South', "
-    "'Bio Te Apiti South'"
+    "'Bio Te Apiti South', 'Te Apiti Wasp Control'"
     ")"
 )
 
@@ -221,6 +231,31 @@ def inject_into_html(html_path: Path, data: dict) -> None:
     log.info(f"  ✓ DATA block updated in {html_path.name}")
 
 # ── Per-site processors ───────────────────────────────────────────────────────
+
+def _fetch_trapnz_wfs_all(api_key: str, project_id: str, layer: str,
+                          page_size: int = 5000) -> list:
+    """Fetch all features from a Trap.NZ WFS layer, handling pagination."""
+    base = f"https://io.trap.nz/geo/trapnz-projects/wfs/{api_key}/{project_id}"
+    features: list = []
+    start = 0
+    while True:
+        resp = requests.get(base, params={
+            "service":     "WFS",
+            "version":     "2.0.0",
+            "request":     "GetFeature",
+            "typeNames":   f"trapnz-projects:{layer}",
+            "outputFormat": "application/json",
+            "count":       page_size,
+            "startIndex":  start,
+        }, timeout=60)
+        resp.raise_for_status()
+        batch = resp.json().get("features", [])
+        features.extend(batch)
+        if len(batch) < page_size:
+            break
+        start += page_size
+    return features
+
 
 def process_te_apiti(wp: pd.DataFrame, pl: pd.DataFrame, gis: GIS) -> dict:
     """
@@ -535,6 +570,61 @@ def process_te_apiti(wp: pd.DataFrame, pl: pd.DataFrame, gis: GIS) -> dict:
     except Exception as exc:
         log.warning(f"  Trap layer query failed — skipping trap data. Error: {exc}")
 
+    # ── DoC trap data (Trap.NZ WFS — authenticated API) ───────────────────────
+    import collections as _col
+    doc_traps: dict = {
+        "total":      None,
+        "byType":     {"labels": [], "data": []},
+        "catchesByFy": {},
+    }
+    if TRAPNZ_API_KEY and TRAPNZ_TE_APITI_NODE:
+        try:
+            # Trap installations → counts by type
+            trap_feats = _fetch_trapnz_wfs_all(
+                TRAPNZ_API_KEY, TRAPNZ_TE_APITI_NODE, "default-project-traps"
+            )
+            type_counts = _col.Counter(
+                f["properties"].get("trap_type", "Unknown") for f in trap_feats
+            )
+            doc_traps["total"]  = len(trap_feats)
+            doc_traps["byType"] = {
+                "labels": [t for t, _ in type_counts.most_common()],
+                "data":   [n for _, n in type_counts.most_common()],
+            }
+            log.info(f"  DoC traps: {doc_traps['total']} | {dict(type_counts)}")
+
+            # Catch records (paginated) → catches by species per NZ financial year
+            rec_feats = _fetch_trapnz_wfs_all(
+                TRAPNZ_API_KEY, TRAPNZ_TE_APITI_NODE, "default-project-trap-records"
+            )
+            log.info(f"  DoC catch records fetched: {len(rec_feats)}")
+            fy_sp: dict = _col.defaultdict(lambda: _col.defaultdict(int))
+            for feat in rec_feats:
+                p  = feat["properties"]
+                sp = (p.get("species_caught") or "").strip()
+                if not sp or sp == "None":
+                    continue
+                dt_str = p.get("record_date", "")
+                if not dt_str:
+                    continue
+                dt = datetime.datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
+                fy = (f"{dt.year-1}-{str(dt.year)[2:]}" if dt.month < 7
+                      else f"{dt.year}-{str(dt.year+1)[2:]}")
+                # Normalise: all Rat variants → "Rat"; Stoat/Weasel kept separately
+                if sp.startswith("Rat"):
+                    sp = "Rat"
+                fy_sp[fy][sp] += int(p.get("strikes") or 1)
+
+            doc_traps["catchesByFy"] = {
+                fy: dict(counts) for fy, counts in sorted(fy_sp.items())
+            }
+            log.info(f"  DoC catches by FY: {doc_traps['catchesByFy']}")
+
+        except Exception as exc:
+            log.warning(f"  DoC Trap.NZ WFS fetch failed — skipping. Error: {exc}")
+    else:
+        log.info("  TRAPNZ_API_KEY not set — skipping DoC trap data.")
+
     return {
         "fy":        FY_VAL,
         "site":      "Te Apiti \u2013 Manawatu Gorge",
@@ -579,6 +669,7 @@ def process_te_apiti(wp: pd.DataFrame, pl: pd.DataFrame, gis: GIS) -> dict:
             "byTypeByZone":     trap_by_type_by_zone,
             "catchesBySpecies": catches_by_species,
         },
+        "docTraps": doc_traps,
         "allYears": all_years_rows,
     }
 
@@ -647,10 +738,46 @@ def process_kia_wharite() -> dict:
 
     log.info(f"  {len(labels)} PCO areas: {list(zip(labels, data, years))}")
 
+    # ── Trap.NZ: year-to-date catches by area ────────────────────────────────
+    KW_AREAS = [
+        ("Aramahoe",         TRAPNZ_KW_ARAMAHOE_URL),
+        ("Ohorea",           TRAPNZ_KW_OHOREA_URL),
+        ("Retaruke",         TRAPNZ_KW_RETARUKE_URL),
+        ("Manganui o te Ao", TRAPNZ_KW_MANGANUI_URL),
+    ]
+    area_names, rats_ytd, mustelids_ytd, other_ytd = [], [], [], []
+    for area_name, url in KW_AREAS:
+        area_names.append(area_name)
+        if not url:
+            log.warning(f"  No Trap.NZ URL configured for {area_name} — defaulting to 0.")
+            rats_ytd.append(0); mustelids_ytd.append(0); other_ytd.append(0)
+            continue
+        try:
+            payload  = requests.get(url, timeout=30).json()
+            sp       = payload.get("catches", {}).get("year", {}).get("species", {})
+            rats     = int(sp.get("Rat",      0) or 0)
+            mustelid = int(sp.get("Mustelid", 0) or 0)
+            other    = int((sp.get("Hedgehog", 0) or 0)
+                         + (sp.get("Possum",   0) or 0)
+                         + (sp.get("Other",    0) or 0))
+            rats_ytd.append(rats); mustelids_ytd.append(mustelid); other_ytd.append(other)
+            log.info(f"  {area_name}: Rat={rats}  Mustelid={mustelid}  Other={other}")
+        except Exception as exc:
+            log.warning(f"  Trap.NZ fetch failed for {area_name}: {exc}")
+            rats_ytd.append(0); mustelids_ytd.append(0); other_ytd.append(0)
+
+    trap_catches_by_area = {
+        "areas":     area_names,
+        "rats":      rats_ytd,
+        "mustelids": mustelids_ytd,
+        "other":     other_ytd,
+    }
+
     return {
-        "site":      "Kia Wharite",
-        "generated": datetime.datetime.now().isoformat(),
-        "pcoRtci":   {"labels": labels, "data": data, "years": years},
+        "site":              "Kia Wharite",
+        "generated":         datetime.datetime.now().isoformat(),
+        "pcoRtci":           {"labels": labels, "data": data, "years": years},
+        "trapCatchesByArea": trap_catches_by_area,
     }
 
 

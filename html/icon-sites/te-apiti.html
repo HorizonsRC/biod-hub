@@ -343,7 +343,7 @@
 
     <div class="panel">
       <div class="panel-title">Pest Animal Catches by Year</div>
-      <div class="panel-sub">HRC PCO traps + DoC Trap.NZ · by financial year</div>
+      <div class="panel-sub">HRC + DoC Traps</div>
       <div class="chart-wrap">
         <canvas id="catchesChart"></canvas>
       </div>
@@ -351,7 +351,7 @@
 
     <div class="panel">
       <div class="panel-title">Trap Network by Type</div>
-      <div class="panel-sub">HRC PCO traps + DoC Trap.NZ traps</div>
+      <div class="panel-sub">HRC + DoC Traps</div>
       <div class="chart-wrap">
         <canvas id="trapTypeChart"></canvas>
       </div>
@@ -954,7 +954,7 @@ if (DATA.fy) {
 }
 
 // Stat grid
-document.getElementById('val-trap-stat').textContent = fmt((DATA.traps || {}).total);
+document.getElementById('val-trap-stat').textContent = fmt(((DATA.traps || {}).total || 0) + ((DATA.docTraps || {}).total || 0));
 document.getElementById('val-adults').textContent    = fmt(DATA.stats.adults);
 document.getElementById('val-species').textContent   = fmt(DATA.stats.species);
 
@@ -968,16 +968,24 @@ document.getElementById('pill-km').textContent       = fmt(DATA.summary.kmTotal,
 (function () {
   const cs  = (DATA.traps && DATA.traps.catchesBySpecies) ? DATA.traps.catchesBySpecies : {};
   const idx = (cs.labels || []).indexOf(DATA.fy);
-  let total = 0, spCount = 0;
+  let total = 0; const spSet = new Set();
   if (idx >= 0 && cs.data) {
-    Object.values(cs.data).forEach(arr => {
+    Object.entries(cs.data).forEach(([sp, arr]) => {
       const v = arr[idx] || 0;
-      total   += v;
-      if (v > 0) spCount++;
+      total += v;
+      if (v > 0) spSet.add(sp);
     });
   }
+  // Add DoC catches for current FY (normalise "2024-25" → "24-25")
+  const docByFy = {};
+  Object.entries((DATA.docTraps && DATA.docTraps.catchesByFy) || {}).forEach(([k, v]) => {
+    docByFy[k.replace(/^\d{2}(\d{2})-/, '$1-')] = v;
+  });
+  Object.entries(docByFy[DATA.fy] || {}).forEach(([sp, n]) => {
+    if (sp !== 'Bird' && n > 0) { total += n; spSet.add(sp); }
+  });
   document.getElementById('val-trap-catches').textContent = fmt(total || null);
-  document.getElementById('val-trap-species').textContent = fmt(spCount || null);
+  document.getElementById('val-trap-species').textContent = fmt(spSet.size || null);
 })();
 document.getElementById('pill-adults').textContent    = fmt(DATA.summary.adults, 'adult');
 document.getElementById('pill-juveniles').textContent = fmt(DATA.summary.juveniles, 'juvenile');
@@ -1036,99 +1044,97 @@ new Chart(document.getElementById('speciesChart'), {
 });
 
 /* ── PEST ANIMAL CATCHES BY YEAR × SPECIES (bottom left) ── */
-const _cs = (DATA.traps && DATA.traps.catchesBySpecies)
-  ? DATA.traps.catchesBySpecies
-  : { labels: [], species: [], data: {} };
+(function () {
+  const _cs = (DATA.traps && DATA.traps.catchesBySpecies)
+    ? DATA.traps.catchesBySpecies
+    : { labels: [], species: [], data: {} };
 
-const _speciesPalette = {
-  Rat:      '#6b4423',
-  Mouse:    '#b89271',
-  Possum:   '#4a4a4a',
-  Stoat:    '#2d6a4f',
-  Weasel:   '#4a9b6f',
-  Ferret:   '#8dc9a6',
-  Hedgehog: '#c8a84b',
-  Rabbit:   '#e0bb6a',
-  Cat:      '#1a6b7c',
-};
-// DoC palette: lighter/muted versions of same hues to distinguish visually
-const _docPalette = {
-  Rat:      '#c49a72',
-  Mouse:    '#d9bfa3',
-  Possum:   '#9a9a9a',
-  Stoat:    '#7ab89a',
-  Weasel:   '#9ecfb5',
-  Ferret:   '#c2e4d0',
-  Hedgehog: '#e8d080',
-  Rabbit:   '#f0d898',
-  Cat:      '#6dbdcd',
-};
+  // Normalise DoC FY keys ("2023-24") → short format ("23-24") to match HRC labels
+  const _docByFy = {};
+  Object.entries((DATA.docTraps && DATA.docTraps.catchesByFy) || {}).forEach(([k, v]) => {
+    _docByFy[k.replace(/^\d{2}(\d{2})-/, '$1-')] = v;
+  });
 
-const _hrcDatasets = (_cs.species || [])
-  .filter(sp => (_cs.data[sp] || []).some(v => v > 0))
-  .map(sp => ({
-    label: sp,
-    data: _cs.data[sp] || [],
-    backgroundColor: _speciesPalette[sp] || teal2,
-    borderRadius: 2,
-    stack: 'hrc',
-  }));
+  const _fyLbls = _cs.labels || [];
+  const hrcCt = (fy, sp) => { const i = _fyLbls.indexOf(fy); return i >= 0 ? ((_cs.data[sp] || [])[i] || 0) : 0; };
+  const docCt = (fy, sp) => (_docByFy[fy] || {})[sp] || 0;
 
-// DoC datasets — aligned to HRC FY labels, zero-filled for years before Oct 2023
-const _docByFy = (DATA.docTraps && DATA.docTraps.catchesByFy) || {};
-const _docDatasets = (_cs.species || [])
-  .filter(sp => (_cs.labels || []).some(fy => _docByFy[fy] && _docByFy[fy][sp]))
-  .map(sp => ({
-    label: sp + ' (DoC)',
-    data: (_cs.labels || []).map(fy => (_docByFy[fy] && _docByFy[fy][sp]) || 0),
-    backgroundColor: _docPalette[sp] || tealLt,
-    borderRadius: 2,
-    stack: 'doc',
-  }));
+  // Display groups — Bird excluded; Ferret/Stoat/Weasel → Mustelids; Cat/Rabbit/Mouse → Other
+  const GROUPS = [
+    { label: 'Rat',       species: ['Rat'],                       color: '#6b4423' },
+    { label: 'Possum',    species: ['Possum'],                    color: '#4a4a4a' },
+    { label: 'Hedgehog',  species: ['Hedgehog'],                  color: '#c8a84b' },
+    { label: 'Mustelids', species: ['Ferret', 'Stoat', 'Weasel'], color: '#2d6a4f' },
+    { label: 'Other',     species: ['Cat', 'Rabbit', 'Mouse'],    color: '#9a9a9a' },
+  ];
 
-new Chart(document.getElementById('catchesChart'), {
-  type: 'bar',
-  data: { labels: _cs.labels, datasets: [..._hrcDatasets, ..._docDatasets] },
-  options: {
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: true, position: 'bottom', labels: { font: { size: 9.5 }, boxWidth: 10, padding: 6 } },
-      tooltip: {
-        callbacks: {
-          label: ctx => {
-            const isDoc = ctx.dataset.stack === 'doc';
-            const sp    = ctx.dataset.label.replace(/ \(DoC\)$/, '');
-            const fy    = ctx.label;
-            const val   = ctx.parsed.y;
-            if (!val) return null;
-            const lines = [` ${sp} ${isDoc ? '· DoC (Trap.NZ)' : '· HRC (PCO)'}: ${val.toLocaleString()}`];
-            if (!isDoc) {
-              const pcoDet = (_cs.pcoDetail && _cs.pcoDetail[fy] && _cs.pcoDetail[fy][sp]) || {};
-              Object.entries(pcoDet).sort((a, b) => b[1] - a[1]).forEach(([pco, n]) => {
-                lines.push(`    ${pco.replace(/^Bio Te Apiti\s*/i, '') || pco}: ${n}`);
-              });
+  const grpHrc = (g, fy) => g.species.reduce((s, sp) => s + hrcCt(fy, sp), 0);
+  const grpDoc = (g, fy) => g.species.reduce((s, sp) => s + docCt(fy, sp), 0);
+
+  const _datasets = GROUPS
+    .filter(g => _fyLbls.some(fy => grpHrc(g, fy) + grpDoc(g, fy) > 0))
+    .map(g => ({
+      label: g.label,
+      data: _fyLbls.map(fy => grpHrc(g, fy) + grpDoc(g, fy)),
+      backgroundColor: g.color,
+      borderRadius: 2,
+      stack: 'catches',
+    }));
+
+  new Chart(document.getElementById('catchesChart'), {
+    type: 'bar',
+    data: { labels: _fyLbls, datasets: _datasets },
+    options: {
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'bottom', labels: { font: { size: 9.5 }, boxWidth: 10, padding: 6 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const g   = GROUPS.find(x => x.label === ctx.dataset.label);
+              const fy  = ctx.label;
+              const tot = ctx.parsed.y;
+              if (!tot || !g) return null;
+              const hrc = grpHrc(g, fy);
+              const doc = grpDoc(g, fy);
+              const lines = [` ${g.label}: ${tot.toLocaleString()} catches`];
+              if (hrc) {
+                lines.push(`   HRC: ${hrc.toLocaleString()}`);
+                if (g.species.length > 1) {
+                  g.species.forEach(sp => { const n = hrcCt(fy, sp); if (n) lines.push(`     ${sp}: ${n}`); });
+                } else {
+                  const pcoDet = ((_cs.pcoDetail || {})[fy] || {})[g.species[0]] || {};
+                  Object.entries(pcoDet).sort((a, b) => b[1] - a[1]).forEach(([z, n]) => {
+                    lines.push(`     ${z.replace(/^Bio Te Apiti\s*/i, '') || z}: ${n}`);
+                  });
+                }
+              }
+              if (doc) {
+                lines.push(`   DoC: ${doc.toLocaleString()}`);
+                if (g.species.length > 1) {
+                  g.species.forEach(sp => { const n = docCt(fy, sp); if (n) lines.push(`     ${sp}: ${n}`); });
+                }
+              }
+              return lines;
+            },
+            footer: items => {
+              const total = items.reduce((s, i) => s + (i.parsed.y || 0), 0);
+              return total ? `Total: ${total.toLocaleString()} catches` : '';
             }
-            return lines;
-          },
-          footer: items => {
-            const total = items.reduce((s, i) => s + (i.parsed.y || 0), 0);
-            return total ? `Total: ${total.toLocaleString()} catches` : '';
           }
         }
-      }
-    },
-    scales: {
-      x: { grid: { display: false }, stacked: true, ticks: { font: { size: 10.5 } } },
-      y: {
-        grid: { color: border },
-        stacked: true,
-        beginAtZero: true,
-        ticks: { font: { size: 10 } },
-        title: { display: true, text: 'Catches', font: { size: 10 }, color: '#8a8a82' }
+      },
+      scales: {
+        x: { grid: { display: false }, stacked: true, ticks: { font: { size: 10.5 } } },
+        y: {
+          grid: { color: border }, stacked: true, beginAtZero: true,
+          ticks: { font: { size: 10 } },
+          title: { display: true, text: 'Catches', font: { size: 10 }, color: '#8a8a82' }
+        }
       }
     }
-  }
-});
+  });
+})();
 
 /* ── WEEDS CONTROLLED BY YEAR × LIFE STAGE (bottom middle) ── */
 const _ay = DATA.allYears || [];
@@ -1174,42 +1180,43 @@ new Chart(document.getElementById('trendsChart'), {
   }
 });
 
-/* ── TRAP TYPE CHART — HRC + DoC grouped (bottom right) ── */
+/* ── TRAP TYPE CHART — HRC + DoC stacked per type (bottom right) ── */
 (function () {
-  const _traps  = DATA.traps    || {};
-  const _doc    = DATA.docTraps || {};
+  const _traps    = DATA.traps    || {};
+  const _doc      = DATA.docTraps || {};
   const _ttByZone = _traps.byTypeByZone || {};
 
-  // Build merged label set: HRC types first, then any DoC-only types
-  const hrcTypeMap = {};
+  // Normalise type name for matching (lowercase, no spaces): "DOC 200" == "DOC200"
+  const norm = t => t.toLowerCase().replace(/\s+/g, '');
+
+  // HRC types: normalised key → {label, count}
+  const hrcTypes = {};
   (_traps.byType && _traps.byType.labels || []).forEach((lbl, i) => {
-    if ((_traps.byType.data[i] || 0) >= 5) hrcTypeMap[lbl] = _traps.byType.data[i];
-  });
-  const docTypeMap = {};
-  (_doc.byType && _doc.byType.labels || []).forEach((lbl, i) => {
-    docTypeMap[lbl] = _doc.byType.data[i] || 0;
+    const count = _traps.byType.data[i] || 0;
+    if (count >= 5) hrcTypes[norm(lbl)] = { label: lbl, count };
   });
 
-  // Union of all types that appear in either source
-  const allTypes = [...new Set([...Object.keys(hrcTypeMap), ...Object.keys(docTypeMap)])];
+  // DoC types: normalised key → {label, count}
+  const docTypes = {};
+  (_doc.byType && _doc.byType.labels || []).forEach((lbl, i) => {
+    docTypes[norm(lbl)] = { label: lbl, count: _doc.byType.data[i] || 0 };
+  });
+
+  // Union of normalised keys; prefer HRC label for display
+  const allNorm    = [...new Set([...Object.keys(hrcTypes), ...Object.keys(docTypes)])];
+  const dispLabels = allNorm.map(k => (hrcTypes[k] || docTypes[k]).label);
+  const hrcData    = allNorm.map(k => (hrcTypes[k] || {}).count || 0);
+  const docData    = allNorm.map(k => (docTypes[k]  || {}).count || 0);
+  // Original HRC label (for byTypeByZone lookup)
+  const hrcOrigLbls = allNorm.map(k => (hrcTypes[k] || {}).label || null);
 
   new Chart(document.getElementById('trapTypeChart'), {
     type: 'bar',
     data: {
-      labels: allTypes,
+      labels: dispLabels,
       datasets: [
-        {
-          label: 'HRC (PCO)',
-          data: allTypes.map(t => hrcTypeMap[t] || 0),
-          backgroundColor: teal,
-          borderRadius: 3,
-        },
-        {
-          label: 'DoC (Trap.NZ)',
-          data: allTypes.map(t => docTypeMap[t] || 0),
-          backgroundColor: '#1f2e35',
-          borderRadius: 3,
-        },
+        { label: 'HRC', data: hrcData, backgroundColor: teal,      borderRadius: 3, stack: 'trap' },
+        { label: 'DoC', data: docData, backgroundColor: '#1f2e35', borderRadius: 3, stack: 'trap' },
       ]
     },
     options: {
@@ -1229,26 +1236,28 @@ new Chart(document.getElementById('trendsChart'), {
               return ` ${ctx.dataset.label}: ${n.toLocaleString()} traps`;
             },
             afterBody: items => {
-              const hrcItem = items.find(i => i.dataset.label === 'HRC (PCO)');
-              if (!hrcItem || !hrcItem.parsed.x) return [];
-              const ttype = hrcItem.label;
-              const zones = _ttByZone[ttype] || {};
-              const rows  = Object.entries(zones).sort((a, b) => b[1] - a[1]);
-              if (!rows.length) return [];
-              return ['', 'By PCO zone:'].concat(
-                rows.map(([z, n]) => `  ${n.toLocaleString()} – ${z}`)
-              );
+              const lines = [];
+              const hrcItem = items.find(i => i.dataset.label === 'HRC' && i.parsed.x);
+              if (hrcItem) {
+                const zones = _ttByZone[hrcOrigLbls[hrcItem.dataIndex]] || {};
+                const rows  = Object.entries(zones).sort((a, b) => b[1] - a[1]);
+                if (rows.length) {
+                  lines.push('', 'By PCO zone:');
+                  rows.forEach(([z, n]) => lines.push(`  ${n.toLocaleString()} – ${z}`));
+                }
+              }
+              return lines;
             }
           }
         }
       },
       scales: {
         x: {
-          grid: { color: border },
+          grid: { color: border }, stacked: true,
           ticks: { font: { size: 10 } },
           title: { display: true, text: 'No. of traps', font: { size: 10 }, color: '#8a8a82' }
         },
-        y: { grid: { display: false }, ticks: { font: { size: 10 } } }
+        y: { grid: { display: false }, stacked: true, ticks: { font: { size: 10 } } }
       }
     }
   });
