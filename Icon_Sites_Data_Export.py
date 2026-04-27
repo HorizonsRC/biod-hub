@@ -28,6 +28,7 @@ import logging
 import re
 import subprocess
 import sys
+import time
 import datetime
 from pathlib import Path
 
@@ -149,6 +150,14 @@ ICON_SITE_HTML = {
 OUTPUT_DIR = Path(getattr(config, "ICON_SITES_OUTPUT_DIR", REPO_ROOT / "Outputs" / "icon-sites"))
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+# Cache files for Trap.NZ killcount endpoints (fallback when rate-limited)
+TRAPNZ_RUAHINE_CACHE     = OUTPUT_DIR / "trapnz_ruahine_cache.json"
+TRAPNZ_ME_CACHE          = OUTPUT_DIR / "trapnz_me_cache.json"
+TRAPNZ_KW_ARAMAHOE_CACHE = OUTPUT_DIR / "trapnz_kw_aramahoe_cache.json"
+TRAPNZ_KW_OHOREA_CACHE   = OUTPUT_DIR / "trapnz_kw_ohorea_cache.json"
+TRAPNZ_KW_RETARUKE_CACHE = OUTPUT_DIR / "trapnz_kw_retaruke_cache.json"
+TRAPNZ_KW_MANGANUI_CACHE = OUTPUT_DIR / "trapnz_kw_manganui_cache.json"
+
 # ── AGOL helpers ──────────────────────────────────────────────────────────────
 
 def connect_gis() -> GIS:
@@ -174,6 +183,54 @@ def fetch_layer_as_df(gis: GIS, item_id: str, layer_id: int) -> pd.DataFrame:
     df = fset.sdf
     log.info(f"  → {len(df):,} records returned")
     return df
+
+
+_trapnz_last_call: float = 0.0
+_TRAPNZ_MIN_GAP_S: int   = 8  # minimum seconds between any two Trap.NZ requests
+
+
+def fetch_trapnz_json(url: str, cache_path: Path, max_retries: int = 2, retry_delay: int = 60) -> dict:
+    """
+    Fetch a Trap.NZ killcount JSON endpoint with courtesy throttling, retrying on
+    429 rate-limit responses, and falling back to a local cache on failure.
+    """
+    global _trapnz_last_call
+    gap = time.time() - _trapnz_last_call
+    if gap < _TRAPNZ_MIN_GAP_S:
+        wait = _TRAPNZ_MIN_GAP_S - gap
+        log.info(f"  Trap.NZ courtesy delay {wait:.1f}s...")
+        time.sleep(wait)
+
+    last_exc = None
+    for attempt in range(max_retries + 1):
+        try:
+            _trapnz_last_call = time.time()
+            resp = requests.get(url, timeout=30)
+            if resp.status_code == 429:
+                if attempt < max_retries:
+                    log.warning(f"  Trap.NZ 429 rate limit — waiting {retry_delay}s (retry {attempt + 1}/{max_retries})...")
+                    time.sleep(retry_delay)
+                    continue
+                last_exc = f"429 Too Many Requests (exhausted {max_retries} retries)"
+                break
+            resp.raise_for_status()
+            payload = resp.json()
+            try:
+                cache_path.write_text(json.dumps(payload), encoding="utf-8")
+                log.info(f"  Trap.NZ response cached → {cache_path.name}")
+            except Exception as ce:
+                log.warning(f"  Could not write Trap.NZ cache: {ce}")
+            return payload
+        except Exception as exc:
+            last_exc = exc
+            break
+
+    log.warning(f"  Trap.NZ fetch failed: {last_exc}")
+    if cache_path.exists():
+        log.warning(f"  Falling back to cached Trap.NZ data ({cache_path.name})")
+        return json.loads(cache_path.read_text(encoding="utf-8"))
+    log.warning("  No Trap.NZ cache available — trap data will be empty")
+    return {}
 
 
 def fetch_service_url_as_df(gis: GIS, service_url: str, layer_id: int, where: str = "1=1") -> pd.DataFrame:
@@ -783,31 +840,27 @@ def process_kia_wharite() -> dict:
 
     # ── Trap.NZ: year-to-date catches by area ────────────────────────────────
     KW_AREAS = [
-        ("Aramahoe",         TRAPNZ_KW_ARAMAHOE_URL),
-        ("Ohorea",           TRAPNZ_KW_OHOREA_URL),
-        ("Retaruke",         TRAPNZ_KW_RETARUKE_URL),
-        ("Manganui o te Ao", TRAPNZ_KW_MANGANUI_URL),
+        ("Aramahoe",         TRAPNZ_KW_ARAMAHOE_URL, TRAPNZ_KW_ARAMAHOE_CACHE),
+        ("Ohorea",           TRAPNZ_KW_OHOREA_URL,   TRAPNZ_KW_OHOREA_CACHE),
+        ("Retaruke",         TRAPNZ_KW_RETARUKE_URL,  TRAPNZ_KW_RETARUKE_CACHE),
+        ("Manganui o te Ao", TRAPNZ_KW_MANGANUI_URL,  TRAPNZ_KW_MANGANUI_CACHE),
     ]
     area_names, rats_ytd, mustelids_ytd, other_ytd = [], [], [], []
-    for area_name, url in KW_AREAS:
+    for area_name, url, cache in KW_AREAS:
         area_names.append(area_name)
         if not url:
             log.warning(f"  No Trap.NZ URL configured for {area_name} — defaulting to 0.")
             rats_ytd.append(0); mustelids_ytd.append(0); other_ytd.append(0)
             continue
-        try:
-            payload  = requests.get(url, timeout=30).json()
-            sp       = payload.get("catches", {}).get("year", {}).get("species", {})
-            rats     = int(sp.get("Rat",      0) or 0)
-            mustelid = int(sp.get("Mustelid", 0) or 0)
-            other    = int((sp.get("Hedgehog", 0) or 0)
-                         + (sp.get("Possum",   0) or 0)
-                         + (sp.get("Other",    0) or 0))
-            rats_ytd.append(rats); mustelids_ytd.append(mustelid); other_ytd.append(other)
-            log.info(f"  {area_name}: Rat={rats}  Mustelid={mustelid}  Other={other}")
-        except Exception as exc:
-            log.warning(f"  Trap.NZ fetch failed for {area_name}: {exc}")
-            rats_ytd.append(0); mustelids_ytd.append(0); other_ytd.append(0)
+        payload  = fetch_trapnz_json(url, cache)
+        sp       = payload.get("catches", {}).get("year", {}).get("species", {})
+        rats     = int(sp.get("Rat",      0) or 0)
+        mustelid = int(sp.get("Mustelid", 0) or 0)
+        other    = int((sp.get("Hedgehog", 0) or 0)
+                     + (sp.get("Possum",   0) or 0)
+                     + (sp.get("Other",    0) or 0))
+        rats_ytd.append(rats); mustelids_ytd.append(mustelid); other_ytd.append(other)
+        log.info(f"  {area_name}: Rat={rats}  Mustelid={mustelid}  Other={other}")
 
     trap_catches_by_area = {
         "areas":     area_names,
@@ -1341,22 +1394,15 @@ def process_manawatu_estuary(wp: pd.DataFrame, gis: GIS) -> dict:
     trapnz_me_traps: int   = 0
     trapnz_me_fy = date_to_fy(datetime.datetime.today())
     if TRAPNZ_ME_URL:
-        try:
-            resp = requests.get(TRAPNZ_ME_URL, timeout=30)
-            resp.raise_for_status()
-            kc = resp.json()
-            # Structure: catches.year.species = {Rat: 76, Possum: 45, ...}
-            species_data = (
-                kc.get("catches", {}).get("year", {}).get("species", {})
-            )
-            trapnz_me_traps = int(kc.get("traps") or 0)
-            log.info(f"  Trap.NZ ME traps: {trapnz_me_traps}, year species: {species_data}")
-            for name, val in species_data.items():
-                if name and val and int(val) > 0:
-                    trapnz_me_catches[name] = int(val)
-            log.info(f"  Trap.NZ ME catches (FY {trapnz_me_fy}): {trapnz_me_catches}")
-        except Exception as exc:
-            log.warning(f"  Trap.NZ ME fetch failed — skipping. Error: {exc}")
+        kc = fetch_trapnz_json(TRAPNZ_ME_URL, TRAPNZ_ME_CACHE)
+        # Structure: catches.year.species = {Rat: 76, Possum: 45, ...}
+        species_data = kc.get("catches", {}).get("year", {}).get("species", {})
+        trapnz_me_traps = int(kc.get("traps") or 0)
+        log.info(f"  Trap.NZ ME traps: {trapnz_me_traps}, year species: {species_data}")
+        for name, val in species_data.items():
+            if name and val and int(val) > 0:
+                trapnz_me_catches[name] = int(val)
+        log.info(f"  Trap.NZ ME catches (FY {trapnz_me_fy}): {trapnz_me_catches}")
 
     return {
         "fy":        FY_PRIMARY,
@@ -1773,16 +1819,13 @@ def process_ruahine_kiwi(gis) -> dict:
         },
     }
 
-    try:
-        resp = requests.get(TRAPNZ_RUAHINE_URL, timeout=30)
-        resp.raise_for_status()
-        data = resp.json()
+    tz_data = fetch_trapnz_json(TRAPNZ_RUAHINE_URL, TRAPNZ_RUAHINE_CACHE)
+    if tz_data:
+        trapnz["traps"]              = tz_data.get("traps")
+        trapnz["monitoringStations"] = tz_data.get("monitoring_stations")
+        trapnz["installations"]      = tz_data.get("installations")
 
-        trapnz["traps"]              = data.get("traps")
-        trapnz["monitoringStations"] = data.get("monitoring_stations")
-        trapnz["installations"]      = data.get("installations")
-
-        catches = data.get("catches", {})
+        catches = tz_data.get("catches", {})
         for period in ("all", "year", "month"):
             c  = catches.get(period, {})
             sp = c.get("species", {})
@@ -1799,8 +1842,6 @@ def process_ruahine_kiwi(gis) -> dict:
             f"{trapnz['catchesAll']} all-time catches, "
             f"{trapnz['catchesYear']} this year"
         )
-    except Exception as exc:
-        log.warning(f"  Trap.NZ killcount query failed — skipping. Error: {exc}")
 
     # ── PCO RTCI monitoring results (Horizons-managed zones) ─────────────────
     RUAHINE_PCO_RTCI_WHERE = (
