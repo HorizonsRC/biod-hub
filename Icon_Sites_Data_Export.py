@@ -1151,6 +1151,8 @@ def process_manawatu_estuary(wp: pd.DataFrame, gis: GIS) -> dict:
         "Australasian Bittern",   # Nationally Critical
         "New Zealand Dotterel",   # Nationally Critical
         "Black-billed Gull",      # Nationally Critical
+        "Black Stilt",            # Nationally Critical (Kākī)
+        "White Heron",            # Nationally Critical (Kōtuku)
         "Wrybill",                # Nationally Vulnerable
         "Black-fronted Tern",     # Nationally Vulnerable
         "New Zealand Grebe",      # At Risk – Declining
@@ -1213,8 +1215,16 @@ def process_manawatu_estuary(wp: pd.DataFrame, gis: GIS) -> dict:
         "Porphyrio melanotus":                  "Australasian Swamphen",
         # Stilts
         "Himantopus himantopus":                "Pied Stilt",
+        "Himantopus leucocephalus":             "Pied Stilt",
+        "Himantopus novaezelandiae":            "Black Stilt",
+        # Plovers (alternative taxonomy)
+        "Anarhynchus bicinctus":                "Double-banded Plover",
+        "Anarhynchus bicinctus bicinctus":      "Double-banded Plover",
+        "Vanellus miles":                       "Masked Lapwing",
+        "Vanellus miles novaehollandiae":       "Masked Lapwing",
         # Kingfishers / fantails / silvereyes / honeyeaters / pigeons
         "Todiramphus sanctus":                  "Sacred Kingfisher",
+        "Todiramphus sanctus vagans":           "Sacred Kingfisher",
         "Rhipidura fuliginosa":                 "New Zealand Fantail",
         "Zosterops lateralis":                  "Silvereye",
         "Prosthemadera novaeseelandiae":        "Tui",
@@ -1225,6 +1235,28 @@ def process_manawatu_estuary(wp: pd.DataFrame, gis: GIS) -> dict:
         "Falco novaeseelandiae":                "New Zealand Falcon",
         # Warblers
         "Gerygone igata":                       "Grey Gerygone",
+        # Subspecies — prevent scientific names leaking through as chart entries
+        "Porphyrio melanotus melanotus":        "Australasian Swamphen",
+        "Egretta novaehollandiae novaehollandiae": "White-faced Heron",
+        "Egretta garzetta immaculata":          "Little Egret",
+        "Phalacrocorax varius varius":          "Pied Shag",
+        "Ardea alba modesta":                   "White Heron",
+        "Larus dominicanus dominicanus":        "Kelp Gull",
+        "Chroicocephalus novaehollandiae scopulinus": "Silver Gull",
+        # Seabirds (native, occasionally recorded near coast)
+        "Pachyptila turtur":                    "Fairy Prion",
+        "Puffinus gavia":                       "Fluttering Shearwater",
+        "Ardenna bulleri":                      "Buller's Shearwater",
+        "Thalassarche cauta":                   "Shy Albatross",
+    }
+
+    # Common-name aliases — normalise spelling/hyphenation differences between eBird and iNaturalist.
+    NAME_NORMALIZE = {
+        "Gray Teal":              "Grey Teal",
+        "Gray Gerygone":          "Grey Gerygone",
+        "Pacific Golden-Plover":  "Pacific Golden Plover",
+        "Little Pied Cormorant":  "Little Pied Shag",
+        "Little Black Cormorant": "Little Black Shag",
     }
 
     # Introduced/pest birds in NZ — excluded from the chart.
@@ -1264,7 +1296,8 @@ def process_manawatu_estuary(wp: pd.DataFrame, gis: GIS) -> dict:
     BIRD_PRIORITY = [
         "Bar-tailed Godwit", "White-fronted Tern", "Variable Oystercatcher",
         "South Island Pied Oystercatcher", "Wrybill", "Caspian Tern",
-        "Black-billed Gull", "Royal Spoonbill", "Australasian Bittern",
+        "Black-billed Gull", "Black Stilt", "White Heron",
+        "Royal Spoonbill", "Australasian Bittern",
         "New Zealand Dotterel", "Pied Stilt", "New Zealand Grebe",
         "Brown Teal", "Australasian Shoveler", "New Zealand Scaup",
         "New Zealand Pigeon", "Tui", "New Zealand Bellbird",
@@ -1293,6 +1326,7 @@ def process_manawatu_estuary(wp: pd.DataFrame, gis: GIS) -> dict:
             for o in ebird_obs:
                 name = o.get("comName") or o.get("sciName") or "Unknown"
                 name = SCI_TO_COMMON.get(name, name)
+                name = NAME_NORMALIZE.get(name, name)
                 if not name or name in INTRODUCED_NZ:
                     continue
                 # eBird 'howMany' is the count of individuals observed on that
@@ -1338,6 +1372,7 @@ def process_manawatu_estuary(wp: pd.DataFrame, gis: GIS) -> dict:
             sci   = taxon.get("name") or ""
             # Prefer common name; if absent fall back through SCI_TO_COMMON lookup
             name  = cn or SCI_TO_COMMON.get(sci) or sci or "Unknown"
+            name  = NAME_NORMALIZE.get(name, name)
             if name and name not in INTRODUCED_NZ:
                 species_counts[name] = species_counts.get(name, 0) + 1
         sources_used.append("iNaturalist")
