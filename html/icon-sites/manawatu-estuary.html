@@ -1043,8 +1043,11 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
             generateLabels: chart => {
               const ds  = chart.data.datasets[0];
               const tot = ds.data.reduce((s, v) => s + v, 0);
+              const ABBREV = {
+                'South Island Pied Oystercatcher': 'Sth Is. Pied Oystercatcher',
+              };
               return chart.data.labels.map((lbl, i) => ({
-                text:        `${lbl} (${ds.data[i]})`,
+                text:        `${ABBREV[lbl] || lbl} (${ds.data[i]})`,
                 fillStyle:   ds.backgroundColor[i],
                 strokeStyle: '#ffffff',
                 lineWidth:   1,

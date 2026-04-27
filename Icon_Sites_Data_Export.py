@@ -1168,6 +1168,7 @@ def process_manawatu_estuary(wp: pd.DataFrame, gis: GIS) -> dict:
     SCI_TO_COMMON = {
         # Terns
         "Sterna striata":                       "White-fronted Tern",
+        "Sterna hirundo":                       "Common Tern",
         "Hydroprogne caspia":                   "Caspian Tern",
         "Chlidonias albostriatus":              "Black-fronted Tern",
         # Oystercatchers
