@@ -1153,6 +1153,7 @@ def process_manawatu_estuary(wp: pd.DataFrame, gis: GIS) -> dict:
         "Black-billed Gull",      # Nationally Critical
         "Black Stilt",            # Nationally Critical (Kākī)
         "White Heron",            # Nationally Critical (Kōtuku)
+        "Red-billed Gull",        # At Risk – Declining (Tarāpunga)
         "Wrybill",                # Nationally Vulnerable
         "Black-fronted Tern",     # Nationally Vulnerable
         "New Zealand Grebe",      # At Risk – Declining
@@ -1191,7 +1192,7 @@ def process_manawatu_estuary(wp: pd.DataFrame, gis: GIS) -> dict:
         # Swallows
         "Hirundo neoxena":                      "Welcome Swallow",
         # Gulls
-        "Chroicocephalus novaehollandiae":      "Silver Gull",
+        "Chroicocephalus novaehollandiae":      "Red-billed Gull",
         "Larus dominicanus":                    "Kelp Gull",
         "Chroicocephalus bulleri":              "Black-billed Gull",
         # Shags / cormorants
@@ -1243,7 +1244,7 @@ def process_manawatu_estuary(wp: pd.DataFrame, gis: GIS) -> dict:
         "Phalacrocorax varius varius":          "Pied Shag",
         "Ardea alba modesta":                   "White Heron",
         "Larus dominicanus dominicanus":        "Kelp Gull",
-        "Chroicocephalus novaehollandiae scopulinus": "Silver Gull",
+        "Chroicocephalus novaehollandiae scopulinus": "Red-billed Gull",
         # Seabirds (native, occasionally recorded near coast)
         "Pachyptila turtur":                    "Fairy Prion",
         "Puffinus gavia":                       "Fluttering Shearwater",
@@ -1258,6 +1259,7 @@ def process_manawatu_estuary(wp: pd.DataFrame, gis: GIS) -> dict:
         "Pacific Golden-Plover":  "Pacific Golden Plover",
         "Little Pied Cormorant":  "Little Pied Shag",
         "Little Black Cormorant": "Little Black Shag",
+        "Silver Gull":            "Red-billed Gull",
     }
 
     # Introduced/pest birds in NZ — excluded from the chart.
