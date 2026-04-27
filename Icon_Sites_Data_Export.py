@@ -1143,7 +1143,7 @@ def process_manawatu_estuary(wp: pd.DataFrame, gis: GIS) -> dict:
     BIRD_LNG       = 175.235
     BIRD_DIST_KM   = 10
     BIRD_BACK_DAYS = 365   # full year for iNaturalist; eBird caps at 30
-    BIRD_TOP_N     = 8
+    BIRD_TOP_N     = 11
 
     # Threatened / At Risk species per NZ Threat Classification System.
     # Any of these detected in sightings are surfaced as notable finds.

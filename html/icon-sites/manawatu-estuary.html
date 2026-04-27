@@ -1060,8 +1060,12 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
               const lbl = ctx.label;
               if (lbl === 'Other') {
                 const others = bs.otherSpecies || [];
-                return [` ${val.toLocaleString()} sightings (${pct}%)`, '', ' Includes:']
-                  .concat(others.map(s => `   · ${s}`));
+                const shown  = others.slice(0, 12);
+                const extra  = others.length - shown.length;
+                const lines  = [` ${val.toLocaleString()} sightings (${pct}%)`, '', ' Includes:']
+                  .concat(shown.map(s => `   · ${s}`));
+                if (extra > 0) lines.push(`   ... and ${extra} more`);
+                return lines;
               }
               return ` ${val.toLocaleString()} sightings (${pct}%)`;
             }
