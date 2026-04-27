@@ -42,8 +42,8 @@
     display: grid;
     grid-template-rows: 58px 435px 1fr;
     height: 806px;
-    width: 953px;
-    min-width: 953px;
+    width: 1100px;
+    min-width: 1100px;
     padding: 0 10px 10px;
     background: var(--bg);
     transform-origin: top center;
@@ -83,7 +83,7 @@
   /* ── TOP ROW ──────────────────────────────── */
   .row-top {
     display: grid;
-    grid-template-columns: 210px 1fr 318px;
+    grid-template-columns: 225px 1fr 415px;
     gap: 8px;
     padding: 8px 0 4px;
     min-height: 0;
@@ -112,7 +112,7 @@
   }
 
   .panel-title {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -120,7 +120,7 @@
     flex-shrink: 0;
   }
   .panel-sub {
-    font-size: 10px;
+    font-size: 11px;
     color: var(--muted);
     margin-top: -4px;
     flex-shrink: 0;
@@ -162,7 +162,7 @@
   .stat-box.gold-box .s-val { color: #8a6820; }
   .stat-box .s-val.sm { font-size: 17px; }
   .stat-box .s-key {
-    font-size: 9.5px;
+    font-size: 10.5px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.07em;
@@ -176,7 +176,7 @@
   .summary-section:last-child { margin-bottom: 0; }
 
   .sum-heading {
-    font-size: 9.5px;
+    font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.09em;
     text-transform: uppercase;
@@ -188,7 +188,7 @@
   .sum-heading.gold  { color: #8a6820; border-bottom: 1px solid var(--gold-md); padding-bottom: 2px; margin-bottom: 3px; }
   .sum-heading.navy  { color: var(--navy); border-bottom: 1px solid var(--slate-md); padding-bottom: 2px; margin-bottom: 3px; }
   .sum-loc {
-    font-size: 9.5px;
+    font-size: 10.5px;
     font-weight: 500;
     color: var(--muted);
     margin-top: -2px;
@@ -197,22 +197,22 @@
 
   .sum-hero {
     font-family: 'Source Serif 4', serif;
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 600;
     color: var(--navy);
     line-height: 1;
   }
-  .sum-unit { font-size: 11px; color: var(--muted); font-weight: 400; }
+  .sum-unit { font-size: 12px; color: var(--muted); font-weight: 400; }
   .sum-detail {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--muted);
     line-height: 1.4;
     margin-top: 1px;
   }
   .pill-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
-  #rtci-pills .pill { font-size: 9px; padding: 2px 5px; }
+  #rtci-pills .pill { font-size: 10px; padding: 2px 6px; }
   .pill {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 600;
     padding: 2px 7px;
     border-radius: 3px;
@@ -269,7 +269,7 @@
     border-top: 1px solid var(--border);
   }
   .notable-label {
-    font-size: 9px;
+    font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -278,7 +278,7 @@
   }
   .notable-row { display: flex; flex-wrap: wrap; gap: 3px; }
   .notable-pill {
-    font-size: 9.5px;
+    font-size: 10.5px;
     font-weight: 600;
     padding: 1px 6px;
     border-radius: 3px;
@@ -294,7 +294,7 @@
     flex-shrink: 0;
   }
   .contractor-label {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -302,7 +302,7 @@
     margin-bottom: 2px;
   }
   .contractor-val {
-    font-size: 10.5px;
+    font-size: 11.5px;
     font-weight: 400;
     line-height: 1.35;
     color: var(--muted);
@@ -433,7 +433,7 @@
 
 <script>
 (function scaleToFit() {
-  const BASE_W = 953, BASE_H = 806;
+  const BASE_W = 1100, BASE_H = 806;
   const wrapper = document.querySelector('.wrapper');
   function resize() {
     const scaleW = window.innerWidth  / BASE_W;
@@ -865,8 +865,8 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
       plugins: {
         legend: { display: false },
         tooltip: {
-          bodyFont:  { size: 9.5 },
-          titleFont: { size: 10 },
+          bodyFont:  { size: 11 },
+          titleFont: { size: 12 },
           boxPadding: 3,
           padding: 6,
           callbacks: {
@@ -888,10 +888,10 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
       scales: {
         x: {
           grid: { color: border },
-          ticks: { font: { size: 10 }, color: '#5a5a52' },
-          title: { display: true, text: 'Weed locations', font: { size: 10 }, color: '#5a5a52' }
+          ticks: { font: { size: 11 }, color: '#5a5a52' },
+          title: { display: true, text: 'Weed locations', font: { size: 11 }, color: '#5a5a52' }
         },
-        y: { grid: { display: false }, ticks: { font: { size: 10.5 }, color: '#5a5a52' } }
+        y: { grid: { display: false }, ticks: { font: { size: 12 }, color: '#5a5a52' } }
       }
     }
   });
@@ -918,7 +918,7 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
 
   const topStr = topSp.slice(0, 3).map(s => `${s.name} (${s.count})`).join(' · ');
   el.innerHTML =
-    `<span style="font-size:13px;font-family:'Source Serif 4',serif;font-weight:600;color:var(--navy)">${total}</span>` +
+    `<span style="font-size:14px;font-family:'Source Serif 4',serif;font-weight:600;color:var(--navy)">${total}</span>` +
     ` <span style="color:var(--muted)">trap catches · HRC (Fernbird Flat)</span>` +
     (topStr ? `<br><span style="color:var(--muted)">${topStr}</span>` : '');
 
@@ -934,10 +934,10 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
       .map(([sp, v]) => `${sp} (${v})`).join(' · ');
     if (tzTotal > 0) {
       const tzTrapsStr = tzTraps
-        ? `<span style="font-size:13px;font-family:'Source Serif 4',serif;font-weight:600;color:var(--navy)">${tzTraps}</span> <span style="color:var(--muted)">traps</span> · `
+        ? `<span style="font-size:14px;font-family:'Source Serif 4',serif;font-weight:600;color:var(--navy)">${tzTraps}</span> <span style="color:var(--muted)">traps</span> · `
         : '';
       tzEl.innerHTML =
-        `<span style="font-size:13px;font-family:'Source Serif 4',serif;font-weight:600;color:var(--navy)">${tzTotal}</span>` +
+        `<span style="font-size:14px;font-family:'Source Serif 4',serif;font-weight:600;color:var(--navy)">${tzTotal}</span>` +
         ` <span style="color:var(--muted)">catches · </span>${tzTrapsStr}` +
         `<span style="color:var(--muted)">Trap.NZ (current year)</span>` +
         (tzTopSp ? `<br><span style="color:var(--muted)">${tzTopSp}</span>` : '');
@@ -1029,9 +1029,9 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
           display: true,
           position: 'right',
           labels: {
-            font: { size: 10.5 },
+            font: { size: 12 },
             color: '#5a5a52',
-            boxWidth: 11,
+            boxWidth: 12,
             padding: 8,
             generateLabels: chart => {
               const ds  = chart.data.datasets[0];
@@ -1048,8 +1048,8 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
           }
         },
         tooltip: {
-          bodyFont:  { size: 9.5 },
-          titleFont: { size: 10 },
+          bodyFont:  { size: 11 },
+          titleFont: { size: 12 },
           boxPadding: 3,
           padding: 6,
           callbacks: {
@@ -1102,7 +1102,7 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
       plugins: {
         legend: {
           display: true, position: 'bottom',
-          labels: { font: { size: 9.5 }, color: '#5a5a52', boxWidth: 10, padding: 6 }
+          labels: { font: { size: 11 }, color: '#5a5a52', boxWidth: 11, padding: 6 }
         },
         tooltip: {
           callbacks: {
@@ -1119,11 +1119,11 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
         }
       },
       scales: {
-        x: { grid: { display: false }, stacked: true, ticks: { font: { size: 10.5 }, color: '#5a5a52' } },
+        x: { grid: { display: false }, stacked: true, ticks: { font: { size: 12 }, color: '#5a5a52' } },
         y: {
           grid: { color: border }, stacked: true, beginAtZero: true,
-          ticks: { font: { size: 10 }, color: '#5a5a52' },
-          title: { display: true, text: 'Catches', font: { size: 10 }, color: '#5a5a52' }
+          ticks: { font: { size: 11 }, color: '#5a5a52' },
+          title: { display: true, text: 'Catches', font: { size: 11 }, color: '#5a5a52' }
         }
       }
     }
@@ -1161,10 +1161,10 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
       scales: {
         x: {
           grid: { color: border },
-          ticks: { font: { size: 10 }, color: '#5a5a52' },
-          title: { display: true, text: 'No. of traps', font: { size: 10 }, color: '#5a5a52' }
+          ticks: { font: { size: 11 }, color: '#5a5a52' },
+          title: { display: true, text: 'No. of traps', font: { size: 11 }, color: '#5a5a52' }
         },
-        y: { grid: { display: false }, ticks: { font: { size: 10.5 }, color: '#5a5a52' } }
+        y: { grid: { display: false }, ticks: { font: { size: 12 }, color: '#5a5a52' } }
       }
     }
   });
