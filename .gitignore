@@ -9,3 +9,4 @@ __pycache__/
 *.pyo
 .env
 .claude/
+html/icon-sites/backups/
