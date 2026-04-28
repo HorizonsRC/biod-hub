@@ -42,8 +42,8 @@
     display: grid;
     grid-template-rows: 58px 405px 1fr;
     height: 806px;
-    width: 953px;
-    min-width: 953px;
+    width: 1100px;
+    min-width: 1100px;
     padding: 0 10px 10px;
     background: var(--bg);
     transform-origin: top center;
@@ -70,7 +70,7 @@
   /* ── TOP ROW ──────────────────────────────── */
   .row-top {
     display: grid;
-    grid-template-columns: 210px 1fr 385px;
+    grid-template-columns: 225px 1fr 430px;
     gap: 8px;
     padding: 8px 0 4px;
     min-height: 0;
@@ -99,7 +99,7 @@
   }
 
   .panel-title {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -107,7 +107,7 @@
     flex-shrink: 0;
   }
   .panel-sub {
-    font-size: 10px;
+    font-size: 11px;
     color: var(--muted);
     margin-top: -4px;
     flex-shrink: 0;
@@ -149,7 +149,7 @@
   .stat-box.gold-box .s-val { color: #8a6820; }
   .stat-box .s-val.sm { font-size: 17px; }
   .stat-box .s-key {
-    font-size: 9.5px;
+    font-size: 10.5px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.07em;
@@ -163,7 +163,7 @@
   .summary-section:last-child { margin-bottom: 0; }
 
   .sum-heading {
-    font-size: 9.5px;
+    font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.09em;
     text-transform: uppercase;
@@ -175,7 +175,7 @@
   .sum-heading.gold { color: #8a6820; border-bottom: 1px solid var(--gold-md); padding-bottom: 2px; margin-bottom: 3px; }
   .sum-heading.navy { color: var(--navy); border-bottom: 1px solid #c8cdd0; padding-bottom: 2px; margin-bottom: 3px; }
   .sum-loc {
-    font-size: 9.5px;
+    font-size: 10.5px;
     font-weight: 500;
     color: var(--muted);
     margin-top: -2px;
@@ -184,21 +184,21 @@
 
   .sum-hero {
     font-family: 'Source Serif 4', serif;
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 600;
     color: var(--navy);
     line-height: 1;
   }
-  .sum-unit { font-size: 11px; color: var(--muted); font-weight: 400; }
+  .sum-unit { font-size: 12px; color: var(--muted); font-weight: 400; }
   .sum-detail {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--muted);
     line-height: 1.4;
     margin-top: 1px;
   }
   .pill-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
   .pill {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 600;
     padding: 2px 7px;
     border-radius: 3px;
@@ -218,7 +218,7 @@
     flex-shrink: 0;
   }
   .contractor-label {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -226,7 +226,7 @@
     margin-bottom: 2px;
   }
   .contractor-val {
-    font-size: 10.5px;
+    font-size: 11.5px;
     font-weight: 400;
     line-height: 1.35;
     color: var(--muted);
@@ -274,7 +274,7 @@
           <div class="s-key">Pest Plant Area (m²)</div>
         </div>
       </div>
-      <div id="reserve-area-note" style="font-size:9px;color:var(--muted);margin-top:5px;text-align:center"></div>
+      <div id="reserve-area-note" style="font-size:10px;color:var(--muted);margin-top:5px;text-align:center"></div>
     </div>
 
     <!-- Middle: OMB by year × age class -->
@@ -295,7 +295,7 @@
         <div class="sum-detail" id="weed-summary-detail">–</div>
         <div class="sum-detail" style="margin-top:3px">Primary target: Old Man's Beard (OMB) · aerial survey + ground control. Control methods: cut stump, hedge trimming, or foliar spray.</div>
         <div style="margin-top:5px">
-          <span class="contractor-label" style="font-size:8.5px;letter-spacing:0.07em">Contractor</span>
+          <span class="contractor-label" style="font-size:10px;letter-spacing:0.07em">Contractor</span>
           <div class="contractor-val">Kaitiaki o te Ngahere</div>
         </div>
       </div>
@@ -303,7 +303,7 @@
       <div class="summary-section">
         <div class="sum-heading navy">Predator Control</div>
         <div id="predator-stats" class="sum-detail">–</div>
-        <div class="contractor-label" style="margin-top:6px;font-size:8.5px;letter-spacing:0.07em">Possum RTCI</div>
+        <div class="contractor-label" style="margin-top:6px;font-size:10px;letter-spacing:0.07em">Possum RTCI</div>
         <div id="rtci-pills" class="pill-row" style="margin-top:3px"></div>
       </div>
 
@@ -353,7 +353,7 @@
 
 <script>
 (function scaleToFit() {
-  const BASE_W = 953, BASE_H = 806;
+  const BASE_W = 1100, BASE_H = 806;
   const wrapper = document.querySelector('.wrapper');
   function resize() {
     const scaleW = window.innerWidth  / BASE_W;
@@ -642,7 +642,7 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
         legend: {
           display: true,
           position: 'bottom',
-          labels: { font: { size: 9.5 }, color: '#5a5a52', boxWidth: 10, padding: 6 }
+          labels: { font: { size: 11 }, color: '#5a5a52', boxWidth: 11, padding: 6 }
         },
         tooltip: {
           callbacks: {
@@ -658,13 +658,13 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
         }
       },
       scales: {
-        x: { grid: { display: false }, stacked: true, ticks: { font: { size: 10.5 }, color: '#5a5a52' } },
+        x: { grid: { display: false }, stacked: true, ticks: { font: { size: 12 }, color: '#5a5a52' } },
         y: {
           grid: { color: border },
           stacked: true,
           beginAtZero: true,
-          ticks: { font: { size: 10 }, color: '#5a5a52' },
-          title: { display: true, text: 'Pest Plants Controlled', font: { size: 10 }, color: '#5a5a52' }
+          ticks: { font: { size: 11 }, color: '#5a5a52' },
+          title: { display: true, text: 'Pest Plants Controlled', font: { size: 11 }, color: '#5a5a52' }
         }
       }
     }
@@ -745,17 +745,17 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
         legend: {
           display: true,
           position: 'bottom',
-          labels: { font: { size: 9.5 }, color: '#5a5a52', boxWidth: 10, padding: 6 }
+          labels: { font: { size: 11 }, color: '#5a5a52', boxWidth: 11, padding: 6 }
         },
         tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)} km` } }
       },
       scales: {
-        x: { grid: { display: false }, ticks: { font: { size: 10.5 }, color: '#5a5a52' } },
+        x: { grid: { display: false }, ticks: { font: { size: 12 }, color: '#5a5a52' } },
         y: {
           grid: { color: border },
           beginAtZero: true,
           ticks: { font: { size: 10 }, color: '#5a5a52' },
-          title: { display: true, text: 'km', font: { size: 10 }, color: '#5a5a52' }
+          title: { display: true, text: 'km', font: { size: 11 }, color: '#5a5a52' }
         }
       }
     }
@@ -797,7 +797,7 @@ new Chart(document.getElementById('catchesChart'), {
       legend: {
         display: true,
         position: 'bottom',
-        labels: { font: { size: 9.5 }, color: '#5a5a52', boxWidth: 10, padding: 6 }
+        labels: { font: { size: 11 }, color: '#5a5a52', boxWidth: 11, padding: 6 }
       },
       tooltip: {
         callbacks: {
@@ -814,13 +814,13 @@ new Chart(document.getElementById('catchesChart'), {
       }
     },
     scales: {
-      x: { grid: { display: false }, stacked: true, ticks: { font: { size: 10.5 }, color: '#5a5a52' } },
+      x: { grid: { display: false }, stacked: true, ticks: { font: { size: 12 }, color: '#5a5a52' } },
       y: {
         grid: { color: border },
         stacked: true,
         beginAtZero: true,
         ticks: { font: { size: 10 }, color: '#5a5a52' },
-        title: { display: true, text: 'Catches', font: { size: 10 }, color: '#5a5a52' }
+        title: { display: true, text: 'Catches', font: { size: 11 }, color: '#5a5a52' }
       }
     }
   }
@@ -854,9 +854,9 @@ new Chart(document.getElementById('catchesChart'), {
         x: {
           grid: { color: border },
           ticks: { font: { size: 10 }, color: '#5a5a52' },
-          title: { display: true, text: 'No. of traps', font: { size: 10 }, color: '#5a5a52' }
+          title: { display: true, text: 'No. of traps', font: { size: 11 }, color: '#5a5a52' }
         },
-        y: { grid: { display: false }, ticks: { font: { size: 10.5 }, color: '#5a5a52' } }
+        y: { grid: { display: false }, ticks: { font: { size: 12 }, color: '#5a5a52' } }
       }
     }
   });
