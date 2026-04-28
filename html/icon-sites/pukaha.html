@@ -766,31 +766,51 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
 const _cs = (DATA.traps && DATA.traps.catchesBySpecies) ? DATA.traps.catchesBySpecies
   : { labels: [], species: [], data: {} };
 
+const _fys = _cs.labels || [];
+const _d   = _cs.data   || {};
+
+const _MUSTELID = ['Stoat', 'Ferret', 'Weasel'];
+const _OTHER    = ['Rabbit', 'Mouse'];
+const _SINGLE   = ['Cat', 'Rat', 'Possum', 'Hedgehog'];
+
 const _speciesPalette = {
   Rat:      '#6b4423',
-  Mouse:    '#b89271',
   Possum:   '#4a4a4a',
-  Stoat:    '#2d5a27',
-  Weasel:   '#4a8a42',
-  Ferret:   '#7ab872',
   Hedgehog: '#c8a84b',
-  Rabbit:   '#e0bb6a',
   Cat:      '#1a5c7c',
+  Mustelid: '#2d5a27',
+  Other:    '#9a9a9a',
 };
 
-const _csDatasets = (_cs.species || [])
-  .filter(sp => (_cs.data[sp] || []).some(v => v > 0))
-  .map(sp => ({
-    label: sp,
-    data: _cs.data[sp] || [],
-    backgroundColor: _speciesPalette[sp] || forest2,
-    borderRadius: 2,
-    stack: 'catches',
-  }));
+function _sumGroup(members) {
+  return _fys.map((_, i) => members.reduce((s, sp) => s + ((_d[sp] || [])[i] || 0), 0));
+}
+function _breakdown(members, i) {
+  return members.map(sp => ({ sp, v: (_d[sp] || [])[i] || 0 }))
+    .filter(x => x.v > 0).map(x => `${x.sp}: ${x.v}`).join(', ');
+}
+
+const _mustData  = _sumGroup(_MUSTELID);
+const _otherData = _sumGroup(_OTHER);
+
+const _csDatasets = [];
+_SINGLE.forEach(sp => {
+  const vals = _fys.map((_, i) => (_d[sp] || [])[i] || 0);
+  if (vals.some(v => v > 0))
+    _csDatasets.push({ label: sp, data: vals, backgroundColor: _speciesPalette[sp] || forest2, borderRadius: 2, stack: 'catches' });
+});
+if (_mustData.some(v => v > 0))
+  _csDatasets.push({ label: 'Mustelid', data: _mustData,
+    breakdown: _fys.map((_, i) => _breakdown(_MUSTELID, i)),
+    backgroundColor: _speciesPalette.Mustelid, borderRadius: 2, stack: 'catches' });
+if (_otherData.some(v => v > 0))
+  _csDatasets.push({ label: 'Other', data: _otherData,
+    breakdown: _fys.map((_, i) => _breakdown(_OTHER, i)),
+    backgroundColor: _speciesPalette.Other, borderRadius: 2, stack: 'catches' });
 
 new Chart(document.getElementById('catchesChart'), {
   type: 'bar',
-  data: { labels: _cs.labels, datasets: _csDatasets },
+  data: { labels: _fys, datasets: _csDatasets },
   options: {
     maintainAspectRatio: false,
     plugins: {
@@ -804,7 +824,10 @@ new Chart(document.getElementById('catchesChart'), {
           label: ctx => {
             const val = ctx.parsed.y;
             if (!val) return null;
-            return ` ${ctx.dataset.label}: ${val.toLocaleString()}`;
+            const bd = ctx.dataset.breakdown ? ctx.dataset.breakdown[ctx.dataIndex] : null;
+            return bd
+              ? ` ${ctx.dataset.label}: ${val.toLocaleString()} (${bd})`
+              : ` ${ctx.dataset.label}: ${val.toLocaleString()}`;
           },
           footer: items => {
             const total = items.reduce((s, i) => s + (i.parsed.y || 0), 0);
