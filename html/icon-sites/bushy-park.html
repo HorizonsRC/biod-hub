@@ -38,7 +38,7 @@
     display: grid;
     grid-template-rows: 70px 420px 1fr;
     height: 870px;
-    width: 969px; min-width: 969px;
+    width: 1100px; min-width: 1100px;
     transform-origin: top center;
     padding: 0 12px 12px;
     background: var(--bg);
@@ -64,7 +64,7 @@
   /* ── TOP ROW — cards with gap ──────────────── */
   .row-top {
     display: grid;
-    grid-template-columns: 230px 1fr 290px;
+    grid-template-columns: 230px 1fr 415px;
     gap: 10px;
     padding: 10px 0 5px;
     min-height: 0;
@@ -93,7 +93,7 @@
   }
 
   .panel-title {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -101,7 +101,7 @@
     flex-shrink: 0;
   }
   .panel-sub {
-    font-size: 10px;
+    font-size: 11px;
     color: var(--label);
     margin-top: -4px;
     flex-shrink: 0;
@@ -157,7 +157,7 @@
   }
   .stat-box .s-val.sm { font-size: 18px; }
   .stat-box .s-key {
-    font-size: 9.5px;
+    font-size: 10.5px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.07em;
@@ -171,7 +171,7 @@
   .summary-section:last-child { margin-bottom: 0; }
 
   .sum-heading {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -192,14 +192,14 @@
   }
   .sum-unit { font-size: 12px; color: var(--muted); font-weight: 400; }
   .sum-detail {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--muted);
     line-height: 1.45;
     margin-top: 2px;
   }
   .pill-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
   .pill {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 600;
     padding: 2px 7px;
     border-radius: 3px;
@@ -217,7 +217,7 @@
     flex-shrink: 0;
   }
   .contractor-label {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 600;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -349,7 +349,7 @@
 <script>
 /* ── SCALE TO FIT VIEWPORT ── */
 (function scaleToFit() {
-  const BASE_W = 969;
+  const BASE_W = 1100;
   const wrapper = document.querySelector('.wrapper');
   function resize() {
     const scale = window.innerWidth / BASE_W;
