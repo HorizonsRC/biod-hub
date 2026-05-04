@@ -35,11 +35,10 @@
   .grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(2, minmax(300px, 1fr));
     gap: clamp(8px, 1.2vw, 18px);
     padding: clamp(12px, 1.5vw, 22px) clamp(14px, 1.8vw, 26px);
-    min-height: 100%;
     width: 100%;
+    align-content: start;
   }
 
   /* base card — accent colour injected via --c / --c-lt per card class */
@@ -134,23 +133,36 @@
     text-overflow: ellipsis;
   }
 
-  .card-involvement-label {
+  .card-involvement {
+    border-top: 1px solid var(--border);
+    padding-top: clamp(5px, 0.5vw, 8px);
+    flex-shrink: 0;
+  }
+  .card-involvement summary {
     font-size: clamp(8px, 0.55vw, 9.5px);
     font-weight: 600;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--c);
-    margin-bottom: 3px;
-    flex-shrink: 0;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 5px;
   }
-  .card-involvement {
+  .card-involvement summary::-webkit-details-marker { display: none; }
+  .card-involvement summary::after {
+    content: "▸";
+    font-size: 0.8em;
+    transition: transform 0.2s;
+  }
+  .card-involvement[open] summary::after { transform: rotate(90deg); }
+  .card-involvement p {
     font-size: clamp(10px, 0.78vw, 12px);
     line-height: 1.5;
     color: var(--muted);
     font-weight: 300;
-    border-top: 1px solid var(--border);
-    padding-top: clamp(5px, 0.5vw, 8px);
-    flex-shrink: 0;
+    margin-top: 5px;
   }
 
   .card-btn {
@@ -186,10 +198,10 @@
       <div class="card-title">Bushy Park Tarapuruhi</div>
     </div>
     <p class="card-desc">An 89 ha predator-proof fenced forest sanctuary northwest of Whanganui, protecting a rare remnant of temperate lowland bush effectively free of pest mammals since 2005. Owned and partially funded by Forest and Bird, managed by Bushy Park Trust. Home to reintroduced hihi, tīeke, toutouwai, popokatea and tītipounamu.</p>
-    <div class="card-involvement">
-      <div class="card-involvement-label">Horizons Involvement</div>
-      Provision of annual funding to support their biodiversity protection activities. Biodiversity staff representation on the Forest Committee and providing general advice and support where their technical knowledge and skills are useful. Bushy Park is classed as one of the actively managed sites in the Priority Habitats programme. Biodiversity advisors carry out a rapid ecological assessment of the forest every 5 years.
-    </div>
+    <details class="card-involvement">
+      <summary>Horizons Involvement</summary>
+      <p>Provision of annual funding to support their biodiversity protection activities. Biodiversity staff representation on the Forest Committee and providing general advice and support where their technical knowledge and skills are useful. Bushy Park is classed as one of the actively managed sites in the Priority Habitats programme. Biodiversity advisors carry out a rapid ecological assessment of the forest every 5 years.</p>
+    </details>
     <div class="card-meta">
       <div class="meta-box"><div class="meta-key">Area</div><div class="meta-val">89 ha</div></div>
       <div class="meta-box"><div class="meta-key">Location</div><div class="meta-val">Northwest of Whanganui</div></div>
@@ -206,6 +218,10 @@
       <div class="card-title">Te Āpiti Manawatū Gorge</div>
     </div>
     <p class="card-desc">Around 2,700 ha of forested gorge between Woodville and Ashhurst, encompassing the Northern and Southern Te Āpiti Scenic Reserves, adjacent public domains and the Manawatū River. A well-used recreational hub corridor attracting new developments guided by a 2022 Masterplan. The project is managed through a broad multi-agency Governance Group.</p>
+    <details class="card-involvement">
+      <summary>Horizons Involvement</summary>
+      <p>Councillor representation and chairing of the governance group. Biodiversity team facilitating meetings and reporting, overseeing the project budget and working with DOC and contractors to improve forest health. Biosecurity pest animal team servicing traps and PCO bait stations in the buffer zones. Communications team assisting with marketing, communications and social media presence for the project.</p>
+    </details>
     <div class="card-meta">
       <div class="meta-box"><div class="meta-key">Area</div><div class="meta-val">~2,700 ha</div></div>
       <div class="meta-box"><div class="meta-key">Location</div><div class="meta-val">Woodville to Ashhurst</div></div>
@@ -222,6 +238,10 @@
       <div class="card-title">Kia Whārite</div>
     </div>
     <p class="card-desc">A 180,000 ha landscape-scale predator and pest control project running since 2008, located west and northwest of Mt Ruapehu. Targets for North Island brown kiwi population growth of 10% per year and 50 whio pairs on the Retaruke and Manganui-o-te-ao rivers have both been achieved and sustained.</p>
+    <details class="card-involvement">
+      <summary>Horizons Involvement</summary>
+      <p>The Biosecurity pest plant and pest animal teams carrying out pest plant and possum control on private land within the project areas. The biodiversity team administering the project budget and managing contracts for predator trap servicing on the Retaruke River and in the Waimarino Forest sites. Coordinating collaboratively with DOC and project stakeholders.</p>
+    </details>
     <div class="card-meta">
       <div class="meta-box"><div class="meta-key">Area</div><div class="meta-val">180,000+ ha</div></div>
       <div class="meta-box"><div class="meta-key">Location</div><div class="meta-val">W &amp; NW of Mt Ruapehu</div></div>
@@ -238,6 +258,10 @@
       <div class="card-title">Manawatū Estuary</div>
     </div>
     <p class="card-desc">A 558 ha Ramsar-listed estuary at Foxton Beach with internationally recognised biodiversity values. Stewardship rests with the MEMT — a broad coalition of DOC, councils, iwi and community organisations, guided by the 2025–2035 Papangaio Te Wharangi Manawatu Estuary Management Plan.</p>
+    <details class="card-involvement">
+      <summary>Horizons Involvement</summary>
+      <p>Horizons biodiversity team providing advice, meeting facilitation and funding toward pest plant and pest animal control. The Biosecurity pest animal team servicing predator traps in the Fernbird Flat area.</p>
+    </details>
     <div class="card-meta">
       <div class="meta-box"><div class="meta-key">Area</div><div class="meta-val">558 ha</div></div>
       <div class="meta-box"><div class="meta-key">Location</div><div class="meta-val">Foxton Beach</div></div>
@@ -254,6 +278,10 @@
       <div class="card-title">Pūkaha Mt Bruce</div>
     </div>
     <p class="card-desc">A 942 ha unfenced wildlife sanctuary near Eketāhuna, straddling the Horizons–Wellington boundary. Features a visitor centre, education programmes and captive breeding for kōkako, kiwi, takahē, kākā, whio and kākāriki.</p>
+    <details class="card-involvement">
+      <summary>Horizons Involvement</summary>
+      <p>Horizons' biodiversity team administering funding for biodiversity protection work and overseeing pest plant control in the buffer. The Biosecurity pest animal team servicing traps in the northern buffer area around Pūkaha.</p>
+    </details>
     <div class="card-meta">
       <div class="meta-box"><div class="meta-key">Area</div><div class="meta-val">942 ha</div></div>
       <div class="meta-box"><div class="meta-key">Location</div><div class="meta-val">Near Eketāhuna</div></div>
@@ -270,6 +298,10 @@
       <div class="card-title">Ruahine Kiwi</div>
     </div>
     <p class="card-desc">Launched in 2022, this community-led partnership between ENM's Source to Sea Collective and Te Kāuru Hapū Collective aims to reintroduce North Island eastern brown kiwi through a 23,000 ha mustelid trap network across the Southern Ruahine Ranges.</p>
+    <details class="card-involvement">
+      <summary>Horizons Involvement</summary>
+      <p>Provision of annual funding to support their operations. Horizons biodiversity and biosecurity pest animal staff providing technical advice and support for the project. Councillor representation on governance group.</p>
+    </details>
     <div class="card-meta">
       <div class="meta-box"><div class="meta-key">Area</div><div class="meta-val">23,000 ha trap network</div></div>
       <div class="meta-box"><div class="meta-key">Location</div><div class="meta-val">Southern Ruahine Range</div></div>
