@@ -270,13 +270,18 @@
 
     const safe = title.normalize('NFD').replace(/[̀-ͯ]/g, '')
                       .replace(/[^a-zA-Z0-9\s-]/g, '').trim().replace(/\s+/g, '_');
-    const a = document.createElement('a');
-    a.download = safe + '.png';
-    a.href = out.toDataURL('image/png');
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    const dataUrl = out.toDataURL('image/png');
+    const w = window.open('', '_blank');
+    if (!w) { alert('Allow pop-ups for this site to export the chart.'); return; }
+    w.document.write(`<!DOCTYPE html><html><head><title>${safe}</title></head>
+<body style="margin:0;background:#1a1a2e;display:flex;flex-direction:column;align-items:center;padding:24px;font-family:sans-serif;gap:16px;">
+  <a href="${dataUrl}" download="${safe}.png"
+     style="background:#2d6a4f;color:#fff;padding:10px 22px;border-radius:6px;text-decoration:none;font-size:15px;font-weight:600;">
+    &#8681; Download ${safe}.png
+  </a>
+  <img src="${dataUrl}" style="max-width:100%;border:1px solid #333;border-radius:4px;">
+</body></html>`);
+    w.document.close();
   }
 </script>
 </body>
