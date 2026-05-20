@@ -29,6 +29,9 @@
     select{width:100%;border:1px solid #ddd;border-radius:6px;padding:8px 28px 8px 10px;font-size:0.85rem;color:#1a1a2e;font-family:inherit;appearance:none;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 10px center;cursor:pointer}
     select:focus{outline:none;border-color:#273747}
     .updated{color:#aaa;font-size:.62em;position:absolute;bottom:4px;right:8px;margin:0}
+    .hd-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+    .print-btn{background:none;border:1px solid #ccc;border-radius:6px;padding:7px 10px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:0.78rem;font-family:inherit;color:#555;white-space:nowrap;flex-shrink:0}
+    .print-btn:hover{background:#f5f5f5;border-color:#aaa}
     .counters{display:flex;gap:10px;margin-bottom:10px}
     .counter{background:#f8f9fa;border-radius:7px;padding:6px 14px;display:flex;align-items:center;gap:10px;flex:1}
     .counter.above{border-left:4px solid #27ae60}
@@ -40,11 +43,17 @@
 <body>
 <div class="wrap">
   <div class="hd">
-    <div class="title">Pressure Management Scores by District</div>
-    <button class="filter-btn" onclick="togglePanel()">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-      Filter
-    </button>
+    <div class="title" id="chartTitle">Pressure Management Scores by District</div>
+    <div class="hd-actions">
+      <button class="print-btn" onclick="exportChart()" title="Download as PNG">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export PNG
+      </button>
+      <button class="filter-btn" onclick="togglePanel()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        Filter
+      </button>
+    </div>
   </div>
 
   <div class="panel" id="panel">
@@ -106,6 +115,7 @@
 
       const { labels, datasets, districtAverages } = getChartData();
       updateCounters(districtAverages);
+      updateTitle();
 
       chart = new Chart(document.getElementById('chart'), {
         type: 'bar',
@@ -137,7 +147,7 @@
           },
           scales: {
             x: { stacked: true, grid: { display: false },
-                 ticks: { font: { family: "'DM Sans', sans-serif", size: 11 } } },
+                 ticks: { color: '#000', font: { family: "'DM Sans', sans-serif", size: 11, weight: '600' } } },
             y: { stacked: true, min: 0, max: 100,
                  title: { display: true, text: 'Combined Pressure Score', font: { family: "'DM Sans', sans-serif", size: 11 } },
                  grid: { color: '#e8e8e8', borderDash: [4, 4] },
@@ -202,6 +212,35 @@
     chart.data.datasets = datasets;
     chart.update();
     updateCounters(districtAverages);
+    updateTitle();
+  }
+
+  function updateTitle() {
+    const fy = fySelect.value;
+    document.getElementById('chartTitle').textContent =
+      'Pressure Management Scores by District for ' + fy;
+  }
+
+  function exportChart() {
+    const src = document.getElementById('chart');
+    const title = document.getElementById('chartTitle').textContent;
+    const dpr = window.devicePixelRatio || 1;
+    const hdrH = Math.round(54 * dpr), padX = Math.round(18 * dpr);
+    const out = document.createElement('canvas');
+    out.width = src.width; out.height = src.height + hdrH;
+    const ctx = out.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, out.width, out.height);
+    ctx.fillStyle = '#1a1a2e';
+    ctx.font = `600 ${Math.round(14 * dpr)}px Arial, sans-serif`;
+    ctx.fillText(title, padX, Math.round(22 * dpr));
+    ctx.drawImage(src, 0, hdrH);
+    const safe = title.normalize('NFD').replace(/[̀-ͯ]/g, '')
+                      .replace(/[^a-zA-Z0-9\s-]/g, '').trim().replace(/\s+/g, '_');
+    const dataUrl = out.toDataURL('image/png');
+    const w = window.open('', '_blank');
+    if (!w) { alert('Allow pop-ups for this site to export the chart.'); return; }
+    w.document.write(`<!DOCTYPE html><html><head><title>${safe}</title></head><body style="margin:0;background:#1a1a2e;display:flex;flex-direction:column;align-items:center;padding:24px;font-family:sans-serif;gap:16px;"><a href="${dataUrl}" download="${safe}.png" style="background:#2d6a4f;color:#fff;padding:10px 22px;border-radius:6px;text-decoration:none;font-size:15px;font-weight:600;">&#8681; Download ${safe}.png</a><img src="${dataUrl}" style="max-width:100%;border:1px solid #333;border-radius:4px;"></body></html>`);
+    w.document.close();
   }
 
   function togglePanel() { document.getElementById('panel').classList.toggle('open'); }
