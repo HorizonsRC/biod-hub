@@ -47,7 +47,7 @@
   <div class="hd">
     <div class="title" id="chartTitle">Single Pressure Management at All Sites</div>
     <div class="hd-actions">
-      <button class="print-btn" onclick="window.print()">
+      <button class="print-btn" onclick="window.open(window.location.href,'_blank')" title="Open in new tab to print">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
         Print
       </button>
@@ -201,12 +201,23 @@
     document.getElementById('pressureName').textContent = def.label;
   }
 
+  const REGION_NAMES = {
+    'Horo': 'Horowhenua',
+    'Rang': 'Rangitīkei',
+    'Whan': 'Whanganui',
+    'Man':  'Manawatū',
+    'Rua':  'Ruapehu',
+    'Tara': 'Tararua',
+    'Palm': 'Palmerston North',
+  };
+
   function updateTitle() {
     const def    = pressureDefs.find(p => p.col === pressureSelect.value);
     const fy     = fySelect.value;
     const region = regionSelect.value;
     const pressureLabel = def ? def.label : 'Pressure';
-    const location = (region === 'All Regions') ? 'All Sites' : region + ' Sites';
+    const regionFull = (region === 'All Regions') ? null : (REGION_NAMES[region] || region);
+    const location = regionFull ? regionFull + ' Sites' : 'All Sites';
     document.getElementById('chartTitle').textContent =
       pressureLabel + ' Pressure at ' + location + ' for ' + fy;
   }
