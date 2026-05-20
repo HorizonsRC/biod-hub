@@ -31,16 +31,31 @@
     select{width:100%;border:1px solid #ddd;border-radius:6px;padding:8px 28px 8px 10px;font-size:0.85rem;color:#1a1a2e;font-family:inherit;appearance:none;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 10px center;cursor:pointer}
     select:focus{outline:none;border-color:#273747}
     .updated{color:#aaa;font-size:.62em;position:absolute;bottom:4px;right:8px;margin:0}
+    .hd-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+    .print-btn{background:none;border:1px solid #ccc;border-radius:6px;padding:7px 10px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:0.78rem;font-family:inherit;color:#555;white-space:nowrap;flex-shrink:0}
+    .print-btn:hover{background:#f5f5f5;border-color:#aaa}
+    @media print{
+      .hd-actions,.panel,.updated{display:none!important}
+      html,body{height:auto;overflow:visible}
+      .wrap{height:auto;padding:10px}
+      .chart-wrap{height:82vh}
+    }
   </style>
 </head>
 <body>
 <div class="wrap">
   <div class="hd">
-    <div class="title">Single Pressure Management at All Sites</div>
-    <button class="filter-btn" onclick="togglePanel()">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-      Filter
-    </button>
+    <div class="title" id="chartTitle">Single Pressure Management at All Sites</div>
+    <div class="hd-actions">
+      <button class="print-btn" onclick="window.print()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Print
+      </button>
+      <button class="filter-btn" onclick="togglePanel()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        Filter
+      </button>
+    </div>
   </div>
 
   <div class="panel" id="panel">
@@ -118,6 +133,7 @@
 
       const { labels, data: chartData, color } = getChartData();
       updateIndicator();
+      updateTitle();
 
       chart = new Chart(document.getElementById('chart'), {
         type: 'bar',
@@ -185,6 +201,16 @@
     document.getElementById('pressureName').textContent = def.label;
   }
 
+  function updateTitle() {
+    const def    = pressureDefs.find(p => p.col === pressureSelect.value);
+    const fy     = fySelect.value;
+    const region = regionSelect.value;
+    const pressureLabel = def ? def.label : 'Pressure';
+    const location = (region === 'All Regions') ? 'All Sites' : region + ' Sites';
+    document.getElementById('chartTitle').textContent =
+      pressureLabel + ' Pressure at ' + location + ' for ' + fy;
+  }
+
   function updateChart() {
     if (!chart) return;
     const { labels, data, color, label } = getChartData();
@@ -194,6 +220,7 @@
     chart.data.datasets[0].label = label;
     chart.update();
     updateIndicator();
+    updateTitle();
   }
 
   function togglePanel() { document.getElementById('panel').classList.toggle('open'); }
