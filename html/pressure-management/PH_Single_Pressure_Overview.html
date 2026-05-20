@@ -273,7 +273,10 @@
     const a = document.createElement('a');
     a.download = safe + '.png';
     a.href = out.toDataURL('image/png');
+    a.style.display = 'none';
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
   }
 </script>
 </body>
