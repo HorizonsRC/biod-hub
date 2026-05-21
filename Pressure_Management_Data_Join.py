@@ -230,43 +230,40 @@ pressure_mapping = {
     'Raw_Rabbits':       'Rabbits/hares'
 }
 
-pressure_ecosystem_data = []
+# Aggregations are produced for two scopes — every site, and Priority Habitat
+# only (Icon Sites + the Regional Park excluded; they skew the averages).
+priority_data = pressure_data[~pressure_data['SiteID'].isin(list(_PROGRAMME_MAP))]
+SCOPES = [('All Sites', pressure_data), ('Priority Habitat', priority_data)]
 
-for ecosystem in sorted(pressure_data['Ecosystem'].unique()):
-    for fy in sorted(pressure_data['FY'].unique()):
-        eco_fy_data = pressure_data[(pressure_data['Ecosystem'] == ecosystem) & (pressure_data['FY'] == fy)]
-        if len(eco_fy_data) > 0:
-            for raw_col, pressure_name in pressure_mapping.items():
-                pressure_ecosystem_data.append({
-                    'Region': 'All Regions',
-                    'Ecosystem': ecosystem,
-                    'Financial_Year': fy,
-                    'Pressure_Type': pressure_name,
-                    'Average_Score': round(eco_fy_data[raw_col].mean(), 2)
-                })
 
-for region in sorted(pressure_data['Region'].dropna().unique()):
-    for ecosystem in sorted(pressure_data['Ecosystem'].unique()):
-        for fy in sorted(pressure_data['FY'].unique()):
-            region_eco_fy_data = pressure_data[
-                (pressure_data['Region'] == region) &
-                (pressure_data['Ecosystem'] == ecosystem) &
-                (pressure_data['FY'] == fy)
-            ]
-            if len(region_eco_fy_data) > 0:
+def build_ecosystem_rows(df, scope):
+    rows = []
+    groups = [('All Regions', df)] + [
+        (r, df[df['Region'] == r]) for r in sorted(df['Region'].dropna().unique())
+    ]
+    for region, region_df in groups:
+        for ecosystem in sorted(region_df['Ecosystem'].unique()):
+            for fy in sorted(region_df['FY'].unique()):
+                cell = region_df[(region_df['Ecosystem'] == ecosystem) & (region_df['FY'] == fy)]
+                if len(cell) == 0:
+                    continue
                 for raw_col, pressure_name in pressure_mapping.items():
-                    pressure_ecosystem_data.append({
-                        'Region': region,
-                        'Ecosystem': ecosystem,
-                        'Financial_Year': fy,
-                        'Pressure_Type': pressure_name,
-                        'Average_Score': round(region_eco_fy_data[raw_col].mean(), 2)
+                    rows.append({
+                        'Scope': scope, 'Region': region, 'Ecosystem': ecosystem,
+                        'Financial_Year': fy, 'Pressure_Type': pressure_name,
+                        'Average_Score': round(cell[raw_col].mean(), 2),
                     })
+    return rows
+
+
+pressure_ecosystem_data = []
+for scope_label, scope_df in SCOPES:
+    pressure_ecosystem_data += build_ecosystem_rows(scope_df, scope_label)
 
 pressure_by_ecosystem = pd.DataFrame(pressure_ecosystem_data)
 pressure_by_ecosystem['Region_Ecosystem'] = pressure_by_ecosystem['Region'] + ' ' + pressure_by_ecosystem['Ecosystem']
 pressure_by_ecosystem = pressure_by_ecosystem[[
-    'Region_Ecosystem', 'Region', 'Ecosystem', 'Financial_Year', 'Pressure_Type', 'Average_Score'
+    'Scope', 'Region_Ecosystem', 'Region', 'Ecosystem', 'Financial_Year', 'Pressure_Type', 'Average_Score'
 ]].copy()
 
 log.info(f"Pressure by Ecosystem:\n{pressure_by_ecosystem.to_string(index=False)}")
@@ -278,31 +275,31 @@ log.info(f"Saved: {pressure_ecosystem_csv}")
 # Sites Above/Below Threshold by Region, Ecosystem and Financial Year
 log.info("Creating sites above/below threshold by region, ecosystem and FY...")
 
+def build_threshold_rows(df, scope):
+    rows = []
+    for region in sorted(df['Region'].dropna().unique()):
+        for ecosystem in sorted(df['Ecosystem'].unique()):
+            for fy in sorted(df['FY'].unique()):
+                cell = df[(df['Region'] == region) &
+                          (df['Ecosystem'] == ecosystem) &
+                          (df['FY'] == fy)]
+                if len(cell) == 0:
+                    continue
+                above = int(cell['Above_55_Threshold'].sum())
+                below = len(cell) - above
+                re_label = f"{ecosystem} {region}"
+                for status, count in [('Above', above), ('Below', below)]:
+                    rows.append({
+                        'Scope': scope, 'Region_Ecosystem': re_label, 'Region': region,
+                        'Ecosystem': ecosystem, 'Financial_Year': fy,
+                        'Threshold_Status': status, 'Count': count,
+                    })
+    return rows
+
+
 threshold_data = []
-
-for region in sorted(pressure_data['Region'].dropna().unique()):
-    for ecosystem in sorted(pressure_data['Ecosystem'].unique()):
-        for fy in sorted(pressure_data['FY'].unique()):
-            region_eco_fy_data = pressure_data[
-                (pressure_data['Region'] == region) &
-                (pressure_data['Ecosystem'] == ecosystem) &
-                (pressure_data['FY'] == fy)
-            ]
-            if len(region_eco_fy_data) > 0:
-                sites_above    = int(region_eco_fy_data['Above_55_Threshold'].sum())
-                sites_below    = len(region_eco_fy_data) - sites_above
-                region_ecosystem = f"{ecosystem} {region}"
-
-                threshold_data.append({
-                    'Region_Ecosystem': region_ecosystem, 'Region': region,
-                    'Ecosystem': ecosystem, 'Financial_Year': fy,
-                    'Threshold_Status': 'Above', 'Count': sites_above
-                })
-                threshold_data.append({
-                    'Region_Ecosystem': region_ecosystem, 'Region': region,
-                    'Ecosystem': ecosystem, 'Financial_Year': fy,
-                    'Threshold_Status': 'Below', 'Count': sites_below
-                })
+for scope_label, scope_df in SCOPES:
+    threshold_data += build_threshold_rows(scope_df, scope_label)
 
 threshold_by_region = pd.DataFrame(threshold_data)
 
@@ -312,7 +309,7 @@ threshold_csv = os.path.join(NETWORK_DIR, "PH_Sites_Threshold_Status.csv")
 threshold_by_region.to_csv(threshold_csv, index=False)
 log.info(f"Saved: {threshold_csv}")
 
-scores_overview_cols = ['SiteID', 'FY', 'Region',
+scores_overview_cols = ['SiteID', 'FY', 'Region', 'site_programme',
                         'Raw_Ungulates', 'Raw_PestPlants', 'Raw_PossumBrowse',
                         'Raw_Predation', 'Raw_Environmental', 'Raw_Rabbits',
                         'Weighted_Ungulates', 'Weighted_PestPlants', 'Weighted_PossumBrowse',
