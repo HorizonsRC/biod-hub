@@ -139,7 +139,7 @@
         const useAbove = abovePx >= belowPx;
         const label = String(c.fy).replace('-', '/');
         ctx.save();
-        if (barHeight >= 20) {
+        if (barHeight >= 40) {
           // Enough room — draw inside bar, white
           const yMid = useAbove
             ? (y.getPixelForValue(0) + y.getPixelForValue(pos)) / 2
