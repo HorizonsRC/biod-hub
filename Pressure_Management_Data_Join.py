@@ -23,7 +23,7 @@ log.info(f"Log file: {log_file}")
 
 import pandas as pd
 import numpy as np
-from arcgis.features import FeatureLayer
+from arcgis.features import FeatureLayer, FeatureLayerCollection, FeatureSet
 import arcpy
 from config import CSV_PATH, OUTPUT_GDB, NETWORK_DIR, OUTPUT_SUMMARY_CSV, FEATURE_SERVICE_URL
 
@@ -33,6 +33,21 @@ log.info("Libraries imported successfully")
 
 OUTPUT_MAIN_FC = "PH_Pressure_Management"
 OUTPUT_RELATED_TABLE = "PH_Pressure_Scores_TimeSeries"
+
+# AGOL push — target hosted feature service (Priority_Habitats_Pressure_Management)
+PUSH_TO_AGOL = True
+AGOL_TARGET_ITEM_ID = "1333a0f1cadb42de8a708bbdb2bf6b67"
+
+# main_fc_data column -> AGOL layer 0 (PH_Pressure_Management) field name.
+# Layer 0 fields were lower-cased when published; District/site_programme were not.
+LAYER0_FIELD_MAP = {
+    'SiteID': 'site_id', 'SiteName': 'site_name', 'Ecosystem': 'ecosystem',
+    'AreaHa': 'area_ha', 'HRCLevel': 'hrc_level', 'HRCStaff': 'hrc_staff',
+    'Management': 'management', 'Protection': 'protection',
+    'Total_Score': 'total_score', 'Above_55_Threshold': 'above_55_threshold',
+    'FY': 'fy', 'District': 'District', 'site_programme': 'site_programme',
+}
+# The related table kept its original field names — columns map 1:1 to AGOL.
 
 log.info(f"Feature Service URL: {FEATURE_SERVICE_URL}")
 log.info(f"CSV Path: {CSV_PATH}")
@@ -143,13 +158,26 @@ main_fc_data = spatial_data[[
 
 main_fc_data = main_fc_data.rename(columns={'Actual_EcoSystem_s_': 'Ecosystem'})
 
+# Hardcoded site programme classification (not in spreadsheet)
+_PROGRAMME_MAP = {
+    'Palm05':  'Icon Site',
+    'Horo34W': 'Icon Site',
+    'Whan35':  'Icon Site',
+    'Man240':  'Regional Park',
+}
+main_fc_data['site_programme'] = main_fc_data['SiteID'].map(_PROGRAMME_MAP).fillna('Priority Habitat')
+log.info(f"Site programme counts:\n{main_fc_data['site_programme'].value_counts().to_string()}")
+
 log.info("Adding latest pressure scores to main feature class...")
 
 latest_scores = pressure_data.sort_values('FY').drop_duplicates(subset=['SiteID'], keep='last')[
-    ['SiteID', 'Total_Score', 'Above_55_Threshold', 'FY']
+    ['SiteID', 'Total_Score', 'Above_55_Threshold', 'FY', 'Region']
 ]
 
 main_fc_data = main_fc_data.merge(latest_scores, on='SiteID', how='left')
+
+# AGOL layer 0 calls the region/district code 'District' — rename to match
+main_fc_data = main_fc_data.rename(columns={'Region': 'District'})
 
 log.info(f"Main feature class — Shape: {main_fc_data.shape}, Unique sites: {main_fc_data['SiteID'].nunique()}")
 log.info(f"First few rows:\n{main_fc_data[['SiteID', 'SiteName', 'Ecosystem', 'AreaHa', 'Total_Score', 'Above_55_Threshold', 'FY']].head().to_string()}")
@@ -163,6 +191,8 @@ related_table_data = pressure_data[[
     'Weighted_Predation', 'Weighted_Environmental', 'Weighted_Rabbits',
     'Total_Score', 'Above_55_Threshold', 'Lead'
 ]].copy()
+
+related_table_data['site_programme'] = related_table_data['SiteID'].map(_PROGRAMME_MAP).fillna('Priority Habitat')
 
 log.info(f"Related table — Shape: {related_table_data.shape}, Unique sites: {related_table_data['SiteID'].nunique()}, Financial years: {sorted(related_table_data['FY'].unique())}")
 
@@ -359,6 +389,80 @@ arcpy.management.CreateRelationshipClass(
 )
 
 log.info(f"Relationship created: {OUTPUT_MAIN_FC} → {OUTPUT_RELATED_TABLE} (SiteID, 1-to-Many)")
+
+# ============================================================
+# PUSH TO AGOL  (delete-all + add — schema unchanged, safe with the joined view)
+# ============================================================
+
+if PUSH_TO_AGOL:
+    import math
+
+    log.info("=" * 70)
+    log.info("PUSHING DATA TO AGOL")
+    log.info("=" * 70)
+
+    def _clean(value):
+        # Normalise for JSON: NaN -> None, numpy scalars -> native python
+        if value is None:
+            return None
+        if isinstance(value, float) and math.isnan(value):
+            return None
+        if hasattr(value, "item"):
+            return value.item()
+        return value
+
+    target_item = gis.content.get(AGOL_TARGET_ITEM_ID)
+    target_flc = FeatureLayerCollection.fromitem(target_item)
+    agol_layer = target_flc.layers[0]   # PH_Pressure_Management
+    agol_table = target_flc.tables[0]   # PH_Pressure_Scores
+    log.info(f"Target service: {target_item.title} ({AGOL_TARGET_ITEM_ID})")
+
+    def replace_features(target, features):
+        name = target.properties.name
+        existing = target.query(where="1=1", return_ids_only=True)["objectIds"]
+        log.info(f"  [{name}] replacing {len(existing)} rows with {len(features)}...")
+        result = target.edit_features(
+            adds=features,
+            deletes=existing if existing else None,
+            rollback_on_failure=True,
+        )
+        added   = sum(1 for r in result.get("addResults", []) if r.get("success"))
+        deleted = sum(1 for r in result.get("deleteResults", []) if r.get("success"))
+        log.info(f"  [{name}] deleted {deleted}, added {added}")
+        if added != len(features):
+            failed = [r for r in result.get("addResults", []) if not r.get("success")]
+            raise RuntimeError(
+                f"{name}: only {added}/{len(features)} adds succeeded — {failed[:1]}")
+
+    # Layer 0 features (with geometry) — remap field names, clean values
+    layer_fs = main_fc_data.spatial.to_featureset()
+    for feat in layer_fs.features:
+        feat.attributes = {LAYER0_FIELD_MAP[k]: _clean(v)
+                           for k, v in feat.attributes.items() if k in LAYER0_FIELD_MAP}
+
+    # Table features (no geometry) — columns already match AGOL field names
+    table_fs = FeatureSet.from_dataframe(related_table_data)
+    for feat in table_fs.features:
+        feat.attributes = {k: _clean(v) for k, v in feat.attributes.items()}
+
+    # The service is published Query-only — editing must be on for applyEdits.
+    original_caps = target_flc.properties.capabilities
+    log.info(f"Capabilities before: {original_caps}")
+    try:
+        # Static-data layers reject editing — clear the flag first, then enable editing
+        target_flc.manager.update_definition({"hasStaticData": False})
+        target_flc.manager.update_definition(
+            {"capabilities": "Query,Create,Update,Delete"})
+        log.info("Editing enabled — pushing features...")
+        replace_features(agol_layer, layer_fs.features)
+        replace_features(agol_table, table_fs.features)
+    finally:
+        target_flc.manager.update_definition({"capabilities": original_caps})
+        log.info(f"Capabilities restored to: {original_caps}")
+
+    log.info("AGOL push complete")
+else:
+    log.info("PUSH_TO_AGOL is False — AGOL not updated")
 
 # ============================================================
 # COMPLETE
