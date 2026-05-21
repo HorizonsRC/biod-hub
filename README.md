@@ -9,12 +9,15 @@ biod-hub/
 ├── html/
 │   ├── index.html                               # Main hub landing page
 │   ├── pressure-management/
-│   │   ├── pressure-management-dashboard.html   # Scoring criteria reference
+│   │   ├── pressure-management-dashboard.html   # Scoring criteria page (Scoring tab)
 │   │   ├── PH_Pressure_Scores_Overview.html     # Chart — loads dashboard_data.json at runtime
+│   │   ├── PH_Pressure_Scores_by_District.html  # Chart — loads dashboard_data.json at runtime
+│   │   ├── PH_Single_Pressure_Overview.html     # Chart — loads dashboard_data.json at runtime
 │   │   ├── PH_Pressure_by_Ecosystem.html        # Chart — loads dashboard_data.json at runtime
 │   │   ├── PH_Sites_Threshold_Status.html       # Chart — loads dashboard_data.json at runtime
-│   │   ├── PH_Pressure_Scores_by_District.html  # Chart — loads dashboard_data.json at runtime
 │   │   ├── PH_Sites_YoY_Threshold.html          # Chart — loads dashboard_data.json at runtime
+│   │   ├── PH_Site_Pressure_Summary.html        # Per-site pressure card (?site= URL param)
+│   │   ├── PH_Pressure_Icons.html               # Static pressure-type image panel
 │   │   └── dashboard_data.json                  # Auto-updated by PM_Dashboard_Export.py
 │   ├── kkt/
 │   │   └── KKT-dashboard.html
@@ -117,7 +120,7 @@ Log files are written to `logs/icon-sites/` (gitignored).
 
 `Pressure_Management_Data_Join.py` reads a manually exported CSV from the Pressure Management Reporting System SharePoint spreadsheet, joins it to the Priority Habitats spatial layer on AGOL, and outputs:
 
-- Updated features to the `PH_Pressure_Management` AGOL feature service
+- Refreshed features pushed straight to the `PH_Pressure_Management` layer and `PH_Pressure_Scores` table on AGOL (delete-all + add, controlled by the `PUSH_TO_AGOL` flag)
 - A local file geodatabase with the feature class and related table
 - Summary CSVs to the network (consumed by `PM_Dashboard_Export.py`)
 
@@ -140,6 +143,10 @@ pip install arcgis pandas numpy
 | `PM_Dashboard_Export.py` | Reads the network CSVs, builds `dashboard_data.json`, commits and pushes it to GitHub Pages |
 
 Run `Pressure_Management_Data_Join.py` first, then `PM_Dashboard_Export.py`. The HTML chart files are static — they fetch `dashboard_data.json` at runtime from GitHub Pages and require no regeneration.
+
+### Site programme
+
+Each site is classified as **Priority Habitat**, **Icon Site**, or **Regional Park** via the `site_programme` field — the three programmes are funded separately. The six pressure charts carry an *Exclude Icon Sites & Regional Park* filter, so reporting can be viewed for Priority Habitats alone or for all sites together.
 
 ### Logging
 
