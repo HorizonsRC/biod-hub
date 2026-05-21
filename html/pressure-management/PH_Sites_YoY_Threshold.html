@@ -332,7 +332,7 @@
     const region = regionSelect.value;
     const regionFull = (region === 'All Districts') ? null : (REGION_NAMES[region] || region);
     const location = regionFull ? regionFull : 'All Districts';
-    const note = document.getElementById('excludeIcon').checked ? ' — Priority Habitat only' : '';
+    const note = document.getElementById('excludeIcon').checked ? ' — Priority Habitats' : '';
     document.getElementById('chartTitle').textContent =
       'Year-on-Year Threshold Change — ' + location + note;
   }
