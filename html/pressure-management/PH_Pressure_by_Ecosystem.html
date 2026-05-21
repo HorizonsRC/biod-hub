@@ -204,7 +204,7 @@
     const region = regionSelect.value;
     const regionFull = (region === 'All Regions') ? null : (REGION_NAMES[region] || region);
     const location = regionFull ? regionFull + ' Sites' : 'All Sites';
-    const note = document.getElementById('excludeIcon').checked ? ' — Priority Habitat only' : '';
+    const note = document.getElementById('excludeIcon').checked ? ' — Priority Habitats' : '';
     document.getElementById('chartTitle').textContent =
       'Average Pressure by Ecosystem at ' + location + ' for ' + fy + note;
   }
