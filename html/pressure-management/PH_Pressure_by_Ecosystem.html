@@ -64,6 +64,12 @@
         <div class="fl">District is</div>
         <select id="regionSelect" onchange="updateChart()"></select>
       </div>
+      <div class="fg">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.82rem;color:#1a1a2e;font-weight:500">
+          <input type="checkbox" id="excludeIcon" onchange="updateChart()" style="width:15px;height:15px;cursor:pointer;accent-color:#273747">
+          Exclude Icon Sites &amp; Regional Park
+        </label>
+      </div>
     </div>
   </div>
 
@@ -166,7 +172,9 @@
   function getDatasets() {
     const fy     = fySelect.value;
     const region = regionSelect.value;
-    const rows   = rawData.filter(d => d.Region === region && String(d.Financial_Year) === String(fy));
+    const scope  = document.getElementById('excludeIcon').checked ? 'Priority Habitat' : 'All Sites';
+    const rows   = rawData.filter(d => d.Region === region && String(d.Financial_Year) === String(fy)
+                                       && (d.Scope === undefined || d.Scope === scope));
     return ecosystems.map(eco => ({
       label: ecoLabels[eco] || eco,
       data: pressureTypes.map(pt => {
@@ -196,8 +204,9 @@
     const region = regionSelect.value;
     const regionFull = (region === 'All Regions') ? null : (REGION_NAMES[region] || region);
     const location = regionFull ? regionFull + ' Sites' : 'All Sites';
+    const note = document.getElementById('excludeIcon').checked ? ' — Priority Habitat only' : '';
     document.getElementById('chartTitle').textContent =
-      'Average Pressure by Ecosystem at ' + location + ' for ' + fy;
+      'Average Pressure by Ecosystem at ' + location + ' for ' + fy + note;
   }
 
   function exportChart() {

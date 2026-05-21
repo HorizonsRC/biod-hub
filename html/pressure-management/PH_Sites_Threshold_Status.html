@@ -59,6 +59,12 @@
         <div class="fl">Financial Year is</div>
         <select id="fySelect" onchange="updateChart()"></select>
       </div>
+      <div class="fg">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.82rem;color:#1a1a2e;font-weight:500">
+          <input type="checkbox" id="excludeIcon" onchange="updateChart()" style="width:15px;height:15px;cursor:pointer;accent-color:#273747">
+          Exclude Icon Sites &amp; Regional Park
+        </label>
+      </div>
     </div>
   </div>
 
@@ -231,8 +237,10 @@
     });
 
   function buildChartData() {
-    const fy   = fySelect.value;
-    const rows = rawData.filter(d => String(d.Financial_Year) === String(fy));
+    const fy    = fySelect.value;
+    const scope = document.getElementById('excludeIcon').checked ? 'Priority Habitat' : 'All Sites';
+    const rows  = rawData.filter(d => String(d.Financial_Year) === String(fy)
+                                      && (d.Scope === undefined || d.Scope === scope));
 
     const regions = [...new Set(rows.map(d => d.Region))].sort();
     combos = [];
@@ -295,8 +303,9 @@
 
   function updateTitle() {
     const fy = fySelect.value;
+    const note = document.getElementById('excludeIcon').checked ? ' — Priority Habitat only' : '';
     document.getElementById('chartTitle').textContent =
-      'Sites Above/Below Threshold by Ecosystem and District for ' + fy;
+      'Sites Above/Below Threshold by Ecosystem and District for ' + fy + note;
   }
 
   function exportChart() {
