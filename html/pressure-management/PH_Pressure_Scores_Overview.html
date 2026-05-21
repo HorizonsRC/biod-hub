@@ -70,6 +70,12 @@
         <div class="fl">District is</div>
         <select id="regionSelect" onchange="updateChart()"></select>
       </div>
+      <div class="fg">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.82rem;color:#1a1a2e;font-weight:500">
+          <input type="checkbox" id="excludeIcon" onchange="updateChart()" style="width:15px;height:15px;cursor:pointer;accent-color:#273747">
+          Exclude Icon Sites &amp; Regional Park
+        </label>
+      </div>
     </div>
   </div>
 
@@ -171,6 +177,8 @@
     const region = regionSelect.value;
     let rows = rawData.filter(d => String(d.FY) === String(fy));
     if (region !== 'All Regions') rows = rows.filter(d => d.Region === region);
+    if (document.getElementById('excludeIcon').checked)
+      rows = rows.filter(d => d.site_programme == null || d.site_programme === 'Priority Habitat');
     rows = rows.slice().sort((a, b) => String(a.SiteID).localeCompare(String(b.SiteID)));
     const labels   = rows.map(d => d.SiteID);
     const datasets = pressureDefs.map(({ label, col, color }, i) => ({
@@ -216,8 +224,9 @@
     const region = regionSelect.value;
     const regionFull = (region === 'All Regions') ? null : (REGION_NAMES[region] || region);
     const location = regionFull ? regionFull + ' Sites' : 'All Sites';
+    const note = document.getElementById('excludeIcon').checked ? ' — Priority Habitat only' : '';
     document.getElementById('chartTitle').textContent =
-      'Pressure Management Scores at ' + location + ' for ' + fy;
+      'Pressure Management Scores at ' + location + ' for ' + fy + note;
   }
 
   function exportChart() {
