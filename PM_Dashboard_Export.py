@@ -36,6 +36,7 @@ log.info("Starting PM Dashboard Export")
 SCORES_CSV    = os.path.join(NETWORK_DIR, "PH_Pressure_Scores_Overview.csv")
 ECOSYSTEM_CSV = os.path.join(NETWORK_DIR, "PH_Pressure_by_Ecosystem.csv")
 THRESHOLD_CSV = os.path.join(NETWORK_DIR, "PH_Sites_Threshold_Status.csv")
+SITES_PROG_CSV = os.path.join(NETWORK_DIR, "PH_Sites_Programme.csv")
 
 log.info(f"Reading: {SCORES_CSV}")
 scores_df = pd.read_csv(SCORES_CSV)
@@ -46,9 +47,13 @@ ecosystem_df = pd.read_csv(ECOSYSTEM_CSV)
 log.info(f"Reading: {THRESHOLD_CSV}")
 threshold_df = pd.read_csv(THRESHOLD_CSV)
 
-log.info(f"  Scores rows    : {len(scores_df)}")
-log.info(f"  Ecosystem rows : {len(ecosystem_df)}")
-log.info(f"  Threshold rows : {len(threshold_df)}")
+log.info(f"Reading: {SITES_PROG_CSV}")
+sites_prog_df = pd.read_csv(SITES_PROG_CSV)
+
+log.info(f"  Scores rows         : {len(scores_df)}")
+log.info(f"  Ecosystem rows      : {len(ecosystem_df)}")
+log.info(f"  Threshold rows      : {len(threshold_df)}")
+log.info(f"  Sites (all spatial) : {len(sites_prog_df)}")
 
 # ============================================================
 # BUILD dashboard_data.json
@@ -62,6 +67,7 @@ payload = {
     "scores_overview":       json.loads(scores_df.to_json(orient='records')),
     "pressure_by_ecosystem": json.loads(ecosystem_df.to_json(orient='records')),
     "threshold_status":      json.loads(threshold_df.to_json(orient='records')),
+    "sites_programme":       json.loads(sites_prog_df.to_json(orient='records')),
 }
 
 JSON_OUT = os.path.join(SCRIPT_DIR, "html", "pressure-management", "dashboard_data.json")

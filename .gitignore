@@ -10,3 +10,6 @@ __pycache__/
 .env
 .claude/
 html/icon-sites/backups/
+
+# Local-only AGOL maintenance scripts — not backed up to GitHub; keep a copy elsewhere
+agol-tools/
