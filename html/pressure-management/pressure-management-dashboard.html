@@ -300,16 +300,16 @@
 </div>
 
 <script>
-  // Fill the per-programme site counts in the intro from the live data
-  fetch('./dashboard_data.json')
+  // Fill the per-programme site counts in the intro from the live data.
+  // Uses sites_programme (every spatial site) rather than scores_overview, so
+  // brand-new sites without pressure scores yet are still counted here.
+  fetch('./dashboard_data.json', { cache: 'no-store' })
     .then(r => r.json())
     .then(data => {
-      const seen = {};
-      (data.scores_overview || []).forEach(d => {
-        if (!(d.SiteID in seen)) seen[d.SiteID] = d.site_programme;
-      });
       const counts = { 'Priority Habitat': 0, 'Icon Site': 0, 'Regional Park': 0 };
-      Object.values(seen).forEach(p => { if (p in counts) counts[p]++; });
+      (data.sites_programme || []).forEach(d => {
+        if (d.site_programme in counts) counts[d.site_programme]++;
+      });
       if (counts['Priority Habitat'] + counts['Icon Site'] + counts['Regional Park'] === 0) return;
       document.getElementById('countPH').textContent   = ' (' + counts['Priority Habitat'] + ')';
       document.getElementById('countIcon').textContent = ' (' + counts['Icon Site'] + ')';

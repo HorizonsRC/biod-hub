@@ -179,6 +179,23 @@ main_fc_data = main_fc_data.merge(latest_scores, on='SiteID', how='left')
 # AGOL layer 0 calls the region/district code 'District' — rename to match
 main_fc_data = main_fc_data.rename(columns={'Region': 'District'})
 
+# A site can exist in the spatial layer before it has any pressure scores.
+# Treat an unscored site as 0 (below threshold) so it still appears and pushes
+# cleanly — leaving the merged values as NaN flips the column to float / null
+# and AGOL rejects the whole batch (rollback, error 1003).
+unscored = main_fc_data['Total_Score'].isna()
+if unscored.any():
+    latest_fy = sorted(pressure_data['FY'].dropna().unique())[-1]
+    log.info(f"Sites with no pressure data ({int(unscored.sum())}) — defaulting "
+             f"score to 0, FY to {latest_fy}: "
+             f"{sorted(main_fc_data.loc[unscored, 'SiteID'])}")
+    main_fc_data['Total_Score'] = main_fc_data['Total_Score'].fillna(0)
+    main_fc_data['FY'] = main_fc_data['FY'].fillna(latest_fy)
+    main_fc_data['District'] = main_fc_data['District'].fillna(
+        main_fc_data['SiteID'].str.extract(r'^([A-Za-z]+)', expand=False))
+# fillna + astype keeps this a clean int column (a NaN would force it to float)
+main_fc_data['Above_55_Threshold'] = main_fc_data['Above_55_Threshold'].fillna(0).astype(int)
+
 log.info(f"Main feature class — Shape: {main_fc_data.shape}, Unique sites: {main_fc_data['SiteID'].nunique()}")
 log.info(f"First few rows:\n{main_fc_data[['SiteID', 'SiteName', 'Ecosystem', 'AreaHa', 'Total_Score', 'Above_55_Threshold', 'FY']].head().to_string()}")
 
@@ -318,6 +335,13 @@ scores_csv = os.path.join(NETWORK_DIR, "PH_Pressure_Scores_Overview.csv")
 related_table_data[scores_overview_cols].to_csv(scores_csv, index=False)
 log.info(f"Saved: {scores_csv}")
 
+# Per-site programme list for ALL spatial sites — used by the dashboard intro
+# count so unscored sites (absent from the scores-based CSVs by design) still
+# get counted in the per-programme totals.
+sites_programme_csv = os.path.join(NETWORK_DIR, "PH_Sites_Programme.csv")
+main_fc_data[['SiteID', 'site_programme']].to_csv(sites_programme_csv, index=False)
+log.info(f"Saved: {sites_programme_csv}")
+
 # ============================================================
 # ARCPY EXPORTS
 # ============================================================
@@ -427,9 +451,28 @@ if PUSH_TO_AGOL:
         deleted = sum(1 for r in result.get("deleteResults", []) if r.get("success"))
         log.info(f"  [{name}] deleted {deleted}, added {added}")
         if added != len(features):
-            failed = [r for r in result.get("addResults", []) if not r.get("success")]
+            # rollback_on_failure=True makes one bad row roll the whole batch back,
+            # and AGOL then reports the generic code 1003 for *every* row — the real
+            # cause is hidden. Re-run the adds with rollback OFF so the genuine
+            # per-feature errors surface, then delete the test rows so the layer is
+            # left exactly as it was.
+            log.error(f"  [{name}] batch rolled back — retrying with rollback OFF "
+                      f"to surface the real per-feature errors...")
+            diag = target.edit_features(adds=features, rollback_on_failure=False)
+            diag_results = diag.get("addResults", [])
+            real_fails = [(i, r) for i, r in enumerate(diag_results)
+                          if not r.get("success")]
+            for i, r in real_fails:
+                attrs = features[i].attributes
+                sid = attrs.get("site_id") or attrs.get("SiteID") or "<no SiteID>"
+                log.error(f"    [{name}] FAILED site={sid}  error={r.get('error')}")
+            added_ids = [r["objectId"] for r in diag_results if r.get("success")]
+            if added_ids:
+                target.edit_features(deletes=added_ids, rollback_on_failure=False)
+                log.info(f"  [{name}] removed {len(added_ids)} diagnostic test rows")
             raise RuntimeError(
-                f"{name}: only {added}/{len(features)} adds succeeded — {failed[:1]}")
+                f"{name}: {len(real_fails)}/{len(features)} feature(s) genuinely "
+                f"failed — see the 'FAILED site=' lines above for the real error.")
 
     # Layer 0 features (with geometry) — remap field names, clean values
     layer_fs = main_fc_data.spatial.to_featureset()
