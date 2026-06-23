@@ -196,7 +196,7 @@
     rows = rows.slice().sort((a, b) => String(a.SiteID).localeCompare(String(b.SiteID)));
 
     return {
-      labels: rows.map(d => d.SiteID),
+      labels: rows.map(d => d.chart_label || d.SiteID),
       data:   rows.map(d => Math.round((d[col] || 0) * 100) / 100),
       color:  def ? def.color : '#273747',
       label:  def ? def.label : col,
