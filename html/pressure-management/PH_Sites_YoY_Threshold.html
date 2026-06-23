@@ -111,7 +111,7 @@
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(sepX, chart.chartArea.top);
-        ctx.lineTo(sepX, chart.chartArea.bottom + 54);
+        ctx.lineTo(sepX, chart.chartArea.bottom + 42);
         ctx.stroke();
       });
 
@@ -122,7 +122,7 @@
       ctx.textAlign = 'center';
       Object.entries(boundaries).forEach(([region, { start, end }]) => {
         const midX = (x.getPixelForValue(start) + x.getPixelForValue(end)) / 2;
-        ctx.fillText(region, midX, chart.chartArea.bottom + 52);
+        ctx.fillText(region, midX, chart.chartArea.bottom + 40);
       });
 
       // FY label on each bar (rotated), skipping spacers.
@@ -183,7 +183,7 @@
           regionSelect.appendChild(o);
         });
 
-      const { barData, colors, tickLabels } = buildChartData();
+      const { barData, colors, tickLabels, yMax, yMin } = buildChartData();
 
       chart = new Chart(document.getElementById('chart'), {
         type: 'bar',
@@ -201,7 +201,7 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          layout: { padding: { bottom: 64, top: 46 } },
+          layout: { padding: { bottom: 52, top: 16 } },
           plugins: {
             legend: { display: false },
             tooltip: {
@@ -229,6 +229,8 @@
             },
             y: {
               beginAtZero: false,
+              max: yMax,
+              min: yMin,
               title: {
                 display: true,
                 text: 'Number of sites scoring above or below pressure management threshold',
@@ -289,7 +291,16 @@
       }
     });
 
-    return { barData, colors, tickLabels };
+    // Y-axis headroom: push the axis a few units beyond the tallest/deepest bar
+    // so the FY label sitting just outside each bar tip lands in clear white
+    // space inside the plot, instead of being jammed against the top/bottom frame.
+    const posMax = Math.max(0, ...barData.map(d => d[1]));
+    const negMin = Math.min(0, ...barData.map(d => d[0]));
+    const margin = Math.max(2, Math.round((posMax - negMin) * 0.1));
+    const yMax = (posMax > 0 ? posMax : 0) + margin;
+    const yMin = (negMin < 0 ? negMin : 0) - margin;
+
+    return { barData, colors, tickLabels, yMax, yMin };
   }
 
   function drawLegend() {
@@ -307,10 +318,12 @@
 
   function updateChart() {
     if (!chart) return;
-    const { barData, colors, tickLabels } = buildChartData();
+    const { barData, colors, tickLabels, yMax, yMin } = buildChartData();
     chart.data.labels                      = tickLabels;
     chart.data.datasets[0].data            = barData;
     chart.data.datasets[0].backgroundColor = colors;
+    chart.options.scales.y.max             = yMax;
+    chart.options.scales.y.min             = yMin;
     chart.update();
     updateTitle();
   }
