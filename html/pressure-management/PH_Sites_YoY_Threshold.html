@@ -90,11 +90,16 @@
   const ECO_ORDER = ['C', 'W', 'F'];
   const ecoColors = { C: '#F9A825', W: '#1565C0', F: '#2E7D32' };
   const ecoLabels = { C: 'Coastal', W: 'Wetland', F: 'Forest' };
-  // Per-district colours for the ecosystems-combined view (district names are on
-  // the axis, so the colour is purely visual separation).
+  // Per-district colours for the ecosystems-combined view, matched to the
+  // KKT Projects map legend (Palmerston North kept as its existing teal).
   const DISTRICT_COLORS = {
-    Horo: '#2166AC', Man: '#D95F02', Palm: '#1B9E77', Rang: '#984EA3',
-    Rua: '#E7298A', Tara: '#66A61E', Whan: '#8C510A',
+    Horo: '#66A61E', // Horowhenua – green
+    Man:  '#26C6DA', // Manawatū – cyan
+    Palm: '#1B9E77', // Palmerston North – unchanged (teal)
+    Rang: '#E53935', // Rangitīkei – red
+    Rua:  '#FB8C00', // Ruapehu – orange
+    Tara: '#FDD835', // Tararua – yellow
+    Whan: '#C838C8', // Whanganui – magenta
   };
 
   const regionSelect = document.getElementById('regionSelect');
