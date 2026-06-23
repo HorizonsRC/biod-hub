@@ -90,7 +90,12 @@
   const ECO_ORDER = ['C', 'W', 'F'];
   const ecoColors = { C: '#F9A825', W: '#1565C0', F: '#2E7D32' };
   const ecoLabels = { C: 'Coastal', W: 'Wetland', F: 'Forest' };
-  const COMBINED_COLOR = '#546E7A'; // neutral slate for the ecosystems-combined view
+  // Per-district colours for the ecosystems-combined view (district names are on
+  // the axis, so the colour is purely visual separation).
+  const DISTRICT_COLORS = {
+    Horo: '#2166AC', Man: '#D95F02', Palm: '#1B9E77', Rang: '#984EA3',
+    Rua: '#E7298A', Tara: '#66A61E', Whan: '#8C510A',
+  };
 
   const regionSelect = document.getElementById('regionSelect');
   const viewSelect   = document.getElementById('viewSelect');
@@ -335,7 +340,7 @@
               { group: reg, groupLabel: reg, eco: null, fy: String(fy),
                 tip: `${reg} — All ecosystems — ${fy}` },
               tally(d => d.Region === reg && String(d.Financial_Year) === String(fy)),
-              COMBINED_COLOR
+              DISTRICT_COLORS[reg] || '#666'
             );
           });
         } else {
@@ -378,8 +383,10 @@
         <span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:${color}"></span>
         ${text}
       </span>`;
+    // District view colours bars per-district (names are on the axis) so no
+    // legend; the ecosystem views show the C/W/F colour key.
     legendEl.innerHTML = viewSelect.value === 'district'
-      ? swatch(COMBINED_COLOR, 'All ecosystems')
+      ? ''
       : ECO_ORDER.map(eco => swatch(ecoColors[eco], ecoLabels[eco])).join('');
   }
 
