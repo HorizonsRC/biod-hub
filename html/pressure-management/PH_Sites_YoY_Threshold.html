@@ -59,6 +59,14 @@
     </div>
     <div class="panel-body">
       <div class="fg">
+        <div class="fl">View</div>
+        <select id="viewSelect" onchange="updateChart()">
+          <option value="district-eco">District &amp; Ecosystem</option>
+          <option value="district">By district (ecosystems combined)</option>
+          <option value="eco">Whole region (by ecosystem)</option>
+        </select>
+      </div>
+      <div class="fg">
         <div class="fl">District is</div>
         <select id="regionSelect" onchange="updateChart()"></select>
       </div>
@@ -82,8 +90,10 @@
   const ECO_ORDER = ['C', 'W', 'F'];
   const ecoColors = { C: '#F9A825', W: '#1565C0', F: '#2E7D32' };
   const ecoLabels = { C: 'Coastal', W: 'Wetland', F: 'Forest' };
+  const COMBINED_COLOR = '#546E7A'; // neutral slate for the ecosystems-combined view
 
   const regionSelect = document.getElementById('regionSelect');
+  const viewSelect   = document.getElementById('viewSelect');
 
   // Plugin: district separators + district labels + FY labels on bars
   const groupPlugin = {
@@ -92,12 +102,13 @@
       const { ctx, scales: { x, y } } = chart;
       if (!combos.length) return;
 
-      // District boundaries (skipping spacers)
+      // Group boundaries (skipping spacers). The group is the district, or the
+      // ecosystem in the whole-region view — c.group / c.groupLabel set per combo.
       const boundaries = {};
       combos.forEach((c, i) => {
         if (c.spacer) return;
-        if (!boundaries[c.region]) boundaries[c.region] = { start: i, end: i };
-        boundaries[c.region].end = i;
+        if (!boundaries[c.group]) boundaries[c.group] = { start: i, end: i, label: c.groupLabel };
+        boundaries[c.group].end = i;
       });
 
       ctx.save();
@@ -115,14 +126,14 @@
         ctx.stroke();
       });
 
-      // District labels
+      // Group labels (district names, or ecosystem names in the whole-region view)
       ctx.setLineDash([]);
       ctx.fillStyle = '#1a1a2e';
       ctx.font = "600 13px 'DM Sans', sans-serif";
       ctx.textAlign = 'center';
-      Object.entries(boundaries).forEach(([region, { start, end }]) => {
+      Object.values(boundaries).forEach(({ start, end, label }) => {
         const midX = (x.getPixelForValue(start) + x.getPixelForValue(end)) / 2;
-        ctx.fillText(region, midX, chart.chartArea.bottom + 40);
+        ctx.fillText(label, midX, chart.chartArea.bottom + 40);
       });
 
       // FY label on each bar (rotated), skipping spacers.
@@ -208,8 +219,7 @@
               callbacks: {
                 title: items => {
                   const i = items[0].dataIndex;
-                  if (combos[i].spacer) return '';
-                  return `${combos[i].region} — ${ecoLabels[combos[i].eco] || combos[i].eco} — ${combos[i].fy}`;
+                  return combos[i].spacer ? '' : combos[i].tip;
                 },
                 label: items => {
                   const [neg, pos] = items.raw;
@@ -268,42 +278,81 @@
   function buildChartData() {
     const region = regionSelect.value;
     const scope  = document.getElementById('excludeIcon').checked ? 'Priority Habitat' : 'All Sites';
+    const view   = viewSelect.value;
     let rows = region === 'All Districts' ? rawData : rawData.filter(d => d.Region === region);
     rows = rows.filter(d => d.Scope === undefined || d.Scope === scope);
 
-    const regions = [...new Set(rows.map(d => d.Region))].sort();
     combos = [];
     const barData    = [];
     const colors     = [];
     const tickLabels = [];
 
-    regions.forEach((reg, regionIdx) => {
-      ECO_ORDER.forEach(eco => {
-        const fys = [...new Set(
-          rows.filter(d => d.Region === reg && d.Ecosystem === eco).map(d => d.Financial_Year)
-        )].sort();
-        fys.forEach(fy => {
-          combos.push({ region: reg, eco, fy: String(fy) });
-          const aboveRow = rows.find(d => d.Region === reg && d.Ecosystem === eco &&
-                                          String(d.Financial_Year) === String(fy) && d.Threshold_Status === 'Above');
-          const belowRow = rows.find(d => d.Region === reg && d.Ecosystem === eco &&
-                                          String(d.Financial_Year) === String(fy) && d.Threshold_Status === 'Below');
-          const above = aboveRow ? aboveRow.Count : 0;
-          const below = belowRow ? belowRow.Count : 0;
-          barData.push([-below, above]);
-          colors.push(ecoColors[eco] || '#888');
-          tickLabels.push(String(fy).replace('-', '/'));
-        });
+    // Sum the above/below-threshold site counts over every row matching predicate.
+    const tally = (predicate) => {
+      let above = 0, below = 0;
+      rows.forEach(d => {
+        if (!predicate(d)) return;
+        if (d.Threshold_Status === 'Above') above += d.Count;
+        else if (d.Threshold_Status === 'Below') below += d.Count;
       });
+      return { above, below };
+    };
+    const fysFor = (predicate) =>
+      [...new Set(rows.filter(predicate).map(d => d.Financial_Year))].sort();
+    const pushBar = (combo, { above, below }, color) => {
+      combos.push(combo);
+      barData.push([-below, above]);
+      colors.push(color);
+      tickLabels.push(String(combo.fy).replace('-', '/'));
+    };
+    const pushSpacer = () => {
+      combos.push({ spacer: true });
+      barData.push([0, 0]);
+      colors.push('rgba(0,0,0,0)');
+      tickLabels.push('');
+    };
 
-      // Spacer between districts (not after the last one)
-      if (regionIdx < regions.length - 1) {
-        combos.push({ spacer: true });
-        barData.push([0, 0]);
-        colors.push('rgba(0,0,0,0)');
-        tickLabels.push('');
-      }
-    });
+    if (view === 'eco') {
+      // Whole region, grouped by ecosystem (districts summed together)
+      ECO_ORDER.forEach((eco, i) => {
+        fysFor(d => d.Ecosystem === eco).forEach(fy => {
+          pushBar(
+            { group: eco, groupLabel: ecoLabels[eco] || eco, eco, fy: String(fy),
+              tip: `${ecoLabels[eco] || eco} — ${fy}` },
+            tally(d => d.Ecosystem === eco && String(d.Financial_Year) === String(fy)),
+            ecoColors[eco] || '#888'
+          );
+        });
+        if (i < ECO_ORDER.length - 1) pushSpacer();
+      });
+    } else {
+      // District-grouped: 'district-eco' keeps the ecosystem split, 'district' sums it out
+      const regions = [...new Set(rows.map(d => d.Region))].sort();
+      regions.forEach((reg, regionIdx) => {
+        if (view === 'district') {
+          fysFor(d => d.Region === reg).forEach(fy => {
+            pushBar(
+              { group: reg, groupLabel: reg, eco: null, fy: String(fy),
+                tip: `${reg} — All ecosystems — ${fy}` },
+              tally(d => d.Region === reg && String(d.Financial_Year) === String(fy)),
+              COMBINED_COLOR
+            );
+          });
+        } else {
+          ECO_ORDER.forEach(eco => {
+            fysFor(d => d.Region === reg && d.Ecosystem === eco).forEach(fy => {
+              pushBar(
+                { group: reg, groupLabel: reg, eco, fy: String(fy),
+                  tip: `${reg} — ${ecoLabels[eco] || eco} — ${fy}` },
+                tally(d => d.Region === reg && d.Ecosystem === eco && String(d.Financial_Year) === String(fy)),
+                ecoColors[eco] || '#888'
+              );
+            });
+          });
+        }
+        if (regionIdx < regions.length - 1) pushSpacer();
+      });
+    }
 
     // Y-axis headroom: push the axis a few units beyond the tallest/deepest bar
     // so the FY label sitting just outside each bar tip lands in clear white
@@ -317,17 +366,21 @@
     return { barData, colors, tickLabels, yMax, yMin };
   }
 
+  let legendEl;
   function drawLegend() {
-    const legendHtml = ECO_ORDER.map(eco =>
+    if (!legendEl) {
+      legendEl = document.createElement('div');
+      legendEl.style.cssText = 'text-align:center;padding:4px 0 2px';
+      document.querySelector('.wrap').appendChild(legendEl);
+    }
+    const swatch = (color, text) =>
       `<span style="display:inline-flex;align-items:center;gap:5px;margin-right:16px;font-size:0.78rem;color:#555">
-        <span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:${ecoColors[eco]}"></span>
-        ${ecoLabels[eco]}
-      </span>`
-    ).join('');
-    const el = document.createElement('div');
-    el.style.cssText = 'text-align:center;padding:4px 0 2px';
-    el.innerHTML = legendHtml;
-    document.querySelector('.wrap').appendChild(el);
+        <span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:${color}"></span>
+        ${text}
+      </span>`;
+    legendEl.innerHTML = viewSelect.value === 'district'
+      ? swatch(COMBINED_COLOR, 'All ecosystems')
+      : ECO_ORDER.map(eco => swatch(ecoColors[eco], ecoLabels[eco])).join('');
   }
 
   function updateChart() {
@@ -340,6 +393,7 @@
     chart.options.scales.y.min             = yMin;
     chart.update();
     updateTitle();
+    drawLegend();
   }
 
   const REGION_NAMES = {
@@ -352,8 +406,12 @@
     const regionFull = (region === 'All Districts') ? null : (REGION_NAMES[region] || region);
     const location = regionFull ? regionFull : 'All Districts';
     const note = document.getElementById('excludeIcon').checked ? ' — Priority Habitats' : '';
+    const view = viewSelect.value;
+    const viewNote = view === 'district' ? ' — Ecosystems Combined'
+                   : view === 'eco'      ? ' — By Ecosystem'
+                   : '';
     document.getElementById('chartTitle').textContent =
-      'Year-on-Year Threshold Change — ' + location + note;
+      'Year-on-Year Threshold Change — ' + location + viewNote + note;
   }
 
   function exportChart() {
