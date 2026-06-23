@@ -111,7 +111,7 @@
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(sepX, chart.chartArea.top);
-        ctx.lineTo(sepX, chart.chartArea.bottom + 42);
+        ctx.lineTo(sepX, chart.chartArea.bottom + 54);
         ctx.stroke();
       });
 
@@ -122,40 +122,32 @@
       ctx.textAlign = 'center';
       Object.entries(boundaries).forEach(([region, { start, end }]) => {
         const midX = (x.getPixelForValue(start) + x.getPixelForValue(end)) / 2;
-        ctx.fillText(region, midX, chart.chartArea.bottom + 40);
+        ctx.fillText(region, midX, chart.chartArea.bottom + 52);
       });
 
-      // FY label on each bar (rotated), skipping spacers
+      // FY label on each bar (rotated), skipping spacers.
+      // Always drawn in black just beyond the bar's tip (outside the bar) for
+      // consistency: above the top for up-bars, below the bottom for down-bars.
+      // Placing every label outside the bar avoids the zero/centre line slicing
+      // through small-bar labels; the extra top/bottom layout padding gives tall
+      // bars room so the outside label can't clip off the canvas.
       combos.forEach((c, i) => {
         if (c.spacer) return;
         const [neg, pos] = chart.data.datasets[0].data[i];
         const barTopPx  = y.getPixelForValue(pos);
         const barBotPx  = y.getPixelForValue(neg);
-        const barHeight = Math.abs(barTopPx - barBotPx);
-        if (barHeight === 0) return;
+        if (barTopPx === barBotPx) return; // zero-height (no data)
         const xPos    = x.getPixelForValue(i);
         const abovePx = Math.abs(y.getPixelForValue(pos) - y.getPixelForValue(0));
         const belowPx = Math.abs(y.getPixelForValue(neg) - y.getPixelForValue(0));
         const useAbove = abovePx >= belowPx;
         const label = String(c.fy).replace('-', '/');
+        const yOut  = useAbove ? barTopPx - 20 : barBotPx + 20;
         ctx.save();
-        if ((useAbove ? abovePx : belowPx) >= 40) {
-          // Enough room — draw inside bar, white
-          const yMid = useAbove
-            ? (y.getPixelForValue(0) + y.getPixelForValue(pos)) / 2
-            : (y.getPixelForValue(0) + y.getPixelForValue(neg)) / 2;
-          ctx.translate(xPos, yMid);
-          ctx.rotate(-Math.PI / 2);
-          ctx.font = "500 11px 'DM Sans', sans-serif";
-          ctx.fillStyle = '#fff';
-        } else {
-          // Too small — draw just outside bar tip, dark
-          const yOut = useAbove ? barTopPx - 20 : barBotPx + 20;
-          ctx.translate(xPos, yOut);
-          ctx.rotate(-Math.PI / 2);
-          ctx.font = "700 10px 'DM Sans', sans-serif";
-          ctx.fillStyle = '#000';
-        }
+        ctx.translate(xPos, yOut);
+        ctx.rotate(-Math.PI / 2);
+        ctx.font = "700 10px 'DM Sans', sans-serif";
+        ctx.fillStyle = '#000';
         ctx.textAlign = 'center';
         ctx.fillText(label, 0, 3);
         ctx.restore();
@@ -209,7 +201,7 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          layout: { padding: { bottom: 52, top: 12 } },
+          layout: { padding: { bottom: 64, top: 46 } },
           plugins: {
             legend: { display: false },
             tooltip: {
