@@ -231,6 +231,20 @@
               beginAtZero: false,
               max: yMax,
               min: yMin,
+              // The max/min above add headroom so the FY labels clear the bars.
+              // Drop the forced boundary tick (and its gridline) when it isn't a
+              // round number, so there's no stray "17"/"9"/"-14" and no line at
+              // the very top/bottom — the headroom reads as open space, like the
+              // margin below the bars where the district names sit.
+              afterBuildTicks(axis) {
+                const t = axis.ticks;
+                if (t.length < 3) return;
+                const step = Math.abs(t[2].value - t[1].value) || 1;
+                axis.ticks = t.filter(tick => {
+                  const onBound = tick.value === axis.max || tick.value === axis.min;
+                  return !onBound || Math.abs(tick.value % step) < 1e-9;
+                });
+              },
               title: {
                 display: true,
                 text: 'Number of sites scoring above or below pressure management threshold',
