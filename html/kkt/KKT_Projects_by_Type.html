@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>KKT Projects by Type</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;overflow:hidden}
+    body{font-family:'DM Sans',sans-serif;background:#fff;color:#1a1a2e}
+    .wrap{background:#fff;padding:14px 18px 8px;height:100%;display:flex;flex-direction:column}
+    .hd{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;gap:14px}
+    .title{font-size:1rem;font-weight:600;line-height:1.35}
+    .sub{font-size:.72rem;color:#6b7280;margin-top:2px}
+    .hd-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+    select{border:1px solid #ddd;border-radius:6px;padding:7px 26px 7px 10px;font-size:.78rem;color:#1a1a2e;font-family:inherit;appearance:none;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 8px center;cursor:pointer}
+    select:focus{outline:none;border-color:#273747}
+    .print-btn{background:none;border:1px solid #ccc;border-radius:6px;padding:7px 10px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:.78rem;font-family:inherit;color:#555;white-space:nowrap}
+    .print-btn:hover{background:#f5f5f5;border-color:#aaa}
+    .legend{display:flex;gap:13px;margin-bottom:7px;font-size:.72rem;color:#4b5563;flex-wrap:wrap}
+    .legend.hide{display:none}
+    .lg{display:flex;align-items:center;gap:5px}
+    .sw{width:11px;height:11px;border-radius:2px;flex-shrink:0}
+    .scroll{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden}
+    .chart-box{position:relative}
+    .note{font-size:.66rem;color:#9ca3af;padding-top:4px;line-height:1.4}
+    .updated{color:#aaa;font-size:.62rem;text-align:right;padding-top:2px}
+    .msg{padding:18px;color:#6b7280;font-size:.85rem}
+    .msg.err{color:#c0392b}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hd">
+    <div>
+      <div class="title" id="chartTitle">KKT Projects by Type</div>
+      <div class="sub" id="chartSub"></div>
+    </div>
+    <div class="hd-actions">
+      <select id="measureSelect" onchange="render()">
+        <option value="count">Number of projects</option>
+        <option value="funding">Funding awarded</option>
+      </select>
+      <select id="yearSelect" onchange="render()"></select>
+      <button class="print-btn" onclick="exportChart()" title="Download as PNG">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        PNG
+      </button>
+    </div>
+  </div>
+
+  <div class="legend" id="legend"></div>
+  <div class="scroll"><div class="chart-box"><canvas id="chart"></canvas></div></div>
+  <div class="note" id="note"></div>
+  <div class="updated" id="updated"></div>
+</div>
+
+<script>
+  // Grant-year colours — fixed order, validated for colour-vision separation.
+  // A year keeps its colour however many years are on screen.
+  const YEAR_COLOURS = {
+    '21_22': '#0083A0', '22_23': '#B4761A', '23_24': '#7A5BA8',
+    '24_25': '#4C8A3F', '25_26': '#2C6BB0', '26_27': '#B44A3C'
+  };
+  const FALLBACK = '#6b7280';
+
+  let projects = [], chart = null;
+  const yearSelect    = document.getElementById('yearSelect');
+  const measureSelect = document.getElementById('measureSelect');
+
+  const yearLabel = y => y ? y.replace('_', '-') : 'Unknown';
+  const money = v => '$' + Math.round(v).toLocaleString('en-NZ');
+
+  const valueLabels = {
+    id: 'valueLabels',
+    afterDatasetsDraw(c) {
+      const { ctx } = c;
+      ctx.save();
+      ctx.font = "500 10px 'DM Sans', sans-serif";
+      ctx.fillStyle = '#4b5563';
+      ctx.textBaseline = 'middle';
+      const isMoney = measureSelect.value === 'funding';
+      // One total per row, not a number on every stacked segment.
+      const totals = c.data.labels.map((_, i) =>
+        c.data.datasets.reduce((s, ds) => s + (ds.data[i] || 0), 0));
+      const last = c.getDatasetMeta(c.data.datasets.length - 1);
+      last.data.forEach((bar, i) => {
+        if (!totals[i]) return;
+        const t = isMoney ? money(totals[i]) : totals[i].toLocaleString('en-NZ');
+        ctx.fillText(t, bar.x + 6, bar.y);
+      });
+      ctx.restore();
+    }
+  };
+
+  fetch('./dashboard_data.json')
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(data => {
+      projects = data.projects || [];
+      document.getElementById('updated').textContent = 'Generated: ' + data.generated_at;
+
+      const years = [...new Set(projects.map(p => p.Grant_year_1).filter(Boolean))].sort();
+      const all = document.createElement('option');
+      all.value = ''; all.textContent = 'All years';
+      yearSelect.appendChild(all);
+      years.forEach(y => {
+        const o = document.createElement('option');
+        o.value = y; o.textContent = yearLabel(y);
+        yearSelect.appendChild(o);
+      });
+      yearSelect.value = '';
+      render();
+    })
+    .catch(err => {
+      document.querySelector('.scroll').innerHTML =
+        '<p class="msg err">Could not load dashboard data (' + err.message + ').</p>';
+    });
+
+  function render() {
+    const year    = yearSelect.value;
+    const measure = measureSelect.value;
+    const isMoney = measure === 'funding';
+
+    const rows = projects.filter(p => !year || p.Grant_year_1 === year);
+
+    // ProjectType is a comma-separated list, so one project can sit in several
+    // types. Counts add 1 to each type it carries. Funding is divided evenly
+    // between them so the column still sums to the real total awarded.
+    const byType = new Map();
+    let multi = 0;
+    rows.forEach(p => {
+      const types = String(p.ProjectType || '')
+        .split(',').map(t => t.trim()).filter(Boolean);
+      if (!types.length) return;
+      if (types.length > 1) multi++;
+      const share = isMoney ? (p.funding || 0) / types.length : 1;
+      if (isMoney && !p.funding) return;
+      types.forEach(t => {
+        if (!byType.has(t)) byType.set(t, {});
+        const slot = byType.get(t);
+        slot[p.Grant_year_1] = (slot[p.Grant_year_1] || 0) + share;
+      });
+    });
+
+    const entries = [...byType.entries()]
+      .map(([type, per]) => ({ type, per, total: Object.values(per).reduce((a, b) => a + b, 0) }))
+      .sort((a, b) => b.total - a.total);
+
+    const years = year ? [year]
+      : [...new Set(rows.map(p => p.Grant_year_1).filter(Boolean))].sort();
+    const usedYears = years.filter(y => entries.some(e => e.per[y]));
+
+    document.getElementById('chartTitle').textContent =
+      isMoney ? 'KKT Funding by Project Type' : 'KKT Projects by Type';
+    document.getElementById('chartSub').textContent =
+      (year ? yearLabel(year) : 'All years') +
+      (isMoney ? ' · grant split evenly across each project’s types'
+               : ' · a project is counted under each type it carries');
+
+    const legend = document.getElementById('legend');
+    if (usedYears.length > 1) {
+      legend.classList.remove('hide');
+      legend.innerHTML = usedYears.map(y =>
+        `<span class="lg"><span class="sw" style="background:${YEAR_COLOURS[y] || FALLBACK}"></span>${yearLabel(y)}</span>`
+      ).join('');
+    } else {
+      legend.classList.add('hide');
+    }
+
+    document.getElementById('note').textContent = multi
+      ? `${multi} project${multi > 1 ? 's' : ''} in this view carr${multi > 1 ? 'y' : 'ies'} more than one type.`
+      : '';
+
+    if (chart) { chart.destroy(); chart = null; }
+    if (!entries.length) {
+      document.querySelector('.chart-box').innerHTML =
+        '<p class="msg">Nothing to show for this selection.</p>';
+      return;
+    }
+    document.querySelector('.chart-box').innerHTML = '<canvas id="chart"></canvas>';
+    document.querySelector('.chart-box').style.height =
+      Math.max(180, entries.length * 26 + 34) + 'px';
+
+    const datasets = usedYears.map(y => ({
+      label: yearLabel(y),
+      data: entries.map(e => e.per[y] || 0),
+      backgroundColor: YEAR_COLOURS[y] || FALLBACK,
+      borderColor: '#fff',
+      borderWidth: { top: 0, bottom: 0, left: 0, right: 2 },
+      borderRadius: 3,
+      borderSkipped: false,
+      barPercentage: 0.8,
+      categoryPercentage: 0.88,
+      stack: 'y'
+    }));
+
+    chart = new Chart(document.getElementById('chart'), {
+      type: 'bar',
+      data: { labels: entries.map(e => e.type), datasets },
+      plugins: [valueLabels],
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: { padding: { right: 76 } },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: c => `${c.dataset.label}: ` +
+                (isMoney ? money(c.parsed.x)
+                         : c.parsed.x.toLocaleString('en-NZ') +
+                           ' project' + (c.parsed.x === 1 ? '' : 's')),
+              footer: items => items.length > 1
+                ? 'Total: ' + (isMoney
+                    ? money(items.reduce((s, i) => s + i.parsed.x, 0))
+                    : items.reduce((s, i) => s + i.parsed.x, 0).toLocaleString('en-NZ'))
+                : ''
+            }
+          }
+        },
+        scales: {
+          x: { stacked: true, beginAtZero: true,
+               grid: { color: '#eee' },
+               ticks: { font: { family: "'DM Sans', sans-serif", size: 10 },
+                        color: '#6b7280',
+                        callback: v => isMoney
+                          ? '$' + (v >= 1000 ? (v / 1000) + 'k' : v)
+                          : v } },
+          y: { stacked: true, grid: { display: false },
+               ticks: { font: { family: "'DM Sans', sans-serif", size: 11 },
+                        color: '#374151', autoSkip: false,
+                        callback: function (v) {
+                          const s = this.getLabelForValue(v);
+                          return s.length > 38 ? s.slice(0, 37) + '…' : s;
+                        } } }
+        }
+      }
+    });
+  }
+
+  function exportChart() {
+    const src = document.getElementById('chart');
+    if (!src) return;
+    const title = document.getElementById('chartTitle').textContent +
+                  ' — ' + document.getElementById('chartSub').textContent;
+    const dpr = window.devicePixelRatio || 1;
+    const hdrH = Math.round(46 * dpr), padX = Math.round(16 * dpr);
+    const out = document.createElement('canvas');
+    out.width = src.width; out.height = src.height + hdrH;
+    const ctx = out.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, out.width, out.height);
+    ctx.fillStyle = '#1a1a2e';
+    ctx.font = `600 ${Math.round(13 * dpr)}px Arial, sans-serif`;
+    ctx.fillText(title, padX, Math.round(20 * dpr));
+    ctx.drawImage(src, 0, hdrH);
+    const safe = title.normalize('NFD').replace(/[̀-ͯ]/g, '')
+                      .replace(/[^a-zA-Z0-9\s-]/g, '').trim().replace(/\s+/g, '_');
+    const dataUrl = out.toDataURL('image/png');
+    const w = window.open('', '_blank');
+    if (!w) { alert('Allow pop-ups for this site to export the chart.'); return; }
+    w.document.write(`<!DOCTYPE html><html><head><title>${safe}</title></head><body style="margin:0;background:#1a1a2e;display:flex;flex-direction:column;align-items:center;padding:24px;font-family:sans-serif;gap:16px;"><a href="${dataUrl}" download="${safe}.png" style="background:#2d6a4f;color:#fff;padding:10px 22px;border-radius:6px;text-decoration:none;font-size:15px;font-weight:600;">&#8681; Download ${safe}.png</a><img src="${dataUrl}" style="max-width:100%;border:1px solid #333;border-radius:4px;"></body></html>`);
+    w.document.close();
+  }
+</script>
+</body>
+</html>

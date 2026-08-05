@@ -63,6 +63,17 @@ RUAHINE_TRAPS_LAYER = r"\\your-server\your-share\IconSite_project\IconSite_proje
 # Keys do not expire. Generate or view yours at https://ebird.org/api/keygen
 EBIRD_API_KEY = "your-ebird-api-key"
 
+# ── KKT ───────────────────────────────────────────────────────────────────────
+
+# Biodiversity KKT Projects service (layer 4 = projects, table 5 = statistics)
+KKT_SERVICE_URL = "https://services1.arcgis.com/your-org-id/arcgis/rest/services/Biodiversity_KKT_Projects/FeatureServer"
+
+# The team's annual summary statistics spreadsheet
+KKT_STATS_XLSX = r"C:\path\to\your\Data\KKT data\Summary KKT stats 2025-26.xlsx"
+
+# Output directory for the match review CSV (recommended: your gitignored Data\ folder)
+KKT_OUTPUT_DIR = r"C:\path\to\your\Data\KKT data"
+
 # ── Kia Whārite ───────────────────────────────────────────────────────────────
 
 # Local File Geodatabase containing the PCO treatment area data.
