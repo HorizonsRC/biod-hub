@@ -20,7 +20,10 @@ biod-hub/
 │   │   ├── PH_Pressure_Icons.html               # Static pressure-type image panel
 │   │   └── dashboard_data.json                  # Auto-updated by PM_Dashboard_Export.py
 │   ├── kkt/
-│   │   └── KKT-dashboard.html
+│   │   ├── KKT-dashboard.html                   # Overview panel (static text/stats)
+│   │   ├── KKT_Project_Stats.html               # Chart — loads dashboard_data.json (?metric=, ?year=)
+│   │   ├── KKT_Projects_by_Type.html            # Chart — loads dashboard_data.json
+│   │   └── dashboard_data.json                  # Auto-updated by KKT_Dashboard_Export.py
 │   ├── targeted-rates/
 │   │   ├── Targeted-rate.html
 │   │   ├── REG.html
@@ -34,6 +37,8 @@ biod-hub/
 │   │   ├── pukaha.html                          # Auto-updated by Icon_Sites_Data_Export.py
 │   │   └── ruahine-kiwi.html                   # Auto-updated by Icon_Sites_Data_Export.py (Trap.NZ + local GDB)
 │   └── totara-reserve/                          # Placeholder for future content
+├── KKT_Stats_Update.py                          # Loads the KKT stats spreadsheet into AGOL
+├── KKT_Dashboard_Export.py                      # Builds html/kkt/dashboard_data.json
 ├── Pressure_Management_Data_Join.py             # Pressure Management data pipeline
 ├── PM_Dashboard_Export.py                       # Builds dashboard_data.json and pushes to GitHub
 ├── Icon_Sites_Data_Export.py                    # Queries AGOL, updates icon site HTML dashboards
@@ -113,6 +118,93 @@ C:\Users\<you>\AppData\Local\ESRI\conda\envs\arcpro-scripts-3-5\python.exe Icon_
 ### Logging
 
 Log files are written to `logs/icon-sites/` (gitignored).
+
+---
+
+## KKT scripts
+
+`KKT_Stats_Update.py` loads the team's annual *Summary KKT stats* spreadsheet into the `KKT_Related_Table_Statistics` table on the `Biodiversity_KKT_Projects` service, matching each spreadsheet row to its project feature in `KKT_Projects_Layer` for a given grant year.
+
+The layer/table relationship is 1:1 — `KKT_Projects_Layer.GlobalID` → `KKT_Related_Table_Statistics.ProjectID`. Each layer feature is one project *for one grant year*, so one stats row per feature is correct.
+
+### How it runs
+
+The script is a dry run by default — it matches names, writes a review CSV and changes nothing:
+
+```
+python KKT_Stats_Update.py --year 25_26
+```
+
+Check the review CSV, then apply it:
+
+```
+python KKT_Stats_Update.py --year 25_26 --push
+```
+
+Rows whose project already has a stats row are **updated** (matched on `ProjectID`), so re-running does not create duplicates. Rows the script is not confident about are left alone for manual entry rather than guessed at.
+
+### Name matching
+
+The spreadsheet's `Applicant` column is free text and does not match the layer cleanly — macron differences, missing suffixes ("Kopua Bush" vs "Kopua Bush Remnant Management Group"), and groups that run several projects in one year. Matching works in three layers:
+
+| Mechanism | Purpose |
+|---|---|
+| Fuzzy match | Normalises both names (lowercase, macrons stripped, punctuation and filler words removed) and scores them. Assignment is one-to-one so two rows never land on the same project. |
+| `NAME_ALIASES` | Spreadsheet group name → `Group_name_1`, for groups the fuzzy match cannot reach. |
+| `ROW_OVERRIDES` | Spreadsheet row number → exact `ProjectNam_1`, for groups with several projects that the sheet gives no project name for. Keyed by grant year. |
+
+Rows reported as `UNMATCHED` or `AMBIGUOUS` are skipped and listed in the log as `MANUAL:` lines — resolve them by adding an alias or override, or enter them by hand in AGOL.
+
+### Field mapping notes
+
+`FIELD_MAP` at the top of the script maps each spreadsheet column to a table field. Two mappings are deliberate decisions rather than obvious ones:
+
+- **`Pest Plant Control ha` → `Pest_Plant_Control_m2`** — the sheet is in hectares but the field is m², so values are multiplied by 10,000. Set `PEST_PLANT_HA_TO_M2 = False` to store raw hectares instead.
+- **`# Plants funded` → `Plants_planted`** — treated as the same figure.
+
+The `Catchment` column has no matching field in the table and is ignored. New columns added to the spreadsheet are logged as a warning rather than silently dropped.
+
+### Setup
+
+Add to `config.py`:
+- `KKT_SERVICE_URL` — FeatureServer URL for `Biodiversity_KKT_Projects` (layer 4 = projects, table 5 = statistics)
+- `KKT_STATS_XLSX` — path to the team's summary statistics spreadsheet
+- `KKT_OUTPUT_DIR` — folder for the match review CSV (gitignored)
+
+### Grant year on the stats table
+
+`KKT_Related_Table_Statistics` has a `Grant_year` field (text, 5 — e.g. `25_26`) mirroring `Grant_year_1` on the projects layer. The table has no other year marker, so without it nothing can split the stats by financial year. `KKT_Stats_Update.py` stamps it on every row it writes; to fix rows loaded before the field existed:
+
+```
+python KKT_Stats_Update.py --backfill-years          # dry run
+python KKT_Stats_Update.py --backfill-years --push   # apply
+```
+
+The backfill reads each row's year from its linked project, so it works for every year at once and does not need the spreadsheet.
+
+### Dashboard charts
+
+`KKT_Dashboard_Export.py` queries the projects layer and stats table and writes `html/kkt/dashboard_data.json`, which the chart pages fetch at runtime — the same arrangement as Pressure Management, so the HTML is static and never regenerated.
+
+```
+python KKT_Dashboard_Export.py            # write the JSON
+python KKT_Dashboard_Export.py --push     # write, commit and push to GitHub Pages
+```
+
+The export joins each stats row to its project and adds `group_name`, `project_name` and `district`. Charts group by `group_name` (the canonical `Group_name_1`) rather than the stats table's `Applicant`, which is free text copied from the spreadsheet and spells the same group differently year to year — grouping by `Applicant` splits one group into several bars. It also parses `Current_YearFund` (`'$3,763.00 '`) into a numeric `funding` field.
+
+| Page | Replaces | URL parameters |
+|---|---|---|
+| `KKT_Project_Stats.html` | The four ExB chart widgets (Community Hours, Member Numbers, Pest Control, Planting) | `?metric=` one of `plants`, `traps`, `hours`, `members`, `animals`, `vols`, `restore`; `?year=` a grant year, or `all` |
+| `KKT_Projects_by_Type.html` | The *KKT Projects by Type and Financial Year* chart | none — measure and year are dropdowns |
+
+Both use horizontal bars so the long group names stay readable, and colour by grant year using a fixed, colour-vision-validated palette (a year keeps its colour however many years are shown).
+
+`ProjectType` is comma-separated, so a project can carry several types. Counts add the project to each of its types; funding is divided evenly between them so the chart still sums to the real total awarded.
+
+### Logging
+
+Log files are written to `logs/kkt/` (gitignored).
 
 ---
 
