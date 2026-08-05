@@ -31,6 +31,22 @@
     .updated{color:#aaa;font-size:.62rem;text-align:right;padding-top:3px}
     .msg{padding:18px;color:#6b7280;font-size:.85rem}
     .msg.err{color:#c0392b}
+
+    /* Compact mode — applied automatically when the embed is short, so the
+       chart keeps as much room as possible in a small panel. */
+    body.compact .wrap{padding:8px 12px 4px}
+    body.compact .hd{margin-bottom:6px}
+    body.compact .title{font-size:.82rem}
+    body.compact .sub{font-size:.64rem;margin-top:1px}
+    body.compact select{padding:4px 22px 4px 7px;font-size:.7rem}
+    body.compact .print-btn{padding:4px 7px;font-size:.7rem}
+    body.compact .totals{gap:6px;margin-bottom:5px}
+    body.compact .tot{padding:3px 9px}
+    body.compact .tot-n{font-size:.95rem}
+    body.compact .tot-l{font-size:.6rem}
+    body.compact .legend{font-size:.64rem;gap:10px;margin-bottom:4px}
+    body.compact .sw{width:9px;height:9px}
+    body.compact .updated{font-size:.56rem;padding-top:0}
   </style>
 </head>
 <body>
@@ -85,6 +101,14 @@
   const metricSelect = document.getElementById('metricSelect');
   const yearSelect   = document.getElementById('yearSelect');
 
+  // The chart is embedded in panels of very different heights. Anything short
+  // gets tighter chrome and smaller type so the bars keep the room.
+  let compact = false;
+  function setCompact() {
+    compact = window.innerHeight < 460;
+    document.body.classList.toggle('compact', compact);
+  }
+
   const fmt = (v, dp) => v == null ? '—'
     : v.toLocaleString('en-NZ', { minimumFractionDigits: dp, maximumFractionDigits: dp });
   const yearLabel = y => y ? y.replace('_', '-') : 'Unknown';
@@ -96,7 +120,7 @@
     afterDatasetsDraw(c) {
       const { ctx } = c;
       ctx.save();
-      ctx.font = "500 10px 'DM Sans', sans-serif";
+      ctx.font = `500 ${compact ? 9 : 10}px 'DM Sans', sans-serif`;
       ctx.fillStyle = '#4b5563';
       ctx.textBaseline = 'middle';
       const stacked = c.data.datasets.length > 1;
@@ -146,6 +170,7 @@
       yearSelect.value = years.includes(wantYear) ? wantYear
                        : (wantYear === 'all' ? '' : (years[years.length - 1] || ''));
 
+      setCompact();
       render();
     })
     .catch(err => {
@@ -210,9 +235,17 @@
     document.querySelector('.chart-box').innerHTML = '<canvas id="chart"></canvas>';
 
     // One row per project — horizontal bars so the long group names stay
-    // readable instead of being rotated and truncated.
-    const box = document.querySelector('.chart-box');
-    box.style.height = Math.max(160, entries.length * 21 + 34) + 'px';
+    // readable instead of being rotated and truncated. Fill the panel when the
+    // rows fit; below ~14px a row is unreadable, so past that the box grows and
+    // the panel scrolls. With 40-odd groups it will usually scroll.
+    const box     = document.querySelector('.chart-box');
+    const avail   = document.querySelector('.scroll').clientHeight;
+    const axisH   = compact ? 26 : 34;
+    const minimum = entries.length * 14 + axisH;
+    box.style.height = Math.max(avail, minimum) + 'px';
+
+    const tickSize  = compact ? 9.5 : 10.5;
+    const xTickSize = compact ? 9 : 10;
 
     const datasets = usedYears.map(y => ({
       label: yearLabel(y),
@@ -235,7 +268,7 @@
         indexAxis: 'y',
         responsive: true,
         maintainAspectRatio: false,
-        layout: { padding: { right: 58 } },
+        layout: { padding: { right: compact ? 48 : 58 } },
         plugins: {
           legend: { display: false },
           tooltip: {
@@ -250,19 +283,31 @@
         scales: {
           x: { stacked: true, beginAtZero: true,
                grid: { color: '#eee' },
-               ticks: { font: { family: "'DM Sans', sans-serif", size: 10 },
-                        color: '#6b7280' } },
+               ticks: { font: { family: "'DM Sans', sans-serif", size: xTickSize },
+                        color: '#6b7280', maxTicksLimit: compact ? 6 : 10 } },
           y: { stacked: true, grid: { display: false },
-               ticks: { font: { family: "'DM Sans', sans-serif", size: 10.5 },
+               ticks: { font: { family: "'DM Sans', sans-serif", size: tickSize },
                         color: '#374151', autoSkip: false,
                         callback: function (v) {
                           const s = this.getLabelForValue(v);
-                          return s.length > 34 ? s.slice(0, 33) + '…' : s;
+                          const max = compact ? 24 : 34;
+                          return s.length > max ? s.slice(0, max - 1) + '…' : s;
                         } } }
         }
       }
     });
   }
+
+  // Re-fit when the panel is resized (ExB panels resize on layout changes).
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if (!rows.length) return;
+      setCompact();
+      render();
+    }, 150);
+  });
 
   function exportChart() {
     const src = document.getElementById('chart');
