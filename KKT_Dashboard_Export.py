@@ -35,6 +35,13 @@ PROJECT_FIELDS = [
     "GlobalID", "Grant_year_1", "Group_name_1", "ProjectNam_1", "District",
     "ProjectType", "Current_YearFund", "Prev_Act_Grant_1", "No_of_GrantYears",
 ]
+
+# The four activity slots and their funding. Read here, but not carried into the
+# JSON as eight loose fields — they are folded into an "activities" list per
+# project instead, which is what the by-type chart actually wants.
+TYPE_FIELDS = ["ProjectType", "ProjectType_2", "ProjectType_3", "ProjectType_4"]
+FUND_FIELDS = ["ProjectType_fund", "ProjectType_fund2", "ProjectType_fund3",
+               "ProjectType_fund4"]
 STATS_FIELDS = [
     "ProjectID", "Grant_year", "Applicant", "Plants_planted", "No_plantsReleased",
     "Pest_Animal_Control", "Traps_funded", "Total_Project_Traps",
@@ -112,14 +119,49 @@ def main():
 
     log.info(f"Reading {layer.properties.name}...")
     projects = []
-    for f in layer.query(where="1=1", out_fields=",".join(PROJECT_FIELDS),
+    no_activities = 0
+    unallocated = 0
+    for f in layer.query(where="1=1",
+                         out_fields=",".join(PROJECT_FIELDS + TYPE_FIELDS
+                                             + FUND_FIELDS),
                          return_geometry=False).features:
-        row = clean(f.attributes, PROJECT_FIELDS)
+        a = f.attributes
+        row = clean(a, PROJECT_FIELDS)
         # Funding is stored as text like '$3,763.00 ' — give the charts a number
         # to sum as well, rather than making every page re-parse it.
         row["funding"] = parse_money(row.get("Current_YearFund"))
+
+        # One entry per activity the project carries, with the grant money the
+        # team recorded against it. A fund of 0 is meaningful — the activity
+        # happened but no grant funding went to it — so it is kept, not dropped.
+        acts = []
+        for tf, ff in zip(TYPE_FIELDS, FUND_FIELDS):
+            t = a.get(tf)
+            t = t.strip() if isinstance(t, str) else t
+            if not t:
+                continue
+            v = a.get(ff)
+            acts.append({"type": t, "fund": None if v is None else round(float(v), 2)})
+        row["activities"] = acts
+
+        if not acts:
+            no_activities += 1
+        else:
+            # The parts deliberately need not add up to the grant: the team
+            # allocated only money actually spent. Counted, not corrected.
+            got = sum(x["fund"] or 0 for x in acts)
+            if row["funding"] and abs(got - row["funding"]) > 0.011:
+                unallocated += 1
+
         projects.append(row)
     log.info(f"  {len(projects)} projects")
+    slot_use = [sum(1 for p in projects if len(p["activities"]) > i) for i in range(4)]
+    log.info(f"  Activity slot use (1-4): {slot_use}")
+    if no_activities:
+        log.warning(f"  {no_activities} project(s) carry no activity at all — these "
+                    f"are invisible to the by-type chart.")
+    log.info(f"  {unallocated} project(s) allocate less than their grant. Expected — "
+             f"the team recorded only money actually spent per activity.")
 
     log.info(f"Reading {stats.properties.name}...")
     stats_rows = [clean(f.attributes, STATS_FIELDS)
