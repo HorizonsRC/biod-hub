@@ -117,7 +117,10 @@
     }
   };
 
-  fetch('./dashboard_data.json')
+  // no-store because the JSON is a snapshot that changes without the page
+  // changing. A cached copy from a previous export can be missing fields this
+  // page now relies on, which reads as an empty chart rather than an error.
+  fetch('./dashboard_data.json', { cache: 'no-store' })
     .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(data => {
       projects = data.projects || [];
@@ -200,8 +203,15 @@
 
     if (chart) { chart.destroy(); chart = null; }
     if (!entries.length) {
-      document.querySelector('.chart-box').innerHTML =
-        '<p class="msg">Nothing to show for this selection.</p>';
+      // Tell the two cases apart. A genuinely empty filter is normal; a data
+      // file with no activities on any project at all means the browser is
+      // holding a snapshot from before the activity split, and the fix is a
+      // refresh, not a different selection.
+      const stale = rows.length && !projects.some(p => (p.activities || []).length);
+      document.querySelector('.chart-box').innerHTML = stale
+        ? '<p class="msg">This page is showing an out-of-date copy of the data. ' +
+          'Refresh to load the current figures.</p>'
+        : '<p class="msg">Nothing to show for this selection.</p>';
       return;
     }
     document.querySelector('.chart-box').innerHTML = '<canvas id="chart"></canvas>';
