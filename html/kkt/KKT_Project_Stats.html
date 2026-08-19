@@ -144,7 +144,9 @@
     }
   };
 
-  fetch('./dashboard_data.json')
+  // no-store — see the note in KKT_Projects_by_Type.html. The JSON is a
+  // snapshot that changes without this page changing.
+  fetch('./dashboard_data.json', { cache: 'no-store' })
     .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(data => {
       rows = data.stats || [];
