@@ -107,9 +107,7 @@
         c.data.datasets.reduce((s, ds) => s + (ds.data[i] || 0), 0));
       const last = c.getDatasetMeta(c.data.datasets.length - 1);
       last.data.forEach((bar, i) => {
-        // A zero total is worth stating, not leaving blank: on the funding view
-        // it means the activity ran with no grant money spent on it, which an
-        // unlabelled empty bar would read as missing data.
+        if (!totals[i]) return;
         const t = isMoney ? money(totals[i]) : totals[i].toLocaleString('en-NZ');
         ctx.fillText(t, bar.x + 6, bar.y);
       });
@@ -172,8 +170,14 @@
       });
     });
 
+    // Drop activities with nothing to show. On the funding view that means the
+    // activity ran but no grant money was spent on it — a labelled empty row
+    // just takes up space, so it is left out rather than drawn at zero. The
+    // count view never produces a zero, since a type only appears if a project
+    // carries it.
     const entries = [...byType.entries()]
       .map(([type, per]) => ({ type, per, total: Object.values(per).reduce((a, b) => a + b, 0) }))
+      .filter(e => e.total > 0)
       .sort((a, b) => b.total - a.total);
 
     const years = year ? [year]
