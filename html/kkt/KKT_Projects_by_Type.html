@@ -107,7 +107,9 @@
         c.data.datasets.reduce((s, ds) => s + (ds.data[i] || 0), 0));
       const last = c.getDatasetMeta(c.data.datasets.length - 1);
       last.data.forEach((bar, i) => {
-        if (!totals[i]) return;
+        // A zero total is worth stating, not leaving blank: on the funding view
+        // it means the activity ran with no grant money spent on it, which an
+        // unlabelled empty bar would read as missing data.
         const t = isMoney ? money(totals[i]) : totals[i].toLocaleString('en-NZ');
         ctx.fillText(t, bar.x + 6, bar.y);
       });
@@ -146,21 +148,23 @@
 
     const rows = projects.filter(p => !year || p.Grant_year_1 === year);
 
-    // ProjectType is a comma-separated list, so one project can sit in several
-    // types. Counts add 1 to each type it carries. Funding is divided evenly
-    // between them so the column still sums to the real total awarded.
+    // Each project carries up to four activities, in p.activities, with the
+    // grant money the team recorded against each one. Counts add 1 per activity
+    // the project carries. Funding uses the team's real figures — these are
+    // amounts actually spent, so a project's parts often add up to less than
+    // its grant, and the column total is intentionally below the total awarded.
     const byType = new Map();
     let multi = 0;
     rows.forEach(p => {
-      const types = String(p.ProjectType || '')
-        .split(',').map(t => t.trim()).filter(Boolean);
-      if (!types.length) return;
-      if (types.length > 1) multi++;
-      const share = isMoney ? (p.funding || 0) / types.length : 1;
-      if (isMoney && !p.funding) return;
-      types.forEach(t => {
-        if (!byType.has(t)) byType.set(t, {});
-        const slot = byType.get(t);
+      const acts = p.activities || [];
+      if (!acts.length) return;
+      if (acts.length > 1) multi++;
+      acts.forEach(a => {
+        // A zero-funded activity still happened, so it keeps its place in the
+        // count. On the funding view it simply contributes nothing.
+        const share = isMoney ? (a.fund || 0) : 1;
+        if (!byType.has(a.type)) byType.set(a.type, {});
+        const slot = byType.get(a.type);
         slot[p.Grant_year_1] = (slot[p.Grant_year_1] || 0) + share;
       });
     });
@@ -177,7 +181,7 @@
       isMoney ? 'KKT Funding by Project Type' : 'KKT Projects by Type';
     document.getElementById('chartSub').textContent =
       (year ? yearLabel(year) : 'All years') +
-      (isMoney ? ' · grant split evenly across each project’s types'
+      (isMoney ? ' · grant funding actually spent on each activity'
                : ' · a project is counted under each type it carries');
 
     const legend = document.getElementById('legend');
