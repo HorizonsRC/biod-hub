@@ -97,7 +97,7 @@
   let metric = METRICS[params.get('metric')] ? params.get('metric') : 'hours';
   const wantYear = params.get('year') || '';
 
-  let rows = [], chart = null;
+  let rows = [], chart = null, grantYears = [];
   const metricSelect = document.getElementById('metricSelect');
   const yearSelect   = document.getElementById('yearSelect');
 
@@ -150,6 +150,11 @@
     .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(data => {
       rows = data.stats || [];
+      // Every grant year the fund has run, which is wider than the years that
+      // have statistics — a pinned page must be able to name a year it holds
+      // nothing for, rather than quietly falling back to a year it does.
+      grantYears = [...new Set((data.projects || [])
+        .map(p => p.Grant_year_1).filter(Boolean))].sort();
       document.getElementById('updated').textContent = 'Generated: ' + data.generated_at;
 
       Object.entries(METRICS).forEach(([k, m]) => {
@@ -168,9 +173,28 @@
         o.value = y; o.textContent = yearLabel(y);
         yearSelect.appendChild(o);
       });
-      // Default to the most recent year, or whatever ?year= asked for.
-      yearSelect.value = years.includes(wantYear) ? wantYear
-                       : (wantYear === 'all' ? '' : (years[years.length - 1] || ''));
+      // A page embedded on a single financial year's tab should stay on that
+      // year, so an explicit ?year= pins it and the picker goes away. The
+      // metric picker stays — one embed per tab still lets people switch
+      // between hours, plants, traps and so on.
+      //
+      // Pinning honours any real grant year, including 21-22 to 23-24, which
+      // have no statistics. Those pages say so. Falling back to the latest year
+      // instead would label 25-26 figures with the tab's year, which is worse
+      // than showing nothing.
+      const pinned = grantYears.includes(wantYear);
+      if (pinned) {
+        if (!years.includes(wantYear)) {
+          const o = document.createElement('option');
+          o.value = wantYear; o.textContent = yearLabel(wantYear);
+          yearSelect.appendChild(o);
+        }
+        yearSelect.value = wantYear;
+        yearSelect.style.display = 'none';
+      } else {
+        // Free-browsing embed: default to the most recent year with data.
+        yearSelect.value = wantYear === 'all' ? '' : (years[years.length - 1] || '');
+      }
 
       setCompact();
       render();
@@ -230,8 +254,14 @@
 
     if (chart) { chart.destroy(); chart = null; }
     if (!entries.length) {
-      document.querySelector('.chart-box').innerHTML =
-        '<p class="msg">No ' + m.label.toLowerCase() + ' recorded for this year.</p>';
+      // Tell "this metric is blank" apart from "we hold no statistics for this
+      // year at all". Reporting only began in 24-25, so on an earlier year's
+      // tab every metric is empty and naming the metric would be misleading.
+      const anyForYear = !year || rows.some(r => r.Grant_year === year);
+      document.querySelector('.chart-box').innerHTML = anyForYear
+        ? '<p class="msg">No ' + m.label.toLowerCase() + ' recorded for this year.</p>'
+        : '<p class="msg">No project statistics were collected for ' +
+          yearLabel(year) + '. Reporting begins in 24-25.</p>';
       return;
     }
     document.querySelector('.chart-box').innerHTML = '<canvas id="chart"></canvas>';
