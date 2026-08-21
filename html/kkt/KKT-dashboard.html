@@ -27,8 +27,15 @@
   .right { background: #f5f4f0; padding: 16px 16px 8px 16px; display: flex; flex-direction: column; gap: 7px; min-height: 0; }
   .right-header { font-size: 9.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #7a9a82; border-bottom: 1px solid #d6d3cc; padding-bottom: 6px; }
   .right-header span { color: #a2b3a6; letter-spacing: 0.04em; }
-  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
-  .stat-card { background: #fff; border: 1px solid #e0ddd8; border-radius: 5px; padding: 8px 11px; border-left: 3px solid #3d7a5a; }
+  /* The embed panel is a good deal taller than the tiles need, so the grids
+     grow to fill it and the rows share the height evenly rather than leaving a
+     block of dead space under the footnote. */
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px;
+                grid-auto-rows: 1fr; }
+  #grantsGrid { flex: 1 1 auto; }
+  #outcomesGrid { flex: 3 1 auto; }
+  .stat-card { display: flex; flex-direction: column; justify-content: center; }
+  .stat-card { background: #fff; border: 1px solid #e0ddd8; border-radius: 5px; padding: 13px 14px; border-left: 3px solid #3d7a5a; }
   .stat-card.b { border-left-color: #6baa78; }
   .stat-card.c { border-left-color: #a5b8a8; }
   .stat-card.d { border-left-color: #b5955a; }
@@ -36,8 +43,8 @@
      so it sits across the foot of the block rather than in line with the
      figures that are counted from project returns. */
   .stat-card.wide { grid-column: 1 / -1; border-left-color: #8a9bb5; }
-  .stat-number { font-family: 'Source Serif 4', serif; font-size: 23px; font-weight: 600; color: #1c3438; line-height: 1.05; margin-bottom: 2px; }
-  .stat-label { font-size: 12px; color: #5a7060; line-height: 1.25; }
+  .stat-number { font-family: 'Source Serif 4', serif; font-size: 30px; font-weight: 600; color: #1c3438; line-height: 1.05; margin-bottom: 3px; }
+  .stat-label { font-size: 13.5px; color: #5a7060; line-height: 1.25; }
   /* Coverage line. Outcome figures are self-reported and patchy, so a tile that
      rests on a handful of returns says so on its face rather than reading as a
      programme-wide total. */
@@ -53,9 +60,9 @@
   body.compact .hi-intro { font-size: 10.5px; }
   body.compact .hi { font-size: 11px; }
   body.compact .right { padding: 12px 12px 6px; gap: 5px; }
-  body.compact .stat-card { padding: 6px 9px; }
-  body.compact .stat-number { font-size: 19px; }
-  body.compact .stat-label { font-size: 11px; }
+  body.compact .stat-card { padding: 8px 10px; }
+  body.compact .stat-number { font-size: 22px; }
+  body.compact .stat-label { font-size: 11.5px; }
   body.compact .stat-note { font-size: 9.5px; }
 </style>
 </head>
@@ -136,26 +143,28 @@
   }
 
   // Anna's question: how many *different* projects has the fund supported,
-  // rather than how many grants it has made.
-  //
-  // No_of_GrantYears on the layer is a running index — 1 on a project's first
-  // grant, 2 on its second, 3 on its third — so first-time rows are the
-  // distinct projects. It is nearly right (146 of 176 rows flagged 1), but a
-  // handful of repeat grants were left at 1, so a group+project name already
-  // seen in an earlier year is not counted again either. Both tests together
-  // give the figure below; either alone over-counts.
-  function distinctProjects(projects) {
-    const sorted = projects.slice().sort(
-      (a, b) => String(a.Grant_year_1 || '').localeCompare(String(b.Grant_year_1 || '')));
-    const seen = new Set();
-    let n = 0;
-    sorted.forEach(p => {
+  // rather than how many grants it has made. One project, however many separate
+  // grants it received — so Castlecliff's Coastal Restoration Project counts
+  // once whether it was funded in one year or two.
+  function projectKeys(projects) {
+    const per = new Map();
+    projects.forEach(p => {
       const key = slug(p.Group_name_1) + '|' + slug(p.ProjectNam_1);
-      const firstGrant = (p.No_of_GrantYears || 1) === 1;
-      if (firstGrant && !seen.has(key)) n++;
-      seen.add(key);
+      if (!per.has(key)) per.set(key, []);
+      per.get(key).push(p);
     });
-    return n;
+    return per;
+  }
+
+  const distinctProjects = projects => projectKeys(projects).size;
+
+  // Projects awarded a consecutive multi-year grant. No_of_GrantYears counts
+  // the year within such an award — 1, then 2, then 3 — so a project that has
+  // any row above 1 ran multi-year. Two separate one-year grants both sit at 1
+  // and are not multi-year, even in back-to-back years.
+  function multiYearProjects(projects) {
+    return [...projectKeys(projects).values()]
+      .filter(rows => rows.some(p => (p.No_of_GrantYears || 1) > 1)).length;
   }
 
   function card(cls, value, label, note) {
@@ -181,34 +190,28 @@
       'Grants awarded <span>· ' + yearRange(grantYears) + '</span>';
     document.getElementById('grantsGrid').innerHTML =
       card('', '$' + fmt(funding), 'Funding awarded',
-           grantYears.length + ' grant rounds') +
+           'Across ' + fmt(projects.length) + ' grants') +
       card('b', fmt(distinct), 'Different projects funded',
-           fmt(projects.length) + ' grants in total — some projects funded more than once');
+           fmt(multiYearProjects(projects)) + ' awarded multi-year funding');
 
     // --- reported outcomes --------------------------------------------------
-    // Each tile carries how many returns it rests on. Fencing in particular is
-    // a real figure from two projects, not a programme total.
+    // How thin the reporting is behind each figure is covered once, in the
+    // footnote below, rather than repeated under every tile.
     function total(field) {
       const vals = stats.map(r => num(r[field])).filter(v => v !== null && v !== 0);
-      return { sum: vals.reduce((a, b) => a + b, 0), n: vals.length };
+      return vals.reduce((a, b) => a + b, 0);
     }
-    const plants = total('Plants_planted');
-    const hours  = total('Community_hours');
-    const traps  = total('Traps_funded');
-    const fence  = total('Fencing_LnMtr');
-    const cov = t => t.n + ' of ' + stats.length + ' project reports';
 
     document.getElementById('outcomesHeader').innerHTML =
       'Reported outcomes <span>· ' + yearRange(statYears) + '</span>';
     document.getElementById('outcomesGrid').innerHTML =
-      card('', fmt(plants.sum), 'Native plants planted', cov(plants)) +
-      card('b', fmt(hours.sum), 'Community hours', cov(hours)) +
-      card('c', fmt(traps.sum), 'Traps purchased', cov(traps)) +
-      card('d', fmt(fence.sum) + ' m', 'Fencing installed', cov(fence)) +
+      card('', fmt(total('Plants_planted')), 'Native plants planted') +
+      card('b', fmt(total('Community_hours')), 'Community hours') +
+      card('c', fmt(total('Traps_funded')), 'Traps purchased') +
+      card('d', fmt(total('Fencing_LnMtr')) + ' m', 'Fencing installed') +
       // Not a counted figure: the stats table has no habitat field, so this
       // stays as reported in the annual report and does not move with the data.
-      card('wide', HABITATS_PER_YEAR, 'Rare &amp; threatened habitats protected per year',
-           'From annual reporting, not project returns');
+      card('wide', HABITATS_PER_YEAR, 'Rare &amp; threatened habitats protected per year');
 
     document.getElementById('footnote').innerHTML =
       'Outcomes are self-reported by funded projects and reporting began in ' +
