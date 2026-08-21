@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>KKT Fund Overview</title>
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -14,21 +15,48 @@
   .left h2 { font-family: 'Source Serif 4', serif; font-size: 16px; font-weight: 600; line-height: 1.35; color: #f0f5f1; }
   .left p { font-size: 12.5px; line-height: 1.55; color: #b0c4b8; }
   .divider { border: none; border-top: 1px solid rgba(255,255,255,0.08); }
+  /* The bullets below come from the ICC report, where a paragraph introduces
+     them. Without that lead-in they read as four unrelated facts, so the
+     report's own phrasing carries over - minus its figures, which are a
+     four-year subset and would contradict the live tiles beside them. */
+  .hi-intro { font-size: 11.5px; line-height: 1.5; color: #9fb6a8; margin-bottom: 1px; }
   .highlights { display: flex; flex-direction: column; gap: 5px; }
   .hi { display: flex; align-items: flex-start; gap: 7px; font-size: 12px; color: #b8ccc0; line-height: 1.45; }
   .hi::before { content: ''; flex-shrink: 0; width: 4px; height: 4px; border-radius: 50%; background: #6baa78; margin-top: 5px; }
 
-  .right { background: #f5f4f0; padding: 20px 16px 12px 16px; display: flex; flex-direction: column; gap: 10px; }
-  .right-header { font-size: 9.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #7a9a82; border-bottom: 1px solid #d6d3cc; padding-bottom: 7px; }
-  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .stat-card { background: #fff; border: 1px solid #e0ddd8; border-radius: 5px; padding: 9px 12px; border-left: 3px solid #3d7a5a; }
+  .right { background: #f5f4f0; padding: 16px 16px 8px 16px; display: flex; flex-direction: column; gap: 7px; min-height: 0; }
+  .right-header { font-size: 9.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #7a9a82; border-bottom: 1px solid #d6d3cc; padding-bottom: 6px; }
+  .right-header span { color: #a2b3a6; letter-spacing: 0.04em; }
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .stat-card { background: #fff; border: 1px solid #e0ddd8; border-radius: 5px; padding: 8px 11px; border-left: 3px solid #3d7a5a; }
   .stat-card.b { border-left-color: #6baa78; }
   .stat-card.c { border-left-color: #a5b8a8; }
   .stat-card.d { border-left-color: #b5955a; }
-  .stat-number { font-family: 'Source Serif 4', serif; font-size: 26px; font-weight: 600; color: #1c3438; line-height: 1; margin-bottom: 3px; }
-  .stat-label { font-size: 13px; color: #5a7060; line-height: 1.3; }
-  .community-box { background: #edf3ef; border-radius: 5px; padding: 9px 12px; font-size: 13px; color: #3a5540; line-height: 1.5; border-left: 3px solid #6baa78; }
-  .community-box strong { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #5a8a65; margin-bottom: 3px; }
+  /* The habitats tile is not in the dataset - it comes from annual reporting -
+     so it sits across the foot of the block rather than in line with the
+     figures that are counted from project returns. */
+  .stat-card.wide { grid-column: 1 / -1; border-left-color: #8a9bb5; }
+  .stat-number { font-family: 'Source Serif 4', serif; font-size: 23px; font-weight: 600; color: #1c3438; line-height: 1.05; margin-bottom: 2px; }
+  .stat-label { font-size: 12px; color: #5a7060; line-height: 1.25; }
+  /* Coverage line. Outcome figures are self-reported and patchy, so a tile that
+     rests on a handful of returns says so on its face rather than reading as a
+     programme-wide total. */
+  .stat-note { font-size: 10px; color: #8b9d90; line-height: 1.3; margin-top: 3px; }
+  .footnote { font-size: 10.5px; color: #7a8d80; line-height: 1.4; }
+  .updated { font-size: 9.5px; color: #a8b5ac; text-align: right; margin-top: auto; padding-top: 4px; }
+  .msg { font-size: 12px; color: #8b6b3a; background: #faf3e4; border-left: 3px solid #b5955a; border-radius: 5px; padding: 9px 12px; line-height: 1.45; }
+
+  /* Compact mode — the ExB panel this sits in is often short. */
+  body.compact .left { padding: 14px 14px 10px; gap: 6px; }
+  body.compact .left h2 { font-size: 14px; }
+  body.compact .left p { font-size: 11.5px; line-height: 1.45; }
+  body.compact .hi-intro { font-size: 10.5px; }
+  body.compact .hi { font-size: 11px; }
+  body.compact .right { padding: 12px 12px 6px; gap: 5px; }
+  body.compact .stat-card { padding: 6px 9px; }
+  body.compact .stat-number { font-size: 19px; }
+  body.compact .stat-label { font-size: 11px; }
+  body.compact .stat-note { font-size: 9.5px; }
 </style>
 </head>
 <body>
@@ -38,6 +66,7 @@
     <h2>Kanorau Koiora Taketake<br>Indigenous Biodiversity Contestable Fund</h2>
     <p>Supporting locally-led conservation projects across Manawatū-Whanganui. Open annually in April/May, grants fund activities with clear community involvement and biodiversity benefit — assessed by a Councillor panel and supported by Biodiversity staff throughout delivery.</p>
     <hr class="divider"/>
+    <div class="hi-intro">Groups supported by the fund with significant community engagement and impact include:</div>
     <div class="highlights">
       <div class="hi">Koitiata Wetlands Restoration Group — 34 events in one year, 500+ volunteer hours</div>
       <div class="hi">Castlecliff Coast Care — 10–20 events/year engaging up to 40 volunteers</div>
@@ -46,30 +75,159 @@
     </div>
   </div>
   <div class="right">
-    <div class="right-header">Fund outcomes · 2021–2025</div>
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-number">125</div>
-        <div class="stat-label">Projects funded</div>
-      </div>
-      <div class="stat-card b">
-        <div class="stat-number">33,998</div>
-        <div class="stat-label">Native plants planted</div>
-      </div>
-      <div class="stat-card c">
-        <div class="stat-number">1,328</div>
-        <div class="stat-label">Traps purchased</div>
-      </div>
-      <div class="stat-card d">
-        <div class="stat-number">16–28</div>
-        <div class="stat-label">Rare &amp; threatened habitats protected per year</div>
-      </div>
-    </div>
-    <div class="community-box">
-      <strong>Community Impact</strong>
-      The fund is typically oversubscribed, reflecting strong demand. Projects are assessed on biodiversity benefit and community engagement. Full reports available on the Horizons website.
-    </div>
+    <div class="right-header" id="grantsHeader">Grants awarded</div>
+    <div class="stats-grid" id="grantsGrid"></div>
+
+    <div class="right-header" id="outcomesHeader">Reported outcomes</div>
+    <div class="stats-grid" id="outcomesGrid"></div>
+
+    <div class="footnote" id="footnote"></div>
+    <div class="updated" id="updated"></div>
   </div>
 </div>
+
+<script>
+  // The one figure on this page that is not counted from the data. There is no
+  // habitat field on the stats table; this comes from the fund's annual
+  // reporting and has held steady since 2021. Edit it here when that changes.
+  const HABITATS_PER_YEAR = '16–28';
+
+  // Same snapshot the KKT charts read. no-store because the JSON changes
+  // without this page changing — a cached copy silently shows old figures.
+  fetch('./dashboard_data.json', { cache: 'no-store' })
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(build)
+    .catch(err => {
+      document.getElementById('grantsGrid').innerHTML =
+        '<p class="msg" style="grid-column:1/-1">Could not load fund data (' +
+        err.message + '). Figures are unavailable.</p>';
+    });
+
+  // Several stats fields are stored as text ('$3,763.00 ', and Fencing_LnMtr
+  // too), so nothing here can assume it is handed a number.
+  function num(v) {
+    if (v === null || v === undefined) return null;
+    if (typeof v === 'number') return isFinite(v) ? v : null;
+    const c = String(v).replace(/[^0-9.\-]/g, '');
+    if (c === '' || c === '.' || c === '-') return null;
+    const n = parseFloat(c);
+    return isFinite(n) ? n : null;
+  }
+
+  const fmt = (n, dp) => n == null ? '—'
+    : n.toLocaleString('en-NZ', { minimumFractionDigits: dp || 0, maximumFractionDigits: dp || 0 });
+
+  // '24_25' -> '2024–25'
+  const yearLabel = y => y ? '20' + y.slice(0, 2) + '–' + y.slice(3) : '';
+
+  function yearRange(years) {
+    if (!years.length) return '';
+    if (years.length === 1) return yearLabel(years[0]);
+    if (years.length === 2) return yearLabel(years[0]) + ' and ' + yearLabel(years[1]);
+    return yearLabel(years[0]) + ' to ' + yearLabel(years[years.length - 1]);
+  }
+
+  // Macrons stripped and punctuation dropped, so 'Rangitīkei' and 'Rangitikei'
+  // are the same project rather than two.
+  function slug(s) {
+    return (s || '').toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]/g, '');
+  }
+
+  // Anna's question: how many *different* projects has the fund supported,
+  // rather than how many grants it has made.
+  //
+  // No_of_GrantYears on the layer is a running index — 1 on a project's first
+  // grant, 2 on its second, 3 on its third — so first-time rows are the
+  // distinct projects. It is nearly right (146 of 176 rows flagged 1), but a
+  // handful of repeat grants were left at 1, so a group+project name already
+  // seen in an earlier year is not counted again either. Both tests together
+  // give the figure below; either alone over-counts.
+  function distinctProjects(projects) {
+    const sorted = projects.slice().sort(
+      (a, b) => String(a.Grant_year_1 || '').localeCompare(String(b.Grant_year_1 || '')));
+    const seen = new Set();
+    let n = 0;
+    sorted.forEach(p => {
+      const key = slug(p.Group_name_1) + '|' + slug(p.ProjectNam_1);
+      const firstGrant = (p.No_of_GrantYears || 1) === 1;
+      if (firstGrant && !seen.has(key)) n++;
+      seen.add(key);
+    });
+    return n;
+  }
+
+  function card(cls, value, label, note) {
+    return '<div class="stat-card ' + cls + '">' +
+             '<div class="stat-number">' + value + '</div>' +
+             '<div class="stat-label">' + label + '</div>' +
+             (note ? '<div class="stat-note">' + note + '</div>' : '') +
+           '</div>';
+  }
+
+  function build(data) {
+    const projects = data.projects || [];
+    const stats    = data.stats    || [];
+
+    const grantYears = [...new Set(projects.map(p => p.Grant_year_1).filter(Boolean))].sort();
+    const statYears  = [...new Set(stats.map(r => r.Grant_year).filter(Boolean))].sort();
+
+    // --- grants awarded -----------------------------------------------------
+    const funding = projects.reduce((s, p) => s + (num(p.funding) || 0), 0);
+    const distinct = distinctProjects(projects);
+
+    document.getElementById('grantsHeader').innerHTML =
+      'Grants awarded <span>· ' + yearRange(grantYears) + '</span>';
+    document.getElementById('grantsGrid').innerHTML =
+      card('', '$' + fmt(funding), 'Funding awarded',
+           grantYears.length + ' grant rounds') +
+      card('b', fmt(distinct), 'Different projects funded',
+           fmt(projects.length) + ' grants in total — some projects funded more than once');
+
+    // --- reported outcomes --------------------------------------------------
+    // Each tile carries how many returns it rests on. Fencing in particular is
+    // a real figure from two projects, not a programme total.
+    function total(field) {
+      const vals = stats.map(r => num(r[field])).filter(v => v !== null && v !== 0);
+      return { sum: vals.reduce((a, b) => a + b, 0), n: vals.length };
+    }
+    const plants = total('Plants_planted');
+    const hours  = total('Community_hours');
+    const traps  = total('Traps_funded');
+    const fence  = total('Fencing_LnMtr');
+    const cov = t => t.n + ' of ' + stats.length + ' project reports';
+
+    document.getElementById('outcomesHeader').innerHTML =
+      'Reported outcomes <span>· ' + yearRange(statYears) + '</span>';
+    document.getElementById('outcomesGrid').innerHTML =
+      card('', fmt(plants.sum), 'Native plants planted', cov(plants)) +
+      card('b', fmt(hours.sum), 'Community hours', cov(hours)) +
+      card('c', fmt(traps.sum), 'Traps purchased', cov(traps)) +
+      card('d', fmt(fence.sum) + ' m', 'Fencing installed', cov(fence)) +
+      // Not a counted figure: the stats table has no habitat field, so this
+      // stays as reported in the annual report and does not move with the data.
+      card('wide', HABITATS_PER_YEAR, 'Rare &amp; threatened habitats protected per year',
+           'From annual reporting, not project returns');
+
+    document.getElementById('footnote').innerHTML =
+      'Outcomes are self-reported by funded projects and reporting began in ' +
+      yearLabel(statYears[0]) + ', so these cover ' + statYears.length +
+      ' of the ' + grantYears.length + ' grant years and not every project reports ' +
+      'every measure. Funding figures cover all grant rounds.';
+
+    document.getElementById('updated').textContent = 'Generated: ' + (data.generated_at || '');
+
+    document.body.classList.toggle('compact', window.innerHeight < 460);
+  }
+
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      document.body.classList.toggle('compact', window.innerHeight < 460);
+    }, 150);
+  });
+</script>
 </body>
 </html>
