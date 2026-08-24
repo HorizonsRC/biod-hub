@@ -32,8 +32,9 @@ KKT_STATS_ID = 5
 # Fields carried into the JSON. Kept deliberately narrow — this file is served
 # publicly from GitHub Pages, so only what the charts actually need goes in it.
 PROJECT_FIELDS = [
-    "GlobalID", "Grant_year_1", "Group_name_1", "ProjectNam_1", "District",
-    "ProjectType", "Current_YearFund", "Prev_Act_Grant_1", "No_of_GrantYears",
+    "GlobalID", "Project_ID", "Grant_year_1", "Group_name_1", "ProjectNam_1",
+    "District", "ProjectType", "Current_YearFund", "Prev_Act_Grant_1",
+    "No_of_GrantYears",
 ]
 
 # The four activity slots and their funding. Read here, but not carried into the
@@ -155,6 +156,18 @@ def main():
 
         projects.append(row)
     log.info(f"  {len(projects)} projects")
+
+    # Project_ID is what the overview's "different projects funded" tile counts.
+    # A grant row without one would be counted as its own project, quietly
+    # inflating the figure, so a new year's rows failing to get a code shows up
+    # here rather than on the dashboard.
+    coded = [p.get("Project_ID") for p in projects if p.get("Project_ID")]
+    blank = len(projects) - len(coded)
+    log.info(f"  Distinct Project_ID: {len(set(coded))} across {len(coded)} grant rows")
+    if blank:
+        log.warning(f"  {blank} grant row(s) have no Project_ID — run "
+                    f"agol-tools/KKT_Project_ID_Assign.py --push to assign them.")
+
     slot_use = [sum(1 for p in projects if len(p["activities"]) > i) for i in range(4)]
     log.info(f"  Activity slot use (1-4): {slot_use}")
     if no_activities:

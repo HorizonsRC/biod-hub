@@ -15,6 +15,22 @@
   .left h2 { font-family: 'Source Serif 4', serif; font-size: 16px; font-weight: 600; line-height: 1.35; color: #f0f5f1; }
   .left p { font-size: 12.5px; line-height: 1.55; color: #b0c4b8; }
   .divider { border: none; border-top: 1px solid rgba(255,255,255,0.08); }
+  /* Grants awarded sits on the dark panel, directly under what the fund is,
+     because it describes the fund rather than what projects reported back. It
+     also leaves the right-hand column to outcomes alone, so the coverage
+     footnote has room to sit under the tiles instead of being clipped. */
+  .left-header { font-size: 9.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #8ecf99; }
+  .left-header span { color: #7d9a86; letter-spacing: 0.04em; }
+  .fund-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px 14px; }
+  .fund { border-left: 2px solid #6baa78; padding-left: 9px; }
+  .fund.b { border-left-color: #a5b8a8; }
+  .fund-number { font-family: 'Source Serif 4', serif; font-size: 23px; font-weight: 600; color: #f0f5f1; line-height: 1.1; }
+  .fund-label { font-size: 11.5px; color: #b0c4b8; line-height: 1.3; margin-top: 2px; }
+  .fund-note { font-size: 10px; color: #8ca396; line-height: 1.35; margin-top: 2px; }
+  /* Spans both figures: it qualifies the project count rather than being a
+     figure in its own right, and 34 beside 19 needs the sentence to explain
+     that one is a subset of the other. */
+  .fund-foot { grid-column: 1 / -1; font-size: 10.5px; color: #8ca396; line-height: 1.4; }
   /* The bullets below come from the ICC report, where a paragraph introduces
      them. Without that lead-in they read as four unrelated facts, so the
      report's own phrasing carries over - minus its figures, which are a
@@ -27,13 +43,12 @@
   .right { background: #f5f4f0; padding: 16px 16px 8px 16px; display: flex; flex-direction: column; gap: 7px; min-height: 0; }
   .right-header { font-size: 9.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #7a9a82; border-bottom: 1px solid #d6d3cc; padding-bottom: 6px; }
   .right-header span { color: #a2b3a6; letter-spacing: 0.04em; }
-  /* The embed panel is a good deal taller than the tiles need, so the grids
-     grow to fill it and the rows share the height evenly rather than leaving a
+  /* The embed panel is a good deal taller than the tiles need, so the grid
+     grows to fill it and the rows share the height evenly rather than leaving a
      block of dead space under the footnote. */
   .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px;
                 grid-auto-rows: 1fr; }
-  #grantsGrid { flex: 1 1 auto; }
-  #outcomesGrid { flex: 3 1 auto; }
+  #outcomesGrid { flex: 1 1 auto; min-height: 0; }
   .stat-card { display: flex; flex-direction: column; justify-content: center; }
   .stat-card { background: #fff; border: 1px solid #e0ddd8; border-radius: 5px; padding: 13px 14px; border-left: 3px solid #3d7a5a; }
   .stat-card.b { border-left-color: #6baa78; }
@@ -59,6 +74,10 @@
   body.compact .left p { font-size: 11.5px; line-height: 1.45; }
   body.compact .hi-intro { font-size: 10.5px; }
   body.compact .hi { font-size: 11px; }
+  body.compact .fund-grid { gap: 6px 12px; }
+  body.compact .fund-number { font-size: 18px; }
+  body.compact .fund-label { font-size: 10.5px; }
+  body.compact .fund-note, body.compact .fund-foot { font-size: 9.5px; }
   body.compact .right { padding: 12px 12px 6px; gap: 5px; }
   body.compact .stat-card { padding: 8px 10px; }
   body.compact .stat-number { font-size: 22px; }
@@ -73,6 +92,9 @@
     <h2>Kanorau Koiora Taketake<br>Indigenous Biodiversity Contestable Fund</h2>
     <p>Supporting locally-led conservation projects across Manawatū-Whanganui. Open annually in April/May, grants fund activities with clear community involvement and biodiversity benefit — assessed by a Councillor panel and supported by Biodiversity staff throughout delivery.</p>
     <hr class="divider"/>
+    <div class="left-header" id="grantsHeader">Grants awarded</div>
+    <div class="fund-grid" id="grantsGrid"></div>
+    <hr class="divider"/>
     <div class="hi-intro">Groups supported by the fund with significant community engagement and impact include:</div>
     <div class="highlights">
       <div class="hi">Koitiata Wetlands Restoration Group — 34 events in one year, 500+ volunteer hours</div>
@@ -82,9 +104,6 @@
     </div>
   </div>
   <div class="right">
-    <div class="right-header" id="grantsHeader">Grants awarded</div>
-    <div class="stats-grid" id="grantsGrid"></div>
-
     <div class="right-header" id="outcomesHeader">Reported outcomes</div>
     <div class="stats-grid" id="outcomesGrid"></div>
 
@@ -105,7 +124,9 @@
     .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(build)
     .catch(err => {
-      document.getElementById('grantsGrid').innerHTML =
+      // On the light panel: the message is styled for a cream background, and
+      // the grants block now sits on the dark one.
+      document.getElementById('outcomesGrid').innerHTML =
         '<p class="msg" style="grid-column:1/-1">Could not load fund data (' +
         err.message + '). Figures are unavailable.</p>';
     });
@@ -146,10 +167,17 @@
   // rather than how many grants it has made. One project, however many separate
   // grants it received — so Castlecliff's Coastal Restoration Project counts
   // once whether it was funded in one year or two.
+  //
+  // Project_ID on the layer is the authority. It is assigned once per project
+  // and carried on every grant row for it, so a project renamed between years
+  // still counts once — which grouping by name cannot do. The name fallback
+  // below only matters if this page is served an older JSON that predates the
+  // field; it keeps the tile roughly right rather than collapsing every grant
+  // into one project.
   function projectKeys(projects) {
     const per = new Map();
     projects.forEach(p => {
-      const key = slug(p.Group_name_1) + '|' + slug(p.ProjectNam_1);
+      const key = p.Project_ID || (slug(p.Group_name_1) + '|' + slug(p.ProjectNam_1));
       if (!per.has(key)) per.set(key, []);
       per.get(key).push(p);
     });
@@ -158,6 +186,17 @@
 
   const distinctProjects = projects => projectKeys(projects).size;
 
+  // Split of those projects by how many grants each has had. This is the
+  // "don't count the same project twice" picture in full: most projects were
+  // funded once, a third of them have come back.
+  function grantSpread(projects) {
+    const sizes = [...projectKeys(projects).values()].map(rows => rows.length);
+    return {
+      once: sizes.filter(n => n === 1).length,
+      repeat: sizes.filter(n => n > 1).length,
+    };
+  }
+
   // Projects awarded a consecutive multi-year grant. No_of_GrantYears counts
   // the year within such an award — 1, then 2, then 3 — so a project that has
   // any row above 1 ran multi-year. Two separate one-year grants both sit at 1
@@ -165,6 +204,16 @@
   function multiYearProjects(projects) {
     return [...projectKeys(projects).values()]
       .filter(rows => rows.some(p => (p.No_of_GrantYears || 1) > 1)).length;
+  }
+
+  // The dark panel's own figure block. Same shape as a stat card, but the white
+  // card treatment would sit badly on the dark background.
+  function fund(cls, value, label, note) {
+    return '<div class="fund ' + cls + '">' +
+             '<div class="fund-number">' + value + '</div>' +
+             '<div class="fund-label">' + label + '</div>' +
+             (note ? '<div class="fund-note">' + note + '</div>' : '') +
+           '</div>';
   }
 
   function card(cls, value, label, note) {
@@ -183,16 +232,27 @@
     const statYears  = [...new Set(stats.map(r => r.Grant_year).filter(Boolean))].sort();
 
     // --- grants awarded -----------------------------------------------------
-    const funding = projects.reduce((s, p) => s + (num(p.funding) || 0), 0);
+    const funding  = projects.reduce((s, p) => s + (num(p.funding) || 0), 0);
     const distinct = distinctProjects(projects);
+    const spread   = grantSpread(projects);
+    const multi    = multiYearProjects(projects);
 
     document.getElementById('grantsHeader').innerHTML =
       'Grants awarded <span>· ' + yearRange(grantYears) + '</span>';
     document.getElementById('grantsGrid').innerHTML =
-      card('', '$' + fmt(funding), 'Funding awarded',
-           'Across ' + fmt(projects.length) + ' grants') +
-      card('b', fmt(distinct), 'Different projects funded',
-           fmt(multiYearProjects(projects)) + ' awarded multi-year funding');
+      fund('', '$' + fmt(funding), 'Funding awarded',
+           'Across ' + fmt(projects.length) + ' grants in ' +
+           fmt(grantYears.length) + ' grant years') +
+      fund('b', fmt(distinct), 'Different projects funded',
+           fmt(spread.once) + ' funded once · ' + fmt(spread.repeat) +
+           ' funded more than once') +
+      // 34 beside 19 reads as a contradiction without this: the multi-year
+      // figure is the subset awarded consecutive years up front, while the rest
+      // applied again and won a separate grant.
+      '<div class="fund-foot">Of the ' + fmt(spread.repeat) +
+      ' funded more than once, ' + fmt(multi) +
+      ' were awarded consecutive multi-year funding; the others applied again in ' +
+      'a later round.</div>';
 
     // --- reported outcomes --------------------------------------------------
     // How thin the reporting is behind each figure is covered once, in the
