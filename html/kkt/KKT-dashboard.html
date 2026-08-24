@@ -10,10 +10,7 @@
   html, body { height: 100%; font-family: 'DM Sans', sans-serif; background: #f5f4f0; color: #1e2d2f; overflow: hidden; }
   .container { display: grid; grid-template-columns: 1fr 1fr; height: 100%; }
 
-  /* Centred: with the highlight bullets gone the panel's content is shorter
-     than the embed, and sitting it in the middle reads as deliberate where
-     top-aligned read as content that had run out. */
-  .left { background: #1c3438; color: #e8ede9; padding: 22px 18px 14px 18px; display: flex; flex-direction: column; justify-content: center; gap: 10px; overflow: hidden; }
+  .left { background: #1c3438; color: #e8ede9; padding: 22px 18px 16px 18px; display: flex; flex-direction: column; gap: 11px; overflow: hidden; }
   .tag { display: inline-block; background: rgba(107,170,120,0.2); color: #8ecf99; font-size: 9px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; padding: 2px 7px; border-radius: 2px; width: fit-content; }
   .left h2 { font-family: 'Source Serif 4', serif; font-size: 16px; font-weight: 600; line-height: 1.35; color: #f0f5f1; }
   .left p { font-size: 12.5px; line-height: 1.55; color: #b0c4b8; }
@@ -24,16 +21,21 @@
      footnote has room to sit under the tiles instead of being clipped. */
   .left-header { font-size: 9.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #8ecf99; }
   .left-header span { color: #7d9a86; letter-spacing: 0.04em; }
-  .fund-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px 14px; }
-  .fund { border-left: 2px solid #6baa78; padding-left: 9px; }
+  /* Four figures in a 2x2, rather than two with fine print underneath. The
+     grant count and the repeat count were sub-notes and kept getting squinted
+     at; as figures in their own right they fill the panel and read at a
+     glance, which is what the space is for. */
+  .fund-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px 14px;
+               flex: 1 1 auto; grid-auto-rows: 1fr; min-height: 0; }
+  /* The rule down the left of each figure runs the full height of its cell, so
+     the four read as a block filling the panel rather than four items sitting
+     above a gap. */
+  .fund { border-left: 2px solid #6baa78; padding-left: 10px;
+          display: flex; flex-direction: column; justify-content: center; }
   .fund.b { border-left-color: #a5b8a8; }
-  .fund-number { font-family: 'Source Serif 4', serif; font-size: 23px; font-weight: 600; color: #f0f5f1; line-height: 1.1; }
-  .fund-label { font-size: 11.5px; color: #b0c4b8; line-height: 1.3; margin-top: 2px; }
-  .fund-note { font-size: 10px; color: #8ca396; line-height: 1.35; margin-top: 2px; }
-  /* Spans both figures: it qualifies the project count rather than being a
-     figure in its own right, and 34 beside 19 needs the sentence to explain
-     that one is a subset of the other. */
-  .fund-foot { grid-column: 1 / -1; font-size: 10.5px; color: #8ca396; line-height: 1.4; }
+  .fund-number { font-family: 'Source Serif 4', serif; font-size: 26px; font-weight: 600; color: #f0f5f1; line-height: 1.1; }
+  .fund-label { font-size: 12px; color: #b0c4b8; line-height: 1.3; margin-top: 2px; }
+  .fund-note { font-size: 10.5px; color: #8ca396; line-height: 1.35; margin-top: 2px; }
   /* The four project highlight bullets that used to sit here were dropped on
      25 Aug 2026. They were quoted from the ICC report and overflowed the ExB
      embed, but the reason not to reinstate them is that three of the four had
@@ -44,15 +46,12 @@
   .right { background: #f5f4f0; padding: 16px 16px 8px 16px; display: flex; flex-direction: column; gap: 7px; min-height: 0; }
   .right-header { font-size: 9.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #7a9a82; border-bottom: 1px solid #d6d3cc; padding-bottom: 6px; }
   .right-header span { color: #a2b3a6; letter-spacing: 0.04em; }
-  /* Rows size to their content rather than stretching to fill the panel. They
-     used to stretch, which made a two-line tile 90px tall for no reason. Any
-     spare height now goes above the footnote, which sits at the foot of the
-     panel where a coverage note belongs. */
+  /* The tiles fill the panel and share its height evenly. Sizing them to their
+     content instead just moved the empty space rather than removing it — the
+     panel is a fixed height either way, so the content may as well use it. */
   .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px;
-                grid-auto-rows: auto; }
-  /* Fills the space between the header and the footnote, but centres the tiles
-     within it at their natural height rather than stretching them to reach. */
-  #outcomesGrid { flex: 1 1 auto; align-content: center; min-height: 0; }
+                grid-auto-rows: 1fr; }
+  #outcomesGrid { flex: 1 1 auto; min-height: 0; }
   .stat-card { display: flex; flex-direction: column; justify-content: center; }
   .stat-card { background: #fff; border: 1px solid #e0ddd8; border-radius: 5px; padding: 11px 13px; border-left: 3px solid #3d7a5a; }
   .stat-card.b { border-left-color: #6baa78; }
@@ -76,10 +75,10 @@
   body.compact .left { padding: 14px 14px 10px; gap: 6px; }
   body.compact .left h2 { font-size: 14px; }
   body.compact .left p { font-size: 11.5px; line-height: 1.45; }
-  body.compact .fund-grid { gap: 6px 12px; }
-  body.compact .fund-number { font-size: 18px; }
-  body.compact .fund-label { font-size: 10.5px; }
-  body.compact .fund-note, body.compact .fund-foot { font-size: 9.5px; }
+  body.compact .fund-grid { gap: 8px 12px; }
+  body.compact .fund-number { font-size: 20px; }
+  body.compact .fund-label { font-size: 11px; }
+  body.compact .fund-note { font-size: 9.5px; }
   body.compact .right { padding: 12px 12px 6px; gap: 5px; }
   body.compact .stat-card { padding: 8px 10px; }
   body.compact .stat-number { font-size: 22px; }
@@ -234,19 +233,16 @@
     document.getElementById('grantsHeader').innerHTML =
       'Grants awarded <span>· ' + yearRange(grantYears) + '</span>';
     document.getElementById('grantsGrid').innerHTML =
-      fund('', '$' + fmt(funding), 'Funding awarded',
-           'Across ' + fmt(projects.length) + ' grants in ' +
-           fmt(grantYears.length) + ' grant years') +
-      fund('b', fmt(distinct), 'Different projects funded',
-           fmt(spread.once) + ' funded once · ' + fmt(spread.repeat) +
-           ' funded more than once') +
-      // 34 beside 19 reads as a contradiction without this: the multi-year
-      // figure is the subset awarded consecutive years up front, while the rest
-      // applied again and won a separate grant.
-      '<div class="fund-foot">Of the ' + fmt(spread.repeat) +
-      ' funded more than once, ' + fmt(multi) +
-      ' were awarded consecutive multi-year funding; the others applied again in ' +
-      'a later round.</div>';
+      fund('', '$' + fmt(funding), 'Funding awarded') +
+      fund('b', fmt(projects.length), 'Grants awarded',
+           'Across ' + fmt(grantYears.length) + ' grant years') +
+      fund('', fmt(distinct), 'Different projects funded',
+           fmt(spread.once) + ' were funded once') +
+      // The multi-year note matters here: 34 beside 19 reads as a
+      // contradiction otherwise. 19 were awarded consecutive years up front;
+      // the rest applied again and won a separate grant.
+      fund('b', fmt(spread.repeat), 'Funded more than once',
+           fmt(multi) + ' of them consecutive multi-year awards');
 
     // --- reported outcomes --------------------------------------------------
     // How thin the reporting is behind each figure is covered once, in the
