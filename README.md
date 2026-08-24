@@ -20,7 +20,7 @@ biod-hub/
 │   │   ├── PH_Pressure_Icons.html               # Static pressure-type image panel
 │   │   └── dashboard_data.json                  # Auto-updated by PM_Dashboard_Export.py
 │   ├── kkt/
-│   │   ├── KKT-dashboard.html                   # Overview panel (static text/stats)
+│   │   ├── KKT-dashboard.html                   # Overview panel — loads dashboard_data.json
 │   │   ├── KKT_Project_Stats.html               # Chart — loads dashboard_data.json (?metric=, ?year=)
 │   │   ├── KKT_Projects_by_Type.html            # Chart — loads dashboard_data.json
 │   │   └── dashboard_data.json                  # Auto-updated by KKT_Dashboard_Export.py
@@ -197,10 +197,17 @@ The export joins each stats row to its project and adds `group_name`, `project_n
 |---|---|---|
 | `KKT_Project_Stats.html` | The four ExB chart widgets (Community Hours, Member Numbers, Pest Control, Planting) | `?metric=` one of `plants`, `traps`, `hours`, `members`, `animals`, `vols`, `restore`; `?year=` a grant year, or `all` |
 | `KKT_Projects_by_Type.html` | The *KKT Projects by Type and Financial Year* chart | none — measure and year are dropdowns |
+| `KKT-dashboard.html` | — | none — overview panel for the KKT Overview tab |
 
-Both use horizontal bars so the long group names stay readable, and colour by grant year using a fixed, colour-vision-validated palette (a year keeps its colour however many years are shown).
+Both charts use horizontal bars so the long group names stay readable, and colour by grant year using a fixed, colour-vision-validated palette (a year keeps its colour however many years are shown).
 
-`ProjectType` is comma-separated, so a project can carry several types. Counts add the project to each of its types; funding is divided evenly between them so the chart still sums to the real total awarded.
+A project carries up to four activities, each in its own field with its own funding figure (`ProjectType` … `ProjectType_4`, `ProjectType_fund` … `ProjectType_fund4`). The export folds them into an `activities` list per project, so the by-type chart sums the team's actual per-activity figures. The parts deliberately need not add up to the grant — the team allocated only money actually spent — and a funding value of 0 means the activity happened with no grant money against it, so it is kept rather than dropped.
+
+### Counting different projects
+
+Each grant row carries a `Project_ID` (`KKT-001` …), assigned once per project and repeated on every grant that project has received, however many years apart. "Different projects funded" on the overview is a distinct count of that field, which a count of project names cannot do reliably — projects get renamed between years.
+
+The codes are assigned by a helper script outside the repo. It is safe to re-run: existing codes are kept and only new grant rows are filled, but check its output each year — a project that gets a new code when it should have matched an existing one silently inflates the count.
 
 ### Logging
 
