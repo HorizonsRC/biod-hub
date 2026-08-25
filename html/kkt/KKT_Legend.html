@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>KKT Projects Legend</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;overflow:hidden}
+    body{font-family:'DM Sans',sans-serif;background:#fff;color:#1a1a2e}
+
+    .wrap{height:100%;padding:14px 16px 10px;display:flex;flex-direction:column;gap:10px}
+    .title{font-size:1rem;font-weight:600;line-height:1.3;flex-shrink:0}
+
+    .sec{flex-shrink:0}
+    .sec-l{font-size:.66rem;font-weight:500;letter-spacing:.04em;text-transform:uppercase;
+           color:#6b7280;margin-bottom:6px}
+
+    /* Districts. Two columns when there is width for them, one when there is not.
+       The minmax(0,…) matters: without it the nowrap names set a min-content
+       floor that pushes the grid wider than the panel and clips the whole page. */
+    .districts{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:3px 14px}
+    .row{display:flex;align-items:center;gap:7px;min-width:0}
+    .dot{width:13px;height:13px;border-radius:50%;flex-shrink:0;
+         border:1px solid rgba(26,26,26,.55)}
+    .name{font-size:.74rem;line-height:1.35;white-space:nowrap;overflow:hidden;
+          text-overflow:ellipsis}
+
+    /* Size ramp. Circles sit on a shared baseline so the sizes compare directly. */
+    .sizes{display:flex;align-items:flex-end;gap:16px;padding:2px 2px 0}
+    .size-item{display:flex;flex-direction:column;align-items:center;gap:5px}
+    .size-dot{border-radius:50%;background:#ccd2d8;border:1px solid rgba(26,26,26,.55)}
+    .size-l{font-size:.7rem;color:#4b5563;line-height:1.2;white-space:nowrap}
+
+    .note{font-size:.62rem;color:#9ca3af;line-height:1.4;padding-top:2px}
+
+    .rule{height:1px;background:#e8e8e8;flex-shrink:0}
+
+    /* Narrow panels: districts drop to a single column. The threshold is set by
+       the longest name ("Palmerston North City") plus its dot, twice over. */
+    @media (max-width:380px){
+      .districts{grid-template-columns:minmax(0,1fr)}
+    }
+
+    /* Short panels: tighter chrome and smaller type, matching the other KKT
+       embeds so a small ExB panel still fits everything without scrolling. */
+    body.compact .wrap{padding:9px 11px 7px;gap:7px}
+    body.compact .title{font-size:.84rem}
+    body.compact .sec-l{font-size:.6rem;margin-bottom:4px}
+    body.compact .districts{gap:1px 10px}
+    body.compact .dot{width:11px;height:11px}
+    body.compact .name{font-size:.68rem}
+    body.compact .sizes{gap:12px}
+    body.compact .size-l{font-size:.64rem}
+    body.compact .note{font-size:.58rem;padding-top:4px}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="title">KKT Projects</div>
+
+  <div class="sec">
+    <div class="sec-l">District</div>
+    <div class="districts" id="districts"></div>
+  </div>
+
+  <div class="rule"></div>
+
+  <div class="sec">
+    <div class="sec-l">Grant years</div>
+    <div class="sizes" id="sizes"></div>
+  </div>
+
+  <div class="note" id="note">
+    Circle size shows how many consecutive years the grant covers.
+  </div>
+</div>
+
+<script>
+  // Colours are copied from the layer's renderer in the web map (unique value on
+  // District). If the map symbology is ever restyled, these must be updated to
+  // match or the legend quietly starts lying. Order matches the map's own legend.
+  const DISTRICTS = [
+    ['Horowhenua District',   '#2AFF17'],
+    ['Manawatū District',     '#00FFF2'],
+    ['Palmerston North City', '#FC88EF'],
+    ['Rangitīkei District',   '#F21105'],
+    ['Ruapehu District',      '#FF7F00'],
+    ['Tararua District',      '#FFE51C'],
+    ['Whanganui District',    '#C500FF'],
+    ['Waitomo District',      '#57BCFF']
+  ];
+
+  // The map sizes circles from No_of_GrantYears with a ramp running 1 -> 4, so a
+  // 3-year project is not the largest circle the ramp can draw. These diameters
+  // keep the true 1 : 1.43 : 1.86 ratio rather than stretching 3 to fill the range.
+  const SIZES = [
+    [1, 18, '1 year'],
+    [2, 26, '2 years'],
+    [3, 34, '3 years']
+  ];
+
+  const districtsEl = document.getElementById('districts');
+  DISTRICTS.forEach(([name, colour]) => {
+    const row = document.createElement('div');
+    row.className = 'row';
+    const dot = document.createElement('span');
+    dot.className = 'dot';
+    dot.style.background = colour;
+    const label = document.createElement('span');
+    label.className = 'name';
+    label.textContent = name;
+    label.title = name;          // full name on hover when a narrow panel clips it
+    row.append(dot, label);
+    districtsEl.append(row);
+  });
+
+  const sizesEl = document.getElementById('sizes');
+  SIZES.forEach(([, px, label]) => {
+    const item = document.createElement('div');
+    item.className = 'size-item';
+    const dot = document.createElement('span');
+    dot.className = 'size-dot';
+    dot.style.width = px + 'px';
+    dot.style.height = px + 'px';
+    const cap = document.createElement('span');
+    cap.className = 'size-l';
+    cap.textContent = label;
+    item.append(dot, cap);
+    sizesEl.append(item);
+  });
+
+  // Same breakpoint the other KKT embeds use, so the whole set behaves alike.
+  function setCompact() {
+    document.body.classList.toggle('compact', window.innerHeight < 460);
+  }
+  setCompact();
+  window.addEventListener('resize', setCompact);
+</script>
+</body>
+</html>
