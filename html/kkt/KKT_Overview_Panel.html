@@ -10,24 +10,27 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; font-family: 'DM Sans', sans-serif; background: #f5f4f0; color: #1e2d2f; overflow: hidden; }
 
-  /* KKT-dashboard.html and KKT_Projects_by_Type.html merged into one page.
-     The two of them stacked in the ExB overview panel each got about half its
-     height — roughly 250px on a 13" laptop — and neither fits in that. The
-     panel is wide and short (about 761x491 on a laptop, 1269x924 on a large
-     monitor), so this lays the same content out ACROSS the width instead:
-     the fund block runs full height down the left, and the outcome figures
-     sit as a strip above the chart on the right. That frees roughly 350px of
-     vertical room for the chart compared with the stacked version. */
-  /* 38% rather than a third: at 34% the description wrapped to eight lines on a
-     laptop and pushed the grant figures past the fold. The extra few percent
-     costs the chart little — it loses bar width, not rows — and buys the fund
-     block two fewer wrapped lines. */
-  .page { display: grid; grid-template-columns: 38% 1fr; height: 100%; }
+  /* KKT-dashboard.html and KKT_Projects_by_Type.html merged into one page,
+     keeping the arrangement they had as two stacked embeds: fund block and
+     outcome figures side by side on top, chart full width underneath.
 
-  /* ---- left: the fund itself -------------------------------------------- */
+     The gain over two embeds is not the arrangement, it is who decides the
+     split. ExB gave each embed a fixed 51/49 of the panel whatever it needed;
+     here the top band takes only the height its content requires and the chart
+     gets everything left over. On a laptop that is the difference between the
+     chart having 240px and having about 200-290px depending on how the fund
+     text wraps — and it removes a second page's worth of padding and borders. */
+  .page { display: flex; flex-direction: column; height: 100%; }
+
+  /* 0 1 auto, not 0 0 auto: on a very short panel the band gives way rather
+     than squeezing the chart out of existence, and its two columns scroll
+     internally instead. */
+  .top { display: grid; grid-template-columns: 46% 1fr; flex: 0 1 auto; min-height: 0; }
+
+  /* ---- top left: the fund itself ---------------------------------------- */
   .left { background: #1c3438; color: #e8ede9; padding: 18px 16px 14px;
           display: flex; flex-direction: column; gap: 10px;
-          overflow-y: auto; overflow-x: hidden; }
+          min-height: 0; overflow-y: auto; overflow-x: hidden; }
   .tag { display: inline-block; background: rgba(107,170,120,0.2); color: #8ecf99; font-size: 9px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; padding: 2px 7px; border-radius: 2px; width: fit-content; }
   .left h2 { font-family: 'Source Serif 4', serif; font-size: 15px; font-weight: 600; line-height: 1.35; color: #f0f5f1; }
   .left p { font-size: 12px; line-height: 1.5; color: #b0c4b8; }
@@ -38,13 +41,19 @@
      width on a laptop and 395px on a large monitor, so this is one column on
      the first and two on the second without a breakpoint. 150px is the floor
      that keeps "$1,801,208" on one line. */
-  /* Rows size to their content and the slack collects at the bottom of the
-     column. A 1fr row instead divides the whole column between however many
-     rows there are, which on a 924px-tall monitor panel stranded each figure
-     in the middle of a 200px cell. */
-  .fund-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-               gap: 11px 13px; flex: 1 1 auto; align-content: start;
-               grid-auto-rows: minmax(48px, auto); }
+  /* Rows size to their content rather than dividing the column between them —
+     a 1fr row stranded each figure in the middle of a 200px cell on a tall
+     monitor panel. auto-fit gives one column on a narrow laptop panel and two
+     once there is room, without a breakpoint. */
+  /* Always two columns, never auto-fit. auto-fit picked one column on a laptop
+     — four stacked rows, which made the top band tall enough to push the chart
+     under its own minimum — and three on a monitor, which left the fourth
+     figure alone on a second row. Two is right at every width this panel gets:
+     the column is 46% of a panel that is never much under 700px wide, so each
+     cell keeps at least ~150px and "$1,801,208" stays on one line. */
+  .fund-grid { display: grid; grid-template-columns: 1fr 1fr;
+               gap: 11px 13px; flex: 0 0 auto; align-content: start;
+               grid-auto-rows: minmax(46px, auto); }
   .fund { border-left: 2px solid #6baa78; padding-left: 9px;
           display: flex; flex-direction: column; justify-content: center; }
   .fund.b { border-left-color: #a5b8a8; }
@@ -52,8 +61,9 @@
   .fund-label { font-size: 11.5px; color: #b0c4b8; line-height: 1.3; margin-top: 2px; }
   .fund-note { font-size: 10px; color: #8ca396; line-height: 1.35; margin-top: 2px; }
 
-  /* ---- right: outcomes over the chart ----------------------------------- */
-  .right { background: #f5f4f0; padding: 12px 14px 6px; display: flex; flex-direction: column; gap: 7px; min-height: 0; }
+  /* ---- top right: reported outcomes ------------------------------------- */
+  .right { background: #f5f4f0; padding: 12px 14px 10px; display: flex; flex-direction: column; gap: 7px;
+           min-height: 0; overflow-y: auto; overflow-x: hidden; }
   .right-header { font-size: 9.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #7a9a82; border-bottom: 1px solid #d6d3cc; padding-bottom: 5px; }
   .right-header span { color: #a2b3a6; letter-spacing: 0.04em; }
   /* The outcome figures were five cards filling half the old page. Here they
@@ -68,9 +78,19 @@
   .stat-card.e { border-left-color: #8a9bb5; }
   .stat-number { font-family: 'Source Serif 4', serif; font-size: 19px; font-weight: 600; color: #1c3438; line-height: 1.05; }
   .stat-label { font-size: 10.5px; color: #5a7060; line-height: 1.25; margin-top: 1px; }
-  .footnote { font-size: 9.5px; color: #7a8d80; line-height: 1.35; }
+  /* margin-top:auto anchors the coverage line to the bottom of its column. The
+     outcomes column is as tall as the fund column beside it, which carries more
+     content, so the slack would otherwise sit under the footnote and read as a
+     gap rather than as spacing. */
+  .footnote { font-size: 9.5px; color: #7a8d80; line-height: 1.35; margin-top: auto; }
 
-  /* ---- chart ------------------------------------------------------------ */
+  /* ---- chart: full width across the bottom ------------------------------ */
+  /* min-height guarantees the chart a floor whatever the fund text does above
+     it — 12 activity rows at ~13px plus an axis is about 190px, below which
+     the rows stop being readable. */
+  .chart-panel { flex: 1 1 auto; min-height: 190px; background: #fff;
+                 border-top: 1px solid #e0ddd8;
+                 padding: 10px 14px 5px; display: flex; flex-direction: column; gap: 5px; }
   .chart-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
   .chart-title { font-size: 13.5px; font-weight: 600; line-height: 1.3; color: #1e2d2f; }
   .chart-sub { font-size: 10.5px; color: #6b7280; margin-top: 1px; }
@@ -106,11 +126,18 @@
   body.roomy .stat-label { font-size: 11.5px; }
 
   /* Compact — short ExB panels. Trims chrome, never the figures. */
-  body.compact .left { padding: 12px 12px 9px; gap: 6px; }
-  body.compact .left h2 { font-size: 13.5px; }
-  body.compact .left p { font-size: 11px; line-height: 1.42; }
-  body.compact .fund-grid { gap: 7px 11px; }
-  body.compact .fund-number { font-size: 18px; }
+  body.compact .left { padding: 10px 11px 8px; gap: 5px; }
+  body.compact .left h2 { font-size: 13px; }
+  /* Clamped, not shrunk further: on a laptop panel the fund column is about
+     20px over budget and 10.5px is already the floor for readable body text.
+     The description is fixed boilerplate and the same on every screen, so it
+     is what gives way — the figures underneath it are the actual data and all
+     four stay visible. Full text returns as soon as there is height for it. */
+  body.compact .left p { font-size: 10.5px; line-height: 1.4;
+                         display: -webkit-box; -webkit-line-clamp: 3;
+                         -webkit-box-orient: vertical; overflow: hidden; }
+  body.compact .fund-grid { gap: 6px 10px; grid-auto-rows: minmax(42px, auto); }
+  body.compact .fund-number { font-size: 17px; }
   body.compact .fund-label { font-size: 10.5px; }
   body.compact .fund-note { font-size: 9.5px; }
   body.compact .right { padding: 9px 11px 4px; gap: 5px; }
@@ -119,25 +146,33 @@
   body.compact .stat-label { font-size: 9.5px; }
   body.compact .chart-title { font-size: 12px; }
   body.compact .chart-sub { font-size: 9.5px; }
-  body.compact .footnote { display: none; }
+  /* The coverage line stays on short panels now. It was dropped when this page
+     was one column and every pixel of height was contested; in the two-column
+     band the fund block is the tall side, so the outcomes column has room
+     going spare and the caveat may as well be visible. */
+  body.compact .footnote { font-size: 9px; }
 </style>
 </head>
 <body>
 <div class="page">
-  <div class="left">
-    <div class="tag">Established 2021</div>
-    <h2>Kanorau Koiora Taketake<br>Indigenous Biodiversity Contestable Fund</h2>
-    <p>Supporting locally-led conservation projects across Manawatū-Whanganui. Open annually in April/May, grants fund activities with clear community involvement and biodiversity benefit — assessed by a Councillor panel and supported by Biodiversity staff throughout delivery.</p>
-    <hr class="divider"/>
-    <div class="left-header" id="grantsHeader">Grants awarded</div>
-    <div class="fund-grid" id="grantsGrid"></div>
+  <div class="top">
+    <div class="left">
+      <div class="tag">Established 2021</div>
+      <h2>Kanorau Koiora Taketake<br>Indigenous Biodiversity Contestable Fund</h2>
+      <p>Supporting locally-led conservation projects across Manawatū-Whanganui. Open annually in April/May, grants fund activities with clear community involvement and biodiversity benefit — assessed by a Councillor panel and supported by Biodiversity staff throughout delivery.</p>
+      <hr class="divider"/>
+      <div class="left-header" id="grantsHeader">Grants awarded</div>
+      <div class="fund-grid" id="grantsGrid"></div>
+    </div>
+
+    <div class="right">
+      <div class="right-header" id="outcomesHeader">Reported outcomes</div>
+      <div class="stats-strip" id="outcomesStrip"></div>
+      <div class="footnote" id="footnote"></div>
+    </div>
   </div>
 
-  <div class="right">
-    <div class="right-header" id="outcomesHeader">Reported outcomes</div>
-    <div class="stats-strip" id="outcomesStrip"></div>
-    <div class="footnote" id="footnote"></div>
-
+  <div class="chart-panel">
     <div class="chart-head">
       <div>
         <div class="chart-title" id="chartTitle">KKT Projects by Type</div>
@@ -438,14 +473,18 @@
     // is unreadable, and past that the box grows and this column scrolls.
     const avail   = document.querySelector('.chart-scroll').clientHeight;
     const axisH   = compact ? 26 : 34;
-    const minimum = entries.length * 13 + axisH;
+    // 11px rows on a compact panel rather than 13. The category labels are
+    // 9.5px there, so 11px still reads, and 12 activities at 13px needed 182px
+    // of scroller — more than a laptop panel has left after the fund band, so
+    // the last row fell below the fold and the chart scrolled.
+    const minimum = entries.length * (compact ? 11 : 13) + axisH;
     document.querySelector('.chart-box').style.height = Math.max(avail, minimum) + 'px';
 
     const datasets = usedYears.map(y => ({
       label: shortYear(y),
       data: entries.map(e => e.per[y] || 0),
       backgroundColor: YEAR_COLOURS[y] || FALLBACK,
-      borderColor: '#f5f4f0',
+      borderColor: '#fff',
       borderWidth: { top: 0, bottom: 0, left: 0, right: 2 },
       borderRadius: 3,
       borderSkipped: false,
