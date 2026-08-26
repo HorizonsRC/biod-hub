@@ -32,11 +32,6 @@ INSP_TABLE_ID    = 1
 # Priority Habitats spatial layer URL (used by Pressure_Management_Data_Join.py)
 FEATURE_SERVICE_URL = "https://services1.arcgis.com/your-org-id/arcgis/rest/services/your-ph-layer/FeatureServer/0"
 
-# Item ID of the published Priority_Habitats_Pressure_Management service.
-# Layer 0 is one row per site with a site_programme field — Hub_Stats_Export.py
-# counts the Priority Habitat sites from it.
-PH_PRESSURE_ITEM_ID = "your-item-id"
-
 # PCO Management Dataset — RTCI monitoring results (read-only)
 # Used by Manawatū Estuary dashboard (layer 0)
 PCO_MONITORING_URL = "https://services1.arcgis.com/VuN78wcRdq1Oj69W/arcgis/rest/services/PCO_Management_Dataset/FeatureServer"

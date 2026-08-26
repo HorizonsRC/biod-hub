@@ -72,13 +72,11 @@ python Hub_Stats_Export.py --push     # write, commit and push to GitHub Pages
 
 | Figure | Source |
 |---|---|
-| Priority Habitat sites | `Priority_Habitats_Pressure_Management` layer 0, distinct `site_id` where `site_programme = 'Priority Habitat'` — so the Icon Sites and Tōtara Reserve carried in the same layer are excluded |
+| Priority Habitat sites | `Priority_habitats_with_PCO` row count — every site in the actively managed priority habitats layer. Deliberately not the pressure management dataset, which reclassifies four of these sites as Icon Sites or the Regional Park and so reports fewer |
 | KKT grants | `Biodiversity_KKT_Projects` layer 4 row count — grants awarded across all years, not distinct projects |
 | Reporting period | The financial year just finished, derived from today's date (NZ FYs run 1 July – 30 June) |
 
-The figures currently in the HTML are fallbacks: if the JSON fails to load, the page shows them rather than rendering blank. They go stale, so run this script whenever the underlying data changes — after `Pressure_Management_Data_Join.py` or `KKT_Stats_Update.py`, and at the start of each financial year.
-
-`PH_PRESSURE_ITEM_ID` in `config.py` is the AGOL item ID of the published pressure management service.
+The figures currently in the HTML are fallbacks: if the JSON fails to load, the page shows them rather than rendering blank. They go stale, so run this script whenever the underlying data changes — after sites are added to the priority habitats layer or `KKT_Stats_Update.py` runs, and at the start of each financial year.
 
 ### Logging
 
