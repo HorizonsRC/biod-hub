@@ -10,7 +10,7 @@
   html, body { height: 100%; font-family: 'DM Sans', sans-serif; background: #f5f4f0; color: #1e2d2f; overflow: hidden; }
   .container { display: grid; grid-template-columns: 1fr 1fr; height: 100%; }
 
-  .left { background: #1c3438; color: #e8ede9; padding: 22px 18px 16px 18px; display: flex; flex-direction: column; gap: 11px; overflow: hidden; }
+  .left { background: #1c3438; color: #e8ede9; padding: 22px 18px 16px 18px; display: flex; flex-direction: column; gap: 11px; overflow-y: auto; overflow-x: hidden; }
   .tag { display: inline-block; background: rgba(107,170,120,0.2); color: #8ecf99; font-size: 9px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; padding: 2px 7px; border-radius: 2px; width: fit-content; }
   .left h2 { font-family: 'Source Serif 4', serif; font-size: 16px; font-weight: 600; line-height: 1.35; color: #f0f5f1; }
   .left p { font-size: 12.5px; line-height: 1.55; color: #b0c4b8; }
@@ -25,8 +25,12 @@
      grant count and the repeat count were sub-notes and kept getting squinted
      at; as figures in their own right they fill the panel and read at a
      glance, which is what the space is for. */
+  /* minmax() rather than a bare 1fr: 1fr alone lets a row shrink below its own
+     text when the panel is short, and the overflow then prints on top of
+     whatever follows. The floor keeps each figure legible and pushes the
+     surplus into .left's scroll instead. */
   .fund-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px 14px;
-               flex: 1 1 auto; grid-auto-rows: 1fr; min-height: 0; }
+               flex: 1 1 auto; grid-auto-rows: minmax(52px, 1fr); }
   /* The rule down the left of each figure runs the full height of its cell, so
      the four read as a block filling the panel rather than four items sitting
      above a gap. */
@@ -43,15 +47,17 @@
      "up to 40 volunteers" is 112 in 25-26, and Ihaia Taueki's "30 to 70 whanau
      members" is 80. Anything replacing them should come from the data. */
 
-  .right { background: #f5f4f0; padding: 16px 16px 8px 16px; display: flex; flex-direction: column; gap: 7px; min-height: 0; }
+  .right { background: #f5f4f0; padding: 16px 16px 8px 16px; display: flex; flex-direction: column; gap: 7px; min-height: 0; overflow-y: auto; overflow-x: hidden; }
   .right-header { font-size: 9.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #7a9a82; border-bottom: 1px solid #d6d3cc; padding-bottom: 6px; }
   .right-header span { color: #a2b3a6; letter-spacing: 0.04em; }
   /* The tiles fill the panel and share its height evenly. Sizing them to their
      content instead just moved the empty space rather than removing it — the
      panel is a fixed height either way, so the content may as well use it. */
+  /* Same floor as .fund-grid, and for the same reason — a short ExB panel was
+     collapsing these rows until the habitats tile overprinted the footnote. */
   .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px;
-                grid-auto-rows: 1fr; }
-  #outcomesGrid { flex: 1 1 auto; min-height: 0; }
+                grid-auto-rows: minmax(50px, 1fr); }
+  #outcomesGrid { flex: 1 1 auto; }
   .stat-card { display: flex; flex-direction: column; justify-content: center; }
   .stat-card { background: #fff; border: 1px solid #e0ddd8; border-radius: 5px; padding: 11px 13px; border-left: 3px solid #3d7a5a; }
   .stat-card.b { border-left-color: #6baa78; }
@@ -271,15 +277,24 @@
 
     document.getElementById('updated').textContent = 'Generated: ' + (data.generated_at || '');
 
-    document.body.classList.toggle('compact', window.innerHeight < 460);
+    setCompact();
+  }
+
+  // Compact mode was originally height-only ("the ExB panel is often short").
+  // Narrow panels need it too: below ~700px wide the intro paragraph wraps
+  // onto enough extra lines to push the grant tiles down, and on a 13" laptop
+  // that clipped them out of view entirely — the panel was overflow:hidden, so
+  // they vanished with no scrollbar to say so. Fixed 26 Aug 2026: .left/.right
+  // now scroll rather than clip, and compact's smaller type keeps most
+  // laptop-sized panels from needing the scrollbar at all.
+  function setCompact() {
+    document.body.classList.toggle('compact', window.innerHeight < 460 || window.innerWidth < 700);
   }
 
   let resizeTimer;
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => {
-      document.body.classList.toggle('compact', window.innerHeight < 460);
-    }, 150);
+    resizeTimer = setTimeout(setCompact, 150);
   });
 </script>
 </body>
