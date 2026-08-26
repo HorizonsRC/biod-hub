@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>KKT Overview Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; font-family: 'DM Sans', sans-serif; background: #f5f4f0; color: #1e2d2f; overflow: hidden; }
+
+  /* KKT-dashboard.html and KKT_Projects_by_Type.html merged into one page.
+     The two of them stacked in the ExB overview panel each got about half its
+     height — roughly 250px on a 13" laptop — and neither fits in that. The
+     panel is wide and short (about 761x491 on a laptop, 1269x924 on a large
+     monitor), so this lays the same content out ACROSS the width instead:
+     the fund block runs full height down the left, and the outcome figures
+     sit as a strip above the chart on the right. That frees roughly 350px of
+     vertical room for the chart compared with the stacked version. */
+  /* 38% rather than a third: at 34% the description wrapped to eight lines on a
+     laptop and pushed the grant figures past the fold. The extra few percent
+     costs the chart little — it loses bar width, not rows — and buys the fund
+     block two fewer wrapped lines. */
+  .page { display: grid; grid-template-columns: 38% 1fr; height: 100%; }
+
+  /* ---- left: the fund itself -------------------------------------------- */
+  .left { background: #1c3438; color: #e8ede9; padding: 18px 16px 14px;
+          display: flex; flex-direction: column; gap: 10px;
+          overflow-y: auto; overflow-x: hidden; }
+  .tag { display: inline-block; background: rgba(107,170,120,0.2); color: #8ecf99; font-size: 9px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; padding: 2px 7px; border-radius: 2px; width: fit-content; }
+  .left h2 { font-family: 'Source Serif 4', serif; font-size: 15px; font-weight: 600; line-height: 1.35; color: #f0f5f1; }
+  .left p { font-size: 12px; line-height: 1.5; color: #b0c4b8; }
+  .divider { border: none; border-top: 1px solid rgba(255,255,255,0.08); }
+  .left-header { font-size: 9.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #8ecf99; }
+  .left-header span { color: #7d9a86; letter-spacing: 0.04em; }
+  /* auto-fit rather than a fixed 2x2: the left column is about 225px of usable
+     width on a laptop and 395px on a large monitor, so this is one column on
+     the first and two on the second without a breakpoint. 150px is the floor
+     that keeps "$1,801,208" on one line. */
+  /* Rows size to their content and the slack collects at the bottom of the
+     column. A 1fr row instead divides the whole column between however many
+     rows there are, which on a 924px-tall monitor panel stranded each figure
+     in the middle of a 200px cell. */
+  .fund-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+               gap: 11px 13px; flex: 1 1 auto; align-content: start;
+               grid-auto-rows: minmax(48px, auto); }
+  .fund { border-left: 2px solid #6baa78; padding-left: 9px;
+          display: flex; flex-direction: column; justify-content: center; }
+  .fund.b { border-left-color: #a5b8a8; }
+  .fund-number { font-family: 'Source Serif 4', serif; font-size: 22px; font-weight: 600; color: #f0f5f1; line-height: 1.1; }
+  .fund-label { font-size: 11.5px; color: #b0c4b8; line-height: 1.3; margin-top: 2px; }
+  .fund-note { font-size: 10px; color: #8ca396; line-height: 1.35; margin-top: 2px; }
+
+  /* ---- right: outcomes over the chart ----------------------------------- */
+  .right { background: #f5f4f0; padding: 12px 14px 6px; display: flex; flex-direction: column; gap: 7px; min-height: 0; }
+  .right-header { font-size: 9.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #7a9a82; border-bottom: 1px solid #d6d3cc; padding-bottom: 5px; }
+  .right-header span { color: #a2b3a6; letter-spacing: 0.04em; }
+  /* The outcome figures were five cards filling half the old page. Here they
+     are a strip that takes only the height it needs, so everything else goes
+     to the chart. auto-fit wraps them 3+2 on a laptop and 5 across on a wide
+     monitor. */
+  .stats-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 7px; }
+  .stat-card { background: #fff; border: 1px solid #e0ddd8; border-radius: 5px; padding: 7px 9px; border-left: 3px solid #3d7a5a; }
+  .stat-card.b { border-left-color: #6baa78; }
+  .stat-card.c { border-left-color: #a5b8a8; }
+  .stat-card.d { border-left-color: #b5955a; }
+  .stat-card.e { border-left-color: #8a9bb5; }
+  .stat-number { font-family: 'Source Serif 4', serif; font-size: 19px; font-weight: 600; color: #1c3438; line-height: 1.05; }
+  .stat-label { font-size: 10.5px; color: #5a7060; line-height: 1.25; margin-top: 1px; }
+  .footnote { font-size: 9.5px; color: #7a8d80; line-height: 1.35; }
+
+  /* ---- chart ------------------------------------------------------------ */
+  .chart-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .chart-title { font-size: 13.5px; font-weight: 600; line-height: 1.3; color: #1e2d2f; }
+  .chart-sub { font-size: 10.5px; color: #6b7280; margin-top: 1px; }
+  .chart-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  select { border: 1px solid #ddd; border-radius: 6px; padding: 5px 22px 5px 8px; font-size: 11px; color: #1a1a2e; font-family: inherit; appearance: none; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 7px center; cursor: pointer; }
+  select:focus { outline: none; border-color: #273747; }
+  .print-btn { background: none; border: 1px solid #ccc; border-radius: 6px; padding: 5px 8px; cursor: pointer; display: flex; align-items: center; gap: 4px; font-size: 11px; font-family: inherit; color: #555; white-space: nowrap; }
+  .print-btn:hover { background: #efeee9; border-color: #aaa; }
+  .legend { display: flex; gap: 11px; font-size: 10.5px; color: #4b5563; flex-wrap: wrap; }
+  .legend.hide { display: none; }
+  .lg { display: flex; align-items: center; gap: 4px; }
+  .sw { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .chart-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+  .chart-box { position: relative; }
+  .updated { font-size: 9px; color: #a8b5ac; text-align: right; }
+  .msg { font-size: 12px; color: #8b6b3a; background: #faf3e4; border-left: 3px solid #b5955a; border-radius: 5px; padding: 9px 12px; line-height: 1.45; }
+  .msg.err { color: #c0392b; background: #fdeeec; border-left-color: #c0392b; }
+
+  /* Roomy — tall ExB panels. The fund block is a fixed amount of content in a
+     column that is about 490px on a laptop and 920px on a large monitor, so
+     without this the monitor gets a long run of empty dark green under the
+     figures. Scales the type up rather than stretching the rows, which is what
+     stranded each number mid-cell before. */
+  body.roomy .left { padding: 24px 20px 18px; gap: 15px; }
+  body.roomy .left h2 { font-size: 18px; }
+  body.roomy .left p { font-size: 13.5px; line-height: 1.6; }
+  body.roomy .fund-grid { gap: 17px 15px; }
+  body.roomy .fund-number { font-size: 27px; }
+  body.roomy .fund-label { font-size: 13px; }
+  body.roomy .fund-note { font-size: 11px; }
+  body.roomy .stat-card { padding: 10px 12px; }
+  body.roomy .stat-number { font-size: 22px; }
+  body.roomy .stat-label { font-size: 11.5px; }
+
+  /* Compact — short ExB panels. Trims chrome, never the figures. */
+  body.compact .left { padding: 12px 12px 9px; gap: 6px; }
+  body.compact .left h2 { font-size: 13.5px; }
+  body.compact .left p { font-size: 11px; line-height: 1.42; }
+  body.compact .fund-grid { gap: 7px 11px; }
+  body.compact .fund-number { font-size: 18px; }
+  body.compact .fund-label { font-size: 10.5px; }
+  body.compact .fund-note { font-size: 9.5px; }
+  body.compact .right { padding: 9px 11px 4px; gap: 5px; }
+  body.compact .stat-card { padding: 5px 8px; }
+  body.compact .stat-number { font-size: 16px; }
+  body.compact .stat-label { font-size: 9.5px; }
+  body.compact .chart-title { font-size: 12px; }
+  body.compact .chart-sub { font-size: 9.5px; }
+  body.compact .footnote { display: none; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="left">
+    <div class="tag">Established 2021</div>
+    <h2>Kanorau Koiora Taketake<br>Indigenous Biodiversity Contestable Fund</h2>
+    <p>Supporting locally-led conservation projects across Manawatū-Whanganui. Open annually in April/May, grants fund activities with clear community involvement and biodiversity benefit — assessed by a Councillor panel and supported by Biodiversity staff throughout delivery.</p>
+    <hr class="divider"/>
+    <div class="left-header" id="grantsHeader">Grants awarded</div>
+    <div class="fund-grid" id="grantsGrid"></div>
+  </div>
+
+  <div class="right">
+    <div class="right-header" id="outcomesHeader">Reported outcomes</div>
+    <div class="stats-strip" id="outcomesStrip"></div>
+    <div class="footnote" id="footnote"></div>
+
+    <div class="chart-head">
+      <div>
+        <div class="chart-title" id="chartTitle">KKT Projects by Type</div>
+        <div class="chart-sub" id="chartSub"></div>
+      </div>
+      <div class="chart-actions">
+        <select id="measureSelect" onchange="render()">
+          <option value="count">Number of projects</option>
+          <option value="funding">Funding awarded</option>
+        </select>
+        <select id="yearSelect" onchange="render()"></select>
+        <button class="print-btn" onclick="exportChart()" title="Download as PNG">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          PNG
+        </button>
+      </div>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div class="chart-scroll"><div class="chart-box"><canvas id="chart"></canvas></div></div>
+    <div class="updated" id="updated"></div>
+  </div>
+</div>
+
+<script>
+  // Not counted from the data — there is no habitat field on the stats table.
+  // Comes from the fund's annual reporting. Edit here when it changes.
+  const HABITATS_PER_YEAR = '16–28';
+
+  // Grant-year colours — fixed order, validated for colour-vision separation.
+  // A year keeps its colour however many years are on screen.
+  const YEAR_COLOURS = {
+    '21_22': '#0083A0', '22_23': '#B4761A', '23_24': '#7A5BA8',
+    '24_25': '#4C8A3F', '25_26': '#2C6BB0', '26_27': '#B44A3C'
+  };
+  const FALLBACK = '#6b7280';
+
+  let projects = [], stats = [], chart = null, compact = false;
+  const yearSelect    = document.getElementById('yearSelect');
+  const measureSelect = document.getElementById('measureSelect');
+
+  function setCompact() {
+    // 560, not the 460 the separate pages used. This panel now carries both
+    // pages' content, and the laptop gives it about 490px — measured at 530px
+    // of content in the default type sizes, so the fourth grant figure fell
+    // below the fold. Compact's tighter type brings it to about 460 and it
+    // fits without scrolling.
+    compact = window.innerHeight < 560;
+    document.body.classList.toggle('compact', compact);
+    document.body.classList.toggle('roomy', window.innerHeight > 700);
+  }
+
+  // Several stats fields are stored as text ('$3,763.00 ', and Fencing_LnMtr
+  // too), so nothing here can assume it is handed a number.
+  function num(v) {
+    if (v === null || v === undefined) return null;
+    if (typeof v === 'number') return isFinite(v) ? v : null;
+    const c = String(v).replace(/[^0-9.\-]/g, '');
+    if (c === '' || c === '.' || c === '-') return null;
+    const n = parseFloat(c);
+    return isFinite(n) ? n : null;
+  }
+
+  const fmt = (n, dp) => n == null ? '—'
+    : n.toLocaleString('en-NZ', { minimumFractionDigits: dp || 0, maximumFractionDigits: dp || 0 });
+
+  const yearLabel  = y => y ? '20' + y.slice(0, 2) + '–' + y.slice(3) : '';
+  const shortYear  = y => y ? y.replace('_', '-') : 'Unknown';
+  const money      = v => '$' + Math.round(v).toLocaleString('en-NZ');
+
+  function yearRange(years) {
+    if (!years.length) return '';
+    if (years.length === 1) return yearLabel(years[0]);
+    if (years.length === 2) return yearLabel(years[0]) + ' and ' + yearLabel(years[1]);
+    return yearLabel(years[0]) + ' to ' + yearLabel(years[years.length - 1]);
+  }
+
+  // Macrons stripped and punctuation dropped, so 'Rangitīkei' and 'Rangitikei'
+  // are the same project rather than two.
+  function slug(s) {
+    return (s || '').toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]/g, '');
+  }
+
+  // Project_ID on the layer is the authority: assigned once per project and
+  // carried on every grant row for it, so a project renamed between years still
+  // counts once. The name fallback only matters if an older JSON predating the
+  // field is served — it keeps the tile roughly right rather than collapsing
+  // every grant into one project.
+  function projectKeys(rows) {
+    const per = new Map();
+    rows.forEach(p => {
+      const key = p.Project_ID || (slug(p.Group_name_1) + '|' + slug(p.ProjectNam_1));
+      if (!per.has(key)) per.set(key, []);
+      per.get(key).push(p);
+    });
+    return per;
+  }
+
+  const distinctProjects = rows => projectKeys(rows).size;
+
+  function grantSpread(rows) {
+    const sizes = [...projectKeys(rows).values()].map(r => r.length);
+    return { once: sizes.filter(n => n === 1).length,
+             repeat: sizes.filter(n => n > 1).length };
+  }
+
+  // No_of_GrantYears counts the year within a consecutive multi-year award —
+  // 1, then 2, then 3 — so a project with any row above 1 ran multi-year. Two
+  // separate one-year grants both sit at 1 and are not multi-year, even in
+  // back-to-back years.
+  function multiYearProjects(rows) {
+    return [...projectKeys(rows).values()]
+      .filter(r => r.some(p => (p.No_of_GrantYears || 1) > 1)).length;
+  }
+
+  const fundBlock = (cls, value, label, note) =>
+    '<div class="fund ' + cls + '">' +
+      '<div class="fund-number">' + value + '</div>' +
+      '<div class="fund-label">' + label + '</div>' +
+      (note ? '<div class="fund-note">' + note + '</div>' : '') +
+    '</div>';
+
+  const card = (cls, value, label) =>
+    '<div class="stat-card ' + cls + '">' +
+      '<div class="stat-number">' + value + '</div>' +
+      '<div class="stat-label">' + label + '</div>' +
+    '</div>';
+
+  // One total per row, not a number on every stacked segment.
+  const valueLabels = {
+    id: 'valueLabels',
+    afterDatasetsDraw(c) {
+      const { ctx } = c;
+      ctx.save();
+      ctx.font = `500 ${compact ? 9 : 10}px 'DM Sans', sans-serif`;
+      ctx.fillStyle = '#4b5563';
+      ctx.textBaseline = 'middle';
+      const isMoney = measureSelect.value === 'funding';
+      const totals = c.data.labels.map((_, i) =>
+        c.data.datasets.reduce((s, ds) => s + (ds.data[i] || 0), 0));
+      const last = c.getDatasetMeta(c.data.datasets.length - 1);
+      last.data.forEach((bar, i) => {
+        if (!totals[i]) return;
+        const t = isMoney ? money(totals[i]) : totals[i].toLocaleString('en-NZ');
+        ctx.fillText(t, bar.x + 6, bar.y);
+      });
+      ctx.restore();
+    }
+  };
+
+  // no-store because the JSON is a snapshot that changes without the page
+  // changing. A cached copy from a previous export can be missing fields this
+  // page relies on, which reads as an empty chart rather than an error.
+  fetch('./dashboard_data.json', { cache: 'no-store' })
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(build)
+    .catch(err => {
+      document.getElementById('outcomesStrip').innerHTML =
+        '<p class="msg err" style="grid-column:1/-1">Could not load fund data (' +
+        err.message + '). Figures are unavailable.</p>';
+    });
+
+  function build(data) {
+    projects = data.projects || [];
+    stats    = data.stats    || [];
+
+    const grantYears = [...new Set(projects.map(p => p.Grant_year_1).filter(Boolean))].sort();
+    const statYears  = [...new Set(stats.map(r => r.Grant_year).filter(Boolean))].sort();
+
+    // --- grants awarded ---------------------------------------------------
+    const funding  = projects.reduce((s, p) => s + (num(p.funding) || 0), 0);
+    const spread   = grantSpread(projects);
+
+    document.getElementById('grantsHeader').innerHTML =
+      'Grants awarded <span>· ' + yearRange(grantYears) + '</span>';
+    document.getElementById('grantsGrid').innerHTML =
+      fundBlock('', '$' + fmt(funding), 'Funding awarded') +
+      fundBlock('b', fmt(projects.length), 'Grants awarded',
+                'Across ' + fmt(grantYears.length) + ' grant years') +
+      fundBlock('', fmt(distinctProjects(projects)), 'Different projects funded',
+                fmt(spread.once) + ' were funded once') +
+      // 34 beside 19 reads as a contradiction without this note: 19 were
+      // awarded consecutive years up front, the rest applied again later.
+      fundBlock('b', fmt(spread.repeat), 'Funded more than once',
+                fmt(multiYearProjects(projects)) + ' of them consecutive multi-year awards');
+
+    // --- reported outcomes ------------------------------------------------
+    const total = field => stats
+      .map(r => num(r[field]))
+      .filter(v => v !== null && v !== 0)
+      .reduce((a, b) => a + b, 0);
+
+    document.getElementById('outcomesHeader').innerHTML =
+      'Reported outcomes <span>· ' + yearRange(statYears) + '</span>';
+    document.getElementById('outcomesStrip').innerHTML =
+      card('',  fmt(total('Plants_planted')),  'Native plants planted') +
+      card('b', fmt(total('Community_hours')), 'Community hours') +
+      card('c', fmt(total('Traps_funded')),    'Traps purchased') +
+      card('d', fmt(total('Fencing_LnMtr')) + ' m', 'Fencing installed') +
+      card('e', HABITATS_PER_YEAR, 'Rare &amp; threatened habitats per year');
+
+    document.getElementById('footnote').innerHTML =
+      'Outcomes are self-reported and reporting began in ' + yearLabel(statYears[0]) +
+      ', so these cover ' + statYears.length + ' of the ' + grantYears.length +
+      ' grant years. Funding figures cover all grant rounds.';
+
+    document.getElementById('updated').textContent = 'Generated: ' + (data.generated_at || '');
+
+    // --- chart controls ---------------------------------------------------
+    const all = document.createElement('option');
+    all.value = ''; all.textContent = 'All years';
+    yearSelect.appendChild(all);
+    grantYears.forEach(y => {
+      const o = document.createElement('option');
+      o.value = y; o.textContent = shortYear(y);
+      yearSelect.appendChild(o);
+    });
+    yearSelect.value = '';
+
+    setCompact();
+    render();
+  }
+
+  function render() {
+    const year    = yearSelect.value;
+    const isMoney = measureSelect.value === 'funding';
+    const rows    = projects.filter(p => !year || p.Grant_year_1 === year);
+
+    // Each project carries up to four activities in p.activities, with the
+    // grant money the team recorded against each. Counts add 1 per activity the
+    // project carries. Funding uses the team's real figures — amounts actually
+    // spent, so a project's parts often add to less than its grant, and the
+    // column total is intentionally below the total awarded.
+    const byType = new Map();
+    let multi = 0;
+    rows.forEach(p => {
+      const acts = p.activities || [];
+      if (!acts.length) return;
+      if (acts.length > 1) multi++;
+      acts.forEach(a => {
+        // A zero-funded activity still happened, so it keeps its place in the
+        // count. On the funding view it simply contributes nothing.
+        const share = isMoney ? (a.fund || 0) : 1;
+        if (!byType.has(a.type)) byType.set(a.type, {});
+        const slot = byType.get(a.type);
+        slot[p.Grant_year_1] = (slot[p.Grant_year_1] || 0) + share;
+      });
+    });
+
+    // Drop activities with nothing to show. On the funding view that means the
+    // activity ran but no grant money was spent on it — a labelled empty row
+    // just takes up space. The count view never produces a zero.
+    const entries = [...byType.entries()]
+      .map(([type, per]) => ({ type, per, total: Object.values(per).reduce((a, b) => a + b, 0) }))
+      .filter(e => e.total > 0)
+      .sort((a, b) => b.total - a.total);
+
+    const years = year ? [year]
+      : [...new Set(rows.map(p => p.Grant_year_1).filter(Boolean))].sort();
+    const usedYears = years.filter(y => entries.some(e => e.per[y]));
+
+    document.getElementById('chartTitle').textContent =
+      isMoney ? 'KKT Funding by Project Type' : 'KKT Projects by Type';
+    document.getElementById('chartSub').textContent =
+      (year ? shortYear(year) : 'All years') +
+      (isMoney ? ' · grant funding actually spent on each activity'
+               : ' · a project is counted under each type it carries') +
+      (multi ? ' · ' + multi + ' carry more than one type' : '');
+
+    const legend = document.getElementById('legend');
+    if (usedYears.length > 1) {
+      legend.classList.remove('hide');
+      legend.innerHTML = usedYears.map(y =>
+        `<span class="lg"><span class="sw" style="background:${YEAR_COLOURS[y] || FALLBACK}"></span>${shortYear(y)}</span>`
+      ).join('');
+    } else {
+      legend.classList.add('hide');
+    }
+
+    if (chart) { chart.destroy(); chart = null; }
+    if (!entries.length) {
+      // Tell the two cases apart. A genuinely empty filter is normal; a data
+      // file with no activities on any project at all means the browser is
+      // holding a snapshot from before the activity split, and the fix is a
+      // refresh, not a different selection.
+      const stale = rows.length && !projects.some(p => (p.activities || []).length);
+      document.querySelector('.chart-box').innerHTML = stale
+        ? '<p class="msg">This page is showing an out-of-date copy of the data. ' +
+          'Refresh to load the current figures.</p>'
+        : '<p class="msg">Nothing to show for this selection.</p>';
+      return;
+    }
+    document.querySelector('.chart-box').innerHTML = '<canvas id="chart"></canvas>';
+
+    // Fill the space the panel gives us. Chart.js spreads categories over
+    // whatever height the box has, so we only need a floor: below ~13px a row
+    // is unreadable, and past that the box grows and this column scrolls.
+    const avail   = document.querySelector('.chart-scroll').clientHeight;
+    const axisH   = compact ? 26 : 34;
+    const minimum = entries.length * 13 + axisH;
+    document.querySelector('.chart-box').style.height = Math.max(avail, minimum) + 'px';
+
+    const datasets = usedYears.map(y => ({
+      label: shortYear(y),
+      data: entries.map(e => e.per[y] || 0),
+      backgroundColor: YEAR_COLOURS[y] || FALLBACK,
+      borderColor: '#f5f4f0',
+      borderWidth: { top: 0, bottom: 0, left: 0, right: 2 },
+      borderRadius: 3,
+      borderSkipped: false,
+      barPercentage: 0.8,
+      categoryPercentage: 0.88,
+      stack: 'y'
+    }));
+
+    chart = new Chart(document.getElementById('chart'), {
+      type: 'bar',
+      data: { labels: entries.map(e => e.type), datasets },
+      plugins: [valueLabels],
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: { padding: { right: compact ? 62 : 76 } },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: c => `${c.dataset.label}: ` +
+                (isMoney ? money(c.parsed.x)
+                         : c.parsed.x.toLocaleString('en-NZ') +
+                           ' project' + (c.parsed.x === 1 ? '' : 's')),
+              footer: items => items.length > 1
+                ? 'Total: ' + (isMoney
+                    ? money(items.reduce((s, i) => s + i.parsed.x, 0))
+                    : items.reduce((s, i) => s + i.parsed.x, 0).toLocaleString('en-NZ'))
+                : ''
+            }
+          }
+        },
+        scales: {
+          x: { stacked: true, beginAtZero: true,
+               grid: { color: '#e5e3dd' },
+               ticks: { font: { family: "'DM Sans', sans-serif", size: compact ? 9 : 10 },
+                        color: '#6b7280', maxTicksLimit: compact ? 6 : 10,
+                        callback: v => isMoney
+                          ? '$' + (v >= 1000 ? (v / 1000) + 'k' : v)
+                          : v } },
+          y: { stacked: true, grid: { display: false },
+               ticks: { font: { family: "'DM Sans', sans-serif", size: compact ? 9.5 : 11 },
+                        color: '#374151', autoSkip: false,
+                        callback: function (v) {
+                          const s = this.getLabelForValue(v);
+                          const max = compact ? 26 : 38;
+                          return s.length > max ? s.slice(0, max - 1) + '…' : s;
+                        } } }
+        }
+      }
+    });
+
+    // The canvas is measured while the surrounding flex column is still
+    // settling — the outcome strip above it wraps to a different number of rows
+    // depending on width, which changes what is left for the chart. Without
+    // this the bars are drawn to a stale, narrower width and a full-length bar
+    // stops a third of the way across the plot.
+    requestAnimationFrame(() => { if (chart) chart.resize(); });
+  }
+
+  // ExB panels resize on layout changes, and the compact threshold and the
+  // chart's own height both depend on the panel size.
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      setCompact();
+      if (projects.length) render();
+    }, 150);
+  });
+
+  function exportChart() {
+    const src = document.getElementById('chart');
+    if (!src) return;
+    const title = document.getElementById('chartTitle').textContent +
+                  ' — ' + document.getElementById('chartSub').textContent;
+    const dpr = window.devicePixelRatio || 1;
+    const hdrH = Math.round(46 * dpr), padX = Math.round(16 * dpr);
+    const out = document.createElement('canvas');
+    out.width = src.width; out.height = src.height + hdrH;
+    const ctx = out.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, out.width, out.height);
+    ctx.fillStyle = '#1a1a2e';
+    ctx.font = `600 ${Math.round(13 * dpr)}px Arial, sans-serif`;
+    ctx.fillText(title, padX, Math.round(20 * dpr));
+    ctx.drawImage(src, 0, hdrH);
+    const safe = title.normalize('NFD').replace(/[̀-ͯ]/g, '')
+                      .replace(/[^a-zA-Z0-9\s-]/g, '').trim().replace(/\s+/g, '_');
+    const dataUrl = out.toDataURL('image/png');
+    const w = window.open('', '_blank');
+    if (!w) { alert('Allow pop-ups for this site to export the chart.'); return; }
+    w.document.write(`<!DOCTYPE html><html><head><title>${safe}</title></head><body style="margin:0;background:#1a1a2e;display:flex;flex-direction:column;align-items:center;padding:24px;font-family:sans-serif;gap:16px;"><a href="${dataUrl}" download="${safe}.png" style="background:#2d6a4f;color:#fff;padding:10px 22px;border-radius:6px;text-decoration:none;font-size:15px;font-weight:600;">&#8681; Download ${safe}.png</a><img src="${dataUrl}" style="max-width:100%;border:1px solid #333;border-radius:4px;"></body></html>`);
+    w.document.close();
+  }
+</script>
+</body>
+</html>
