@@ -379,7 +379,7 @@ html, body {
     </div>
     <div class="header-badge">
       <span class="badge-label">Last updated</span>
-      <div class="badge-value">2024–25 Financial Year</div>
+      <div class="badge-value" id="statPeriodBadge">2024–25 Financial Year</div>
     </div>
   </div>
 </header>
@@ -412,7 +412,7 @@ html, body {
         <div class="card-desc">Annual pressure management scores across managed biodiversity sites. Tracks how well key ecological threats such as ungulates, predators, pest plants and possums are being managed at sites supported by Horizons.</div>
       </div>
       <div class="card-footer">
-        <span class="card-tag">96 Sites</span>
+        <span class="card-tag" id="cardTagPriorityHabitat">96 Sites</span>
         <span class="card-arrow">Open Dashboard →</span>
       </div>
     </a>
@@ -495,7 +495,7 @@ html, body {
       <div class="stat-dot" style="background:#2d6a4f"></div>
       <div>
         <div class="stat-label">Priority Habitat Sites</div>
-        <div class="stat-value">96 Sites Monitored</div>
+        <div class="stat-value" id="statPriorityHabitat">96 Sites Monitored</div>
       </div>
     </div>
     <div class="stat-item">
@@ -509,14 +509,14 @@ html, body {
       <div class="stat-dot" style="background:#b08d57"></div>
       <div>
         <div class="stat-label">KKT Programme</div>
-        <div class="stat-value">Placeholder</div>
+        <div class="stat-value" id="statKkt">176 Grants Funded</div>
       </div>
     </div>
     <div class="stat-item">
       <div class="stat-dot" style="background:#273747"></div>
       <div>
         <div class="stat-label">Reporting Period</div>
-        <div class="stat-value">2024–25 Financial Year</div>
+        <div class="stat-value" id="statPeriod">2025–26 Financial Year</div>
       </div>
     </div>
   </div>
@@ -526,6 +526,30 @@ html, body {
   </div>
 
 </main>
+
+<script>
+  // Headline figures come from hub_stats.json, written by Hub_Stats_Export.py.
+  // The values sitting in the HTML above are the last known ones — they show if
+  // the fetch fails, so the strip never renders blank or half-filled.
+  // no-store because the JSON changes without this page changing; a cached copy
+  // would quietly keep showing last year's figures.
+  fetch('./hub_stats.json', { cache: 'no-store' })
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(d => {
+      const set = (id, text) => {
+        const el = document.getElementById(id);
+        if (el && text) el.textContent = text;
+      };
+      if (d.priority_habitat_sites) {
+        set('statPriorityHabitat', d.priority_habitat_sites + ' Sites Monitored');
+        set('cardTagPriorityHabitat', d.priority_habitat_sites + ' Sites');
+      }
+      if (d.kkt_grants) set('statKkt', d.kkt_grants + ' Grants Funded');
+      set('statPeriod', d.reporting_period);
+      set('statPeriodBadge', d.reporting_period);
+    })
+    .catch(e => console.warn('hub_stats.json unavailable, showing built-in figures:', e));
+</script>
 
 </body>
 </html>
