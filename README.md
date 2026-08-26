@@ -7,7 +7,8 @@ Repository for the Biodiversity Programme Hub — HTML dashboard content embedde
 ```
 biod-hub/
 ├── html/
-│   ├── index.html                               # Main hub landing page
+│   ├── index.html                               # Main hub landing page — loads hub_stats.json
+│   ├── hub_stats.json                           # Auto-updated by Hub_Stats_Export.py
 │   ├── pressure-management/
 │   │   ├── pressure-management-dashboard.html   # Scoring criteria page (Scoring tab)
 │   │   ├── PH_Pressure_Scores_Overview.html     # Chart — loads dashboard_data.json at runtime
@@ -42,6 +43,7 @@ biod-hub/
 ├── Pressure_Management_Data_Join.py             # Pressure Management data pipeline
 ├── PM_Dashboard_Export.py                       # Builds dashboard_data.json and pushes to GitHub
 ├── Icon_Sites_Data_Export.py                    # Queries AGOL, updates icon site HTML dashboards
+├── Hub_Stats_Export.py                          # Builds html/hub_stats.json (landing page figures)
 ├── config.py                                    # Local paths — gitignored, not committed
 ├── config.example.py                            # Template for config.py
 └── requirements.txt
@@ -58,6 +60,29 @@ HTML files are served via GitHub Pages at `https://HorizonsRC.github.io/biod-hub
 | Targeted Rates | `html/targeted-rates/` |
 | Icon Sites | `html/icon-sites/` |
 | Tōtara Reserve | `html/totara-reserve/` *(coming soon)* |
+
+## Hub landing page stats
+
+`Hub_Stats_Export.py` builds `html/hub_stats.json`, which `index.html` fetches at runtime to fill the "Programme at a Glance" strip and the header's reporting-period badge. Same arrangement as the other dashboards — the HTML is static and never regenerated.
+
+```bash
+python Hub_Stats_Export.py            # write the JSON
+python Hub_Stats_Export.py --push     # write, commit and push to GitHub Pages
+```
+
+| Figure | Source |
+|---|---|
+| Priority Habitat sites | `Priority_Habitats_Pressure_Management` layer 0, distinct `site_id` where `site_programme = 'Priority Habitat'` — so the Icon Sites and Tōtara Reserve carried in the same layer are excluded |
+| KKT grants | `Biodiversity_KKT_Projects` layer 4 row count — grants awarded across all years, not distinct projects |
+| Reporting period | The financial year just finished, derived from today's date (NZ FYs run 1 July – 30 June) |
+
+The figures currently in the HTML are fallbacks: if the JSON fails to load, the page shows them rather than rendering blank. They go stale, so run this script whenever the underlying data changes — after `Pressure_Management_Data_Join.py` or `KKT_Stats_Update.py`, and at the start of each financial year.
+
+`PH_PRESSURE_ITEM_ID` in `config.py` is the AGOL item ID of the published pressure management service.
+
+### Logging
+
+Logs go to `logs/hub/`.
 
 ## Icon Sites script
 
