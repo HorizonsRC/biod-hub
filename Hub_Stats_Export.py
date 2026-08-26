@@ -12,11 +12,16 @@ static, only the JSON moves.
 
 Where each figure comes from:
 
-  Priority Habitat sites  Priority_Habitats_Pressure_Management layer 0 (the
-                          layer Pressure_Management_Data_Join.py publishes).
-                          One row per site, counted where site_programme is
-                          'Priority Habitat' — so the five Icon Sites and Tōtara
-                          Reserve carried in the same layer are excluded.
+  Priority Habitat sites  Priority_habitats_with_PCO — the actively managed
+                          priority habitats layer, one row per site. Every site
+                          in it is counted.
+
+                          Note this deliberately differs from the pressure
+                          management dataset, which reclassifies four of these
+                          sites (Manawatū Estuary, Bushy Park, Te Āpiti and
+                          Tōtara Reserve) as Icon Sites or the Regional Park and
+                          so reports a lower figure. The hub tile counts the
+                          priority habitats layer itself.
 
   KKT grants              Biodiversity_KKT_Projects layer 4. One row per grant,
                           so this is grants awarded across all years, not the
@@ -41,15 +46,9 @@ import argparse
 import subprocess
 from datetime import datetime as dt
 
-from config import PH_PRESSURE_ITEM_ID, KKT_SERVICE_URL
+from config import FEATURE_SERVICE_URL, KKT_SERVICE_URL
 
-PH_LAYER_ID = 0
 KKT_LAYER_ID = 4
-
-# The site_programme value that counts as a Priority Habitat site. Matches the
-# classification Pressure_Management_Data_Join.py writes (everything not listed
-# in its SPECIAL_SITES dict falls back to this).
-PRIORITY_HABITAT_PROGRAMME = "Priority Habitat"
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_DIR = os.path.join(SCRIPT_DIR, "logs", "hub")
@@ -81,43 +80,28 @@ def previous_financial_year(today=None):
 
 
 def count_priority_habitat_sites(gis):
-    """Distinct sites in the published pressure management layer whose
-    site_programme is 'Priority Habitat'."""
-    item = gis.content.get(PH_PRESSURE_ITEM_ID)
-    if item is None:
-        raise RuntimeError(
-            f"Could not open AGOL item {PH_PRESSURE_ITEM_ID}. Check "
-            f"PH_PRESSURE_ITEM_ID in config.py and that you are signed in."
-        )
-    layer = item.layers[PH_LAYER_ID]
-    log.info(f"Reading {item.title} / {layer.properties.name}...")
+    """Sites in the actively managed priority habitats layer."""
+    from arcgis.features import FeatureLayer
 
-    where = f"site_programme = '{PRIORITY_HABITAT_PROGRAMME}'"
-    feats = layer.query(where=where, out_fields="site_id,site_programme",
+    layer = FeatureLayer(FEATURE_SERVICE_URL, gis=gis)
+    log.info(f"Reading {layer.properties.name}...")
+
+    feats = layer.query(where="1=1", out_fields="SiteID",
                         return_geometry=False).features
 
-    # Counted distinct rather than trusting the row count: the layer is meant to
-    # be one row per site, but a duplicate site_id would silently inflate the
-    # headline figure otherwise.
-    site_ids = {f.attributes.get("site_id") for f in feats
-                if f.attributes.get("site_id")}
+    # The layer is one row per site, so the row count is the answer. Distinct
+    # SiteIDs are counted alongside it purely as a check — if a duplicate or a
+    # blank ever appears the two disagree and the warning fires, rather than the
+    # headline figure quietly drifting.
+    site_ids = {f.attributes.get("SiteID") for f in feats
+                if f.attributes.get("SiteID")}
     if len(site_ids) != len(feats):
-        log.warning(f"  {len(feats)} rows but only {len(site_ids)} distinct "
-                    f"site_id values — the layer has duplicates.")
+        log.warning(f"  {len(feats)} rows but {len(site_ids)} distinct SiteID "
+                    f"values — the layer has duplicate or blank SiteIDs. "
+                    f"Reporting the row count.")
 
-    # Everything else in the layer is an Icon Site or the Regional Park. Logged
-    # so a new programme value showing up is visible rather than silently
-    # dropping out of the count.
-    other = layer.query(where=f"site_programme <> '{PRIORITY_HABITAT_PROGRAMME}'",
-                        out_fields="site_programme",
-                        return_geometry=False).features
-    other_counts = {}
-    for f in other:
-        key = f.attributes.get("site_programme") or "(blank)"
-        other_counts[key] = other_counts.get(key, 0) + 1
-    log.info(f"  {len(site_ids)} Priority Habitat sites "
-             f"(also in layer: {other_counts or 'nothing'})")
-    return len(site_ids)
+    log.info(f"  {len(feats)} priority habitat sites")
+    return len(feats)
 
 
 def count_kkt_grants(gis):
