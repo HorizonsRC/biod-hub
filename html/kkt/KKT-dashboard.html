@@ -81,6 +81,20 @@
   body.compact .left { padding: 14px 14px 10px; gap: 6px; }
   body.compact .left h2 { font-size: 14px; }
   body.compact .left p { font-size: 11.5px; line-height: 1.45; }
+  /* Last resort before a scrollbar, applied only when the panel is still
+     overflowing at compact sizes — see setCompact(). The description is fixed
+     boilerplate and reads the same on every screen, so it is what gives way;
+     the four grant figures under it are the actual data and stay whole. */
+  body.tight .left p { display: -webkit-box; -webkit-line-clamp: 3;
+                       -webkit-box-orient: vertical; overflow: hidden; }
+  body.tight .fund-grid { gap: 6px 12px; grid-auto-rows: minmax(46px, 1fr); }
+  body.tight .left { padding: 12px 13px 8px; gap: 5px; }
+  body.tight .right { padding: 10px 10px 4px; gap: 4px; }
+  body.tight .stats-grid { gap: 6px; grid-auto-rows: minmax(44px, 1fr); }
+  body.tight .stat-card { padding: 6px 9px; }
+  body.tight .stat-number { font-size: 19px; }
+  body.tight .stat-label { font-size: 11px; }
+  body.tight .footnote { font-size: 9.5px; line-height: 1.3; }
   body.compact .fund-grid { gap: 8px 12px; }
   body.compact .fund-number { font-size: 20px; }
   body.compact .fund-label { font-size: 11px; }
@@ -280,15 +294,28 @@
     setCompact();
   }
 
-  // Compact mode was originally height-only ("the ExB panel is often short").
-  // Narrow panels need it too: below ~700px wide the intro paragraph wraps
-  // onto enough extra lines to push the grant tiles down, and on a 13" laptop
-  // that clipped them out of view entirely — the panel was overflow:hidden, so
-  // they vanished with no scrollbar to say so. Fixed 26 Aug 2026: .left/.right
-  // now scroll rather than clip, and compact's smaller type keeps most
-  // laptop-sized panels from needing the scrollbar at all.
+  // Sizing is measured, not guessed. Compact was originally a height threshold,
+  // then a height-or-width one, and both were wrong at some panel size: the
+  // intro paragraph wraps to a different number of lines at every width, so
+  // the height at which the fund column stops fitting is not a fixed number.
+  // In the overview view the panel is about 751x311 on a 13" laptop, which is
+  // compact by any threshold and still overflowed by a few pixels.
+  //
+  // This starts at full size and steps down only while something is actually
+  // overflowing: compact type first, then the clamped description. If it still
+  // does not fit the columns scroll, as they did before — nothing is ever
+  // clipped away silently.
   function setCompact() {
-    document.body.classList.toggle('compact', window.innerHeight < 460 || window.innerWidth < 700);
+    const body  = document.body;
+    const left  = document.querySelector('.left');
+    const right = document.querySelector('.right');
+    const overflows = () =>
+      left.scrollHeight  > left.clientHeight  + 1 ||
+      right.scrollHeight > right.clientHeight + 1;
+
+    body.classList.remove('compact', 'tight');
+    if (overflows()) body.classList.add('compact');
+    if (overflows()) body.classList.add('tight');
   }
 
   let resizeTimer;
