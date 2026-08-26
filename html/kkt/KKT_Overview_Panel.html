@@ -66,16 +66,20 @@
            min-height: 0; overflow-y: auto; overflow-x: hidden; }
   .right-header { font-size: 9.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #7a9a82; border-bottom: 1px solid #d6d3cc; padding-bottom: 5px; }
   .right-header span { color: #a2b3a6; letter-spacing: 0.04em; }
-  /* The outcome figures were five cards filling half the old page. Here they
-     are a strip that takes only the height it needs, so everything else goes
-     to the chart. auto-fit wraps them 3+2 on a laptop and 5 across on a wide
-     monitor. */
-  .stats-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 7px; }
+  /* 2x2 with the habitats figure spanning the foot — the arrangement the
+     separate dashboard page used. A single 5-across strip was tried while this
+     page was one column and every pixel of height was contested; in the
+     two-column band it is the fund block that sets the height, so the outcomes
+     column has room going spare and the strip only wasted it. */
+  .stats-strip { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
   .stat-card { background: #fff; border: 1px solid #e0ddd8; border-radius: 5px; padding: 7px 9px; border-left: 3px solid #3d7a5a; }
   .stat-card.b { border-left-color: #6baa78; }
   .stat-card.c { border-left-color: #a5b8a8; }
   .stat-card.d { border-left-color: #b5955a; }
-  .stat-card.e { border-left-color: #8a9bb5; }
+  /* The habitats figure is not counted from the data — it comes from annual
+     reporting — so it sits across the foot of the block rather than in line
+     with the figures that are counted from project returns. */
+  .stat-card.e { border-left-color: #8a9bb5; grid-column: 1 / -1; }
   .stat-number { font-family: 'Source Serif 4', serif; font-size: 19px; font-weight: 600; color: #1c3438; line-height: 1.05; }
   .stat-label { font-size: 10.5px; color: #5a7060; line-height: 1.25; margin-top: 1px; }
   /* margin-top:auto anchors the coverage line to the bottom of its column. The
@@ -213,15 +217,27 @@
   const yearSelect    = document.getElementById('yearSelect');
   const measureSelect = document.getElementById('measureSelect');
 
+  // Measured, not a height threshold. A threshold has to be guessed, and the
+  // guess was wrong twice: the fund description wraps to a different number of
+  // lines at every panel width, so the height at which the column stops fitting
+  // is not a fixed number. This starts at the roomiest treatment the panel
+  // allows and steps down only while something is actually overflowing.
   function setCompact() {
-    // 560, not the 460 the separate pages used. This panel now carries both
-    // pages' content, and the laptop gives it about 490px — measured at 530px
-    // of content in the default type sizes, so the fourth grant figure fell
-    // below the fold. Compact's tighter type brings it to about 460 and it
-    // fits without scrolling.
-    compact = window.innerHeight < 560;
-    document.body.classList.toggle('compact', compact);
-    document.body.classList.toggle('roomy', window.innerHeight > 700);
+    const body  = document.body;
+    const left  = document.querySelector('.left');
+    const right = document.querySelector('.right');
+    const overflows = () =>
+      left.scrollHeight  > left.clientHeight  + 1 ||
+      right.scrollHeight > right.clientHeight + 1;
+
+    body.classList.remove('compact');
+    body.classList.toggle('roomy', window.innerHeight > 700);
+
+    // Roomy first, then default sizing, then compact's clamped description.
+    if (overflows()) body.classList.remove('roomy');
+    if (overflows()) body.classList.add('compact');
+
+    compact = body.classList.contains('compact');
   }
 
   // Several stats fields are stored as text ('$3,763.00 ', and Fencing_LnMtr
@@ -373,7 +389,7 @@
       card('b', fmt(total('Community_hours')), 'Community hours') +
       card('c', fmt(total('Traps_funded')),    'Traps purchased') +
       card('d', fmt(total('Fencing_LnMtr')) + ' m', 'Fencing installed') +
-      card('e', HABITATS_PER_YEAR, 'Rare &amp; threatened habitats per year');
+      card('e', HABITATS_PER_YEAR, 'Rare &amp; threatened habitats protected per year');
 
     document.getElementById('footnote').innerHTML =
       'Outcomes are self-reported and reporting began in ' + yearLabel(statYears[0]) +
@@ -478,7 +494,11 @@
     // of scroller — more than a laptop panel has left after the fund band, so
     // the last row fell below the fold and the chart scrolled.
     const minimum = entries.length * (compact ? 11 : 13) + axisH;
-    document.querySelector('.chart-box').style.height = Math.max(avail, minimum) + 'px';
+    // 100% rather than the measured pixel value when it fits: avail is read
+    // mid-layout and can land a pixel or two under the box it is describing,
+    // which showed a scrollbar on a chart that had nothing to scroll.
+    document.querySelector('.chart-box').style.height =
+      minimum > avail ? minimum + 'px' : '100%';
 
     const datasets = usedYears.map(y => ({
       label: shortYear(y),
