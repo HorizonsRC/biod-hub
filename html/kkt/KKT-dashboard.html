@@ -83,12 +83,10 @@
   body.compact .left { padding: 14px 14px 10px; gap: 6px; }
   body.compact .left h2 { font-size: 14px; }
   body.compact .left p { font-size: 11.5px; line-height: 1.45; }
-  /* Last resort before a scrollbar, applied only when the panel is still
-     overflowing at compact sizes — see setCompact(). The description is fixed
-     boilerplate and reads the same on every screen, so it is what gives way;
-     the four grant figures under it are the actual data and stay whole. */
-  body.tight .left p { display: -webkit-box; -webkit-line-clamp: 3;
-                       -webkit-box-orient: vertical; overflow: hidden; }
+  /* Applied only when the panel is still overflowing at compact sizes — see
+     setCompact(). Tightens spacing and type further but keeps every word: the
+     description is boilerplate, but a sentence cut mid-word reads as broken,
+     which is what the laptop panel was doing on 28 Aug 2026. */
   body.tight .fund-grid { gap: 6px 12px; grid-auto-rows: minmax(46px, 1fr); }
   body.tight .left { padding: 12px 13px 8px; gap: 5px; }
   body.tight .right { padding: 10px 10px 4px; gap: 4px; }
@@ -97,6 +95,13 @@
   body.tight .stat-number { font-size: 19px; }
   body.tight .stat-label { font-size: 11px; }
   body.tight .footnote { font-size: 9.5px; line-height: 1.3; }
+  /* Genuine last resort, below .tight. The description gives way rather than
+     the four grant figures, which are the data — but it gives way a whole
+     sentence at a time. A -webkit-line-clamp was tried here and dropped on
+     28 Aug 2026: it cut mid-sentence with a trailing ellipsis on the laptop
+     panel, and measuring the line count only bought one more line before
+     cutting again. Dropping the process sentence loses less and reads intact. */
+  body.clamp .intro-more { display: none; }
   body.compact .fund-grid { gap: 8px 12px; }
   body.compact .fund-number { font-size: 20px; }
   body.compact .fund-label { font-size: 11px; }
@@ -113,7 +118,12 @@
   <div class="left">
     <div class="tag">Established 2021</div>
     <h2>Kanorau Koiora Taketake<br>Indigenous Biodiversity Contestable Fund</h2>
-    <p>Supporting locally-led conservation projects across Manawatū-Whanganui. Open annually in April/May, grants fund activities with clear community involvement and biodiversity benefit — assessed by a Councillor panel and supported by Biodiversity staff throughout delivery.</p>
+    <!-- Split into two sentences so the short-panel fallback can drop the
+         second whole rather than clipping the paragraph mid-word. The first
+         sentence says what the fund is and always stays; the second is process
+         detail (who assesses, who supports) and is the part that gives way. -->
+    <p>Supporting locally-led conservation projects across Manawatū-Whanganui. Open annually in April/May, grants fund activities with clear community involvement and biodiversity benefit.</p>
+    <p class="intro-more">Applications are assessed by a Councillor panel, and funded projects are supported by Biodiversity staff throughout delivery.</p>
     <hr class="divider"/>
     <div class="left-header" id="grantsHeader">Grants awarded</div>
     <div class="fund-grid" id="grantsGrid"></div>
@@ -301,9 +311,14 @@
   // compact by any threshold and still overflowed by a few pixels.
   //
   // This starts at full size and steps down only while something is actually
-  // overflowing: compact type first, then the clamped description. If it still
-  // does not fit the columns scroll, as they did before — nothing is ever
-  // clipped away silently.
+  // overflowing: compact type, then tight spacing, and only then dropping the
+  // description's second sentence. If it still does not fit the columns scroll,
+  // as they did before — nothing is ever clipped away silently.
+  //
+  // The last tier used to clamp the description to a fixed 3 lines, which cut
+  // it mid-sentence on the laptop panel (28 Aug 2026). Whole sentences in,
+  // whole sentences out: a truncated sentence reads as a bug, a shorter
+  // description just reads as a shorter description.
   function setCompact() {
     const body  = document.body;
     const left  = document.querySelector('.left');
@@ -312,9 +327,10 @@
       left.scrollHeight  > left.clientHeight  + 1 ||
       right.scrollHeight > right.clientHeight + 1;
 
-    body.classList.remove('compact', 'tight');
+    body.classList.remove('compact', 'tight', 'clamp');
     if (overflows()) body.classList.add('compact');
     if (overflows()) body.classList.add('tight');
+    if (overflows()) body.classList.add('clamp');
   }
 
   let resizeTimer;
