@@ -15,6 +15,21 @@
   .left h2 { font-family: 'Source Serif 4', serif; font-size: 16px; font-weight: 600; line-height: 1.35; color: #f0f5f1; }
   .left p { font-size: 12.5px; line-height: 1.55; color: #b0c4b8; }
   .divider { border: none; border-top: 1px solid rgba(255,255,255,0.08); }
+  /* The one action on the page. Green to match the tag and section headers so
+     it reads as part of the fund block, underlined so it is recognisable as a
+     link without a button's weight — the figures below should stay the loudest
+     thing in this column. width:fit-content keeps the hit area on the text. */
+  .header-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  /* Sits on the header line, so it takes the header's uppercase treatment but
+     drops the letter-spacing to stay readable, and is underlined so it reads as
+     a link rather than another label. The figures below stay the loudest thing
+     in this column. */
+  .apply-link { font-size: 9.5px; font-weight: 600; color: #8ecf99;
+                letter-spacing: 0.04em; text-transform: uppercase;
+                white-space: nowrap; flex: none;
+                text-decoration: underline; text-underline-offset: 2px;
+                text-decoration-color: rgba(142,207,153,0.45); }
+  .apply-link:hover { color: #a9ddb2; text-decoration-color: #a9ddb2; }
   /* Grants awarded sits on the dark panel, directly under what the fund is,
      because it describes the fund rather than what projects reported back. It
      also leaves the right-hand column to outcomes alone, so the coverage
@@ -83,6 +98,7 @@
   body.compact .left { padding: 14px 14px 10px; gap: 6px; }
   body.compact .left h2 { font-size: 14px; }
   body.compact .left p { font-size: 11.5px; line-height: 1.45; }
+  body.compact .apply-link { font-size: 9px; }
   /* Applied only when the panel is still overflowing at compact sizes — see
      setCompact(). Tightens spacing and type further but keeps every word: the
      description is boilerplate, but a sentence cut mid-word reads as broken,
@@ -125,7 +141,18 @@
     <p>Supporting locally-led conservation projects across Manawatū-Whanganui. Open annually in April/May, grants fund activities with clear community involvement and biodiversity benefit.</p>
     <p class="intro-more">Applications are assessed by a Councillor panel, and funded projects are supported by Biodiversity staff throughout delivery.</p>
     <hr class="divider"/>
-    <div class="left-header" id="grantsHeader">Grants awarded</div>
+    <!-- The apply link rides on the "Grants awarded" header line rather than
+         sitting on its own. Anna asked for a route back to the HRC page that
+         explains how to apply; on its own line it costs ~20px, which is enough
+         to push the bottom fund row out of a short embed. The header line is
+         mostly empty, so this is free height.
+         target="_blank" is required, not stylistic: this page runs inside an ExB
+         Embed widget, so without it the HRC site would load inside the iframe
+         with no way back. -->
+    <div class="left-header header-row">
+      <span id="grantsHeader">Grants awarded</span>
+      <a class="apply-link" href="https://www.horizons.govt.nz/get-involved/grants-and-sponsorship/kanorau-koiora-taketake-indigenous-biodiversity-contestable-fund" target="_blank" rel="noopener">How to apply →</a>
+    </div>
     <div class="fund-grid" id="grantsGrid"></div>
   </div>
   <div class="right">
