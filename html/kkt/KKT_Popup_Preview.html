@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>KKT Popup Design Preview</title>
+<style>
+  /* ------------------------------------------------------------------ *
+   * This page is a design harness, not an embed. It renders the popup
+   * card at the widths the ExB Feature Info panel actually uses, so the
+   * layout can be checked before it goes near the web map.
+   *
+   * The card markup itself is built by cardHtml() below and uses ONLY
+   * what the ArcGIS popup sanitiser keeps: tables, divs, spans and
+   * inline styles. No classes, no <style> rules, no flexbox, no grid.
+   * Whatever renders here is what renders in the popup.
+   * ------------------------------------------------------------------ */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Avenir Next', 'Segoe UI', sans-serif; background: #dfe1dd; padding: 20px; color: #1e2d2f; }
+  .bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+  .bar label { font-size: 12px; color: #4a5a4e; }
+  select, button { font: inherit; font-size: 12.5px; padding: 5px 9px; border: 1px solid #b6bdb6; border-radius: 5px; background: #fff; cursor: pointer; }
+  button.on { background: #1c3438; color: #fff; border-color: #1c3438; }
+  .stage { background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.12); margin: 0 auto; overflow: hidden; }
+  .note { max-width: 760px; margin: 18px auto 0; font-size: 11.5px; line-height: 1.6; color: #55645a; }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <label for="rec">Record</label>
+  <select id="rec" onchange="draw()"></select>
+  <label>Panel width</label>
+  <button onclick="setW(340,this)" class="on">340 narrow</button>
+  <button onclick="setW(480,this)">480 panel</button>
+  <button onclick="setW(880,this)">880 wide</button>
+</div>
+
+<div class="stage" id="stage" style="width:340px"></div>
+
+<div class="note">
+  Sample records are real rows from <b>KKT_Projects_Layer</b>. Photos are drawn
+  here as a placeholder strip — in the real popup they come from the built-in
+  Attachments element sitting under this card, not from the HTML.
+</div>
+
+<script>
+// Real rows, chosen to cover the awkward cases: four activity slots, an
+// activity funded at 0, no website or social media, a multi-year award, a long
+// description, and a grant with no report page and no links at all.
+const RECORDS = [
+  { label: "OID 120 — Forest & Bird Rangitikei (the screenshot)",
+    OBJECTID: 120, Group_name_1: "Forest & Bird Rangitikei Branch",
+    ProjectNam_1: "Sutherland-Pūriri Trapping", Grant_year_1: "25_26",
+    Prog_desc_1: "Pest animal control at Sutherland-Pūriri Reserve",
+    District: "Rangitīkei District", Prev_Act_Grant_1: "Active",
+    No_of_GrantYears: 1, ProjectType: "Pest Animal Control",
+    ProjectType_2: null, ProjectType_3: null, ProjectType_4: null,
+    ProjectType_fund: 10452, ProjectType_fund2: null, ProjectType_fund3: null,
+    ProjectType_fund4: null, Current_YearFund: "$10,452.00",
+    Website: null, Social_media: null,
+    Report_Link: "https://www.horizons.govt.nz/media/pfzjw5dp/kanorau-koiora-taketake-report-summary-report-2025-26.pdf#page=13",
+    Project_ID: "KKT-076", photos: 1 },
+
+  { label: "OID 56 — Project Tongariro (four activities)",
+    OBJECTID: 56, Group_name_1: "Project Tongariro",
+    ProjectNam_1: "Rongokaupo Wetland Biodiversity and Restoration Project",
+    Grant_year_1: "21_22",
+    Prog_desc_1: "Restoration project at Rongokaupo Wetland involving weed control, replanting with native plants and trapping.",
+    District: "Ruapehu District", Prev_Act_Grant_1: "Active",
+    No_of_GrantYears: 1, ProjectType: "Pest Plant Control",
+    ProjectType_2: "Pest Animal Control", ProjectType_3: "Planting",
+    ProjectType_4: "Fencing", ProjectType_fund: 7466.5, ProjectType_fund2: 4902.5,
+    ProjectType_fund3: 3342.5, ProjectType_fund4: 2972.5,
+    Current_YearFund: "$18,684.00 ",
+    Report_Link: "https://www.horizons.govt.nz/media/42qbt5k4/final-report-summar-2022.pdf#page=79",
+    Website: "https://www.tongariro.org.nz/",
+    Social_media: "https://www.facebook.com/ProjectTongariro/",
+    Project_ID: "KKT-021", photos: 0 },
+
+  { label: "OID 70 — Ruahine Whio (year 3 of a multi-year award)",
+    OBJECTID: 70, Group_name_1: "Ruahine Whio Protection Trust",
+    ProjectNam_1: "Te Potae O Awarua and the Pohangina River Projects",
+    Grant_year_1: "23_24",
+    Prog_desc_1: "Funding for mustelid trapping to protect whio and kiwi in remote backcountry sites that require helicopter access",
+    District: "Rangitīkei District", Prev_Act_Grant_1: "Previous",
+    No_of_GrantYears: 3, ProjectType: "Pest Animal Control",
+    ProjectType_2: null, ProjectType_3: null, ProjectType_4: null,
+    ProjectType_fund: 12000, ProjectType_fund2: null, ProjectType_fund3: null,
+    ProjectType_fund4: null, Current_YearFund: "$12,000.00 ",
+    Report_Link: "https://www.horizons.govt.nz/media/osmikher/kanorau-koiora-taketake-report-summary-report-2023-24.pdf#page=23",
+    Website: "https://www.rwp.org.nz/",
+    Social_media: "https://www.facebook.com/people/Ruahine-Whio-Protectors/100066318196849/",
+    Project_ID: "KKT-016", photos: 2 },
+
+  { label: "OID 1 — Gribble Family Trust (no website or social)",
+    OBJECTID: 1, Group_name_1: "Gribble Family Trust",
+    ProjectNam_1: "Wetland Restoration Project", Grant_year_1: "22_23",
+    Prog_desc_1: "Controlling weeds and replanting native species around wetland",
+    District: "Whanganui District", Prev_Act_Grant_1: "Active",
+    No_of_GrantYears: 1, ProjectType: "Pest Plant Control",
+    ProjectType_2: "Pest Animal Control", ProjectType_3: "Planting",
+    ProjectType_4: null, ProjectType_fund: 901.61, ProjectType_fund2: 750,
+    ProjectType_fund3: 2111.39, ProjectType_fund4: null,
+    Current_YearFund: "$3,763.00 ", Website: null, Social_media: null,
+    Report_Link: "https://www.horizons.govt.nz/media/4sjdl5sm/report-summary-2022-23.pdf#page=8",
+    Project_ID: "KKT-022", photos: 3 },
+
+  { label: "OID 19 — Bushy Park Tarapuruhi (long description)",
+    OBJECTID: 19, Group_name_1: "Bushy Park Tarapuruhi Forest Sanctuary (F&B)",
+    ProjectNam_1: "Titipounamu/Rifleman Translocation", Grant_year_1: "21_22",
+    Prog_desc_1: "Use specialist contractor to undertake translocation of rifleman - a rare species within Horizons Region. Provide opportunity for people to see rifleman in accessible natural environment, raise the profile of rifleman and the role of ecological restoration at BPT.",
+    District: "Whanganui District", Prev_Act_Grant_1: "Active",
+    No_of_GrantYears: 1, ProjectType: "Bird Reintroduction",
+    ProjectType_2: null, ProjectType_3: null, ProjectType_4: null,
+    ProjectType_fund: 20289, ProjectType_fund2: null, ProjectType_fund3: null,
+    ProjectType_fund4: null, Current_YearFund: "$20,289.00 ",
+    Report_Link: "https://www.horizons.govt.nz/media/42qbt5k4/final-report-summar-2022.pdf#page=3",
+    Website: "https://bushypark.nz/",
+    Social_media: "https://www.facebook.com/BushyParkTarapuruhi/",
+    Project_ID: "KKT-001", photos: 0 },
+
+  { label: "OID 113 — Awahuri Forest Kitchener Park (Monitoring funded at 0)",
+    OBJECTID: 113, Group_name_1: "Awahuri Forest Kitchener Park Trust",
+    ProjectNam_1: "Post planting care and native forest restoration.",
+    Grant_year_1: "25_26",
+    Prog_desc_1: "AF/KP Trust planted 10,000 trees in 2023 and plans to plant 30,000 in 2024. These require two and a half years of care for a 90% survival rate, with 60% in new wetlands and stream sides, and the rest in restoration areas.",
+    District: "Manawatū District", Prev_Act_Grant_1: "Previous",
+    No_of_GrantYears: 2, ProjectType: "Planting",
+    ProjectType_2: "Monitoring", ProjectType_3: null, ProjectType_4: null,
+    ProjectType_fund: 9000, ProjectType_fund2: 0, ProjectType_fund3: null,
+    ProjectType_fund4: null, Current_YearFund: "$9,000.00",
+    Report_Link: "https://www.horizons.govt.nz/media/pfzjw5dp/kanorau-koiora-taketake-report-summary-report-2025-26.pdf#page=6",
+    Website: "https://www.awahuri-forest-kitchener-park.nz/",
+    Social_media: "https://www.facebook.com/AwahuriKitchener/",
+    Project_ID: "KKT-055", photos: 1 },
+
+  // The empty case, and a real one: this grant has no page in the 23-24
+  // report - the group is not in it at all - and no website or social media
+  // either, so the whole link block should disappear rather than leave a
+  // stranded rule or a dead button. 31 of the 176 rows have no report link:
+  // the 29 for 26-27, whose report is written after the year ends, plus this
+  // one and OID 25.
+  { label: "OID 68 — Ihaia Taueki Trust (no report page, no links)",
+    OBJECTID: 68, Group_name_1: "Ihaia Taueki Trust",
+    ProjectNam_1: "Ihaia Taueki A6B Wetlands and Dunes Project",
+    Grant_year_1: "23_24",
+    Prog_desc_1: "Restoring dune forest to restore mauri of the whenua and mana of the people",
+    District: "Horowhenua District", Prev_Act_Grant_1: "Previous",
+    No_of_GrantYears: 2, ProjectType: "Planting",
+    ProjectType_2: null, ProjectType_3: null, ProjectType_4: null,
+    ProjectType_fund: 2500, ProjectType_fund2: null, ProjectType_fund3: null,
+    ProjectType_fund4: null, Current_YearFund: "$2,500.00 ",
+    Report_Link: null, Website: null, Social_media: null,
+    Project_ID: "KKT-006", photos: 0 }
+];
+
+// Same fixed grant-year colours the charts use, so a year reads the same
+// whichever page it appears on.
+const YEAR_COLOURS = {
+  '21_22': '#0083A0', '22_23': '#B4761A', '23_24': '#7A5BA8',
+  '24_25': '#4C8A3F', '25_26': '#2C6BB0', '26_27': '#B44A3C'
+};
+
+const has = v => v !== null && v !== undefined && String(v).trim() !== '';
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+// "25_26" -> "2025–26", the way the team writes a grant round.
+const yearLabel = y => has(y) ? '20' + y.slice(0, 2) + '–' + y.slice(3) : '';
+
+// Current_YearFund is text ("$3,763.00 "), so it is trimmed and shown as
+// given rather than reparsed. The activity figures are real numbers.
+const money = n => '$' + Number(n).toLocaleString('en-NZ',
+  { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+function cardHtml(r) {
+  const accent = YEAR_COLOURS[r.Grant_year_1] || '#3d7a5a';
+  const SERIF = "'Source Serif 4',Georgia,'Times New Roman',serif";
+  let h = '';
+
+  // ---- header band ------------------------------------------------------
+  // The group name is deliberately not repeated here — the Feature Info
+  // widget already puts it at the top of the panel as the record title.
+  h += '<div style="background:#1c3438;padding:14px 16px 13px 16px">';
+  h +=   '<div style="font-size:10px;font-weight:600;letter-spacing:0.11em;'
+       + 'text-transform:uppercase;color:#8ecf99">'
+       +   esc(yearLabel(r.Grant_year_1)) + ' grant round</div>';
+  h +=   '<div style="font-family:' + SERIF + ';font-size:18px;line-height:1.25;'
+       + 'color:#f4f8f4;margin-top:5px">' + esc(r.ProjectNam_1) + '</div>';
+  h += '</div>';
+
+  // ---- award ------------------------------------------------------------
+  // The award is what people open this popup for, so it gets the largest
+  // type on the card rather than a row in a list of fields.
+  h += '<div style="background:#f5f4f0;border-bottom:1px solid #e2dfd8;'
+     + 'border-left:4px solid ' + accent + ';padding:11px 16px">'
+     +   '<div style="font-family:' + SERIF + ';font-size:23px;color:#1c3438;'
+     +     'line-height:1.1">' + esc(String(r.Current_YearFund).trim()) + '</div>'
+     +   '<div style="font-size:11px;color:#5a7060;margin-top:2px">'
+     +     'awarded this grant year</div>'
+     + '</div>';
+
+  // ---- district + grant years -------------------------------------------
+  // No_of_GrantYears counts the year within a consecutive multi-year award,
+  // not how many times the project has been funded — and 1 can mean either a
+  // standalone one-year grant or the first year of a multi-year one. So it is
+  // shown as the plain field value, with no wording that would read into it.
+  h += '<table width="100%" cellpadding="0" cellspacing="0" '
+     + 'style="border-collapse:collapse;border-bottom:1px solid #e2dfd8;'
+     + 'font-size:12px"><tr>'
+     +   '<td style="padding:9px 16px 9px 16px;color:#33453a">'
+     +     esc(r.District) + '</td>'
+     +   '<td align="right" style="padding:9px 16px 9px 16px;color:#7b8b7f">'
+     +     'Grant years <span style="color:#33453a;font-weight:600">'
+     +     r.No_of_GrantYears + '</span></td>'
+     + '</tr></table>';
+
+  // ---- description ------------------------------------------------------
+  if (has(r.Prog_desc_1)) {
+    h += '<div style="padding:12px 16px 2px 16px;font-size:13px;line-height:1.55;'
+       + 'color:#33453a">' + esc(String(r.Prog_desc_1).trim()) + '</div>';
+  }
+
+  // ---- activities and what the grant paid for ---------------------------
+  // Bars are proportional to the largest activity, drawn as table cells so
+  // they survive the popup sanitiser.
+  //
+  // Activities funded at 0 are left off the card. A 0 is a deliberate
+  // statement in this dataset — the activity happened, no grant money went to
+  // it — so this does understate what a project did, but a row reading
+  // "$0" under a heading that says "Activities funded" reads as a data error
+  // to everyone who is not holding that context. 16 of 176 grants have one,
+  // and none of them is left with an empty section. A null fund is different
+  // and is kept: that activity has simply not been split yet.
+  const acts = [
+    { t: r.ProjectType,   f: r.ProjectType_fund  },
+    { t: r.ProjectType_2, f: r.ProjectType_fund2 },
+    { t: r.ProjectType_3, f: r.ProjectType_fund3 },
+    { t: r.ProjectType_4, f: r.ProjectType_fund4 }
+  ].filter(a => has(a.t) && !(has(a.f) && Number(a.f) === 0));
+
+  if (acts.length) {
+    const max = Math.max.apply(null, acts.map(a => has(a.f) ? Number(a.f) : 0)) || 1;
+    h += '<div style="padding:12px 16px 4px 16px">';
+    h +=   '<div style="font-size:9.5px;font-weight:600;letter-spacing:0.1em;'
+         + 'text-transform:uppercase;color:#7a9a82;border-bottom:1px solid #e2dfd8;'
+         + 'padding-bottom:5px;margin-bottom:8px">Activities funded</div>';
+    h +=   '<table width="100%" cellpadding="0" cellspacing="0" '
+         + 'style="border-collapse:collapse;font-size:12.5px">';
+    acts.forEach(function (a) {
+      const val = has(a.f) ? Number(a.f) : null;
+      const pct = val === null ? 0 : Math.max(2, Math.round(val / max * 100));
+      // Label and amount are two cells rather than a floated span — float is
+      // one of the things the popup sanitiser is least reliable about.
+      h += '<tr>'
+         +   '<td style="padding:0;color:#33453a">' + esc(a.t) + '</td>'
+         +   '<td align="right" style="padding:0;color:#1c3438;font-weight:600;'
+         +     'white-space:nowrap">'
+         +     (val === null
+                 ? '<span style="color:#9aa89e;font-weight:400">not split</span>'
+                 : money(val))
+         +   '</td>'
+         + '</tr>';
+      // The bar: a two-cell table, filled part then remainder. Only worth
+      // drawing when there is more than one activity to compare — on a
+      // single-activity grant it is always full.
+      if (acts.length > 1) {
+        h += '<tr><td colspan="2" style="padding:4px 0 9px 0">'
+           +   '<table width="100%" cellpadding="0" cellspacing="0" '
+           +     'style="border-collapse:collapse"><tr>'
+           +     '<td width="' + pct + '%" style="background:' + accent + ';'
+           +       'height:5px;font-size:0;line-height:0">&nbsp;</td>'
+           +     '<td width="' + (100 - pct) + '%" style="background:#e6e9e4;'
+           +       'height:5px;font-size:0;line-height:0">&nbsp;</td>'
+           +   '</tr></table>'
+           + '</td></tr>';
+      }
+    });
+    h += '</table>';
+    // Only needed where there is a split to misread.
+    if (acts.length > 1) {
+      h += '<div style="font-size:10.5px;color:#8b9d90;line-height:1.4;'
+         + 'margin-top:2px">Figures show grant money spent per activity, and '
+         + 'may add up to less than the total award.</div>';
+    }
+    h += '</div>';
+  }
+
+  // ---- links ------------------------------------------------------------
+  // Only drawn when there is something to link to. Roughly half the rows have
+  // no website and two thirds no social media, and empty rows are exactly
+  // what makes the default popup look unfinished.
+  if (has(r.Report_Link) || has(r.Website) || has(r.Social_media)) {
+    const btn = 'display:inline-block;text-decoration:none;font-size:12px;'
+              + 'font-weight:600;padding:6px 13px;border-radius:16px;'
+              + 'margin:0 6px 6px 0;border:1px solid #c8d2c8;color:#1c3438;'
+              + 'background:#fff';
+    h += '<div style="padding:9px 16px 13px 16px;border-top:1px solid #e2dfd8;'
+       + 'margin-top:6px">';
+
+    // The annual summary report, opened at this project's own page via the
+    // "#page=" fragment already baked into Report_Link. Given its own filled
+    // button above the others because it is a different kind of link: the
+    // group's website is theirs, this is Horizons' published account of the
+    // funded work, and it is the write-up the card is a summary of.
+    //
+    // Blank wherever there is no page to open - 26-27 has no report yet, and a
+    // couple of grants have no page in their year's report. Nothing is drawn
+    // in that case rather than a dead button.
+    if (has(r.Report_Link)) {
+      const rptBtn = 'display:inline-block;text-decoration:none;font-size:12px;'
+                   + 'font-weight:600;padding:7px 14px;border-radius:16px;'
+                   + 'margin:0 6px 8px 0;border:1px solid ' + accent + ';'
+                   + 'color:#fff;background:' + accent;
+      const rl = yearLabel(r.Grant_year_1);
+      h += '<div><a href="' + esc(r.Report_Link) + '" target="_blank" style="'
+         + rptBtn + '">Read the ' + (rl === '' ? 'project' : esc(rl))
+         + ' report &#8599;</a></div>';
+    }
+
+    if (has(r.Website))      h += '<a href="' + esc(r.Website) + '" target="_blank" '
+                                + 'style="' + btn + '">Website &#8599;</a>';
+    if (has(r.Social_media)) h += '<a href="' + esc(r.Social_media) + '" target="_blank" '
+                                + 'style="' + btn + '">Social media &#8599;</a>';
+    h += '</div>';
+  } else {
+    h += '<div style="padding:0 0 8px 0"></div>';
+  }
+
+  return h;
+}
+
+// Placeholder for the attachments element, which sits under the card in the
+// real popup. Preview only — not part of the markup that goes to AGOL.
+function photoStrip(n) {
+  if (!n) return '';
+  let s = '<div style="padding:0 17px 16px 17px">'
+        + '<div style="font-size:9.5px;font-weight:600;letter-spacing:0.1em;'
+        + 'text-transform:uppercase;color:#7a9a82;border-top:1px solid #e2dfd8;'
+        + 'padding-top:10px;margin-bottom:8px">Photos ('
+        + n + ') &mdash; attachments element</div>';
+  for (let i = 0; i < n; i++) {
+    s += '<div style="display:inline-block;width:72px;height:72px;'
+       + 'background:#dbe2db;border-radius:4px;margin:0 6px 0 0"></div>';
+  }
+  return s + '</div>';
+}
+
+function draw() {
+  const r = RECORDS[document.getElementById('rec').value];
+  document.getElementById('stage').innerHTML = cardHtml(r) + photoStrip(r.photos);
+}
+function setW(w, btn) {
+  document.getElementById('stage').style.width = w + 'px';
+  document.querySelectorAll('.bar button').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+const sel = document.getElementById('rec');
+RECORDS.forEach((r, i) => sel.add(new Option(r.label, i)));
+
+// ?rec=<index>&w=<px> so a particular record and width can be linked to or
+// screenshotted without clicking through the controls.
+const q = new URLSearchParams(location.search);
+if (q.get('rec') !== null) sel.value = q.get('rec');
+if (q.get('w')) document.getElementById('stage').style.width = q.get('w') + 'px';
+draw();
+</script>
+</body>
+</html>

@@ -1,0 +1,219 @@
+// ---------------------------------------------------------------------------
+// KKT project popup — Arcade expression
+//
+// Paste into: Map Viewer > the KKT_Projects_Layer > Pop-ups > Add content >
+// Arcade. Delete the "Fields list" element that is there now, and add an
+// "Attachments" element UNDER this one for the photos.
+//
+// It returns HTML, which the popup renders. The ExB Feature Info widget draws
+// the same popup definition, so the panel and the map popup both pick this up
+// and both stay tied to whichever feature is selected.
+//
+// Only markup the ArcGIS popup sanitiser keeps is used here: tables, divs,
+// spans and inline styles. No classes, no <style> block, no flexbox.
+//
+// Design source is html/kkt/KKT_Popup_Preview.html in the biod-hub repo —
+// change it there first, it renders the same card without a round trip to AGOL.
+// ---------------------------------------------------------------------------
+
+// Escape the free-text fields. Group and project names contain "&".
+function esc(v) {
+  if (IsEmpty(v)) { return ''; }
+  var s = Trim(Text(v));
+  s = Replace(s, '&', '&amp;', true);
+  s = Replace(s, '<', '&lt;', true);
+  s = Replace(s, '>', '&gt;', true);
+  return s;
+}
+function filled(v) { return !IsEmpty(v) && Trim(Text(v)) != ''; }
+
+var SERIF = "'Source Serif 4',Georgia,'Times New Roman',serif";
+
+// Same fixed grant-year colours the dashboard charts use, so a year reads the
+// same whichever page it appears on.
+var accent = Decode($feature.Grant_year_1,
+  '21_22', '#0083A0', '22_23', '#B4761A', '23_24', '#7A5BA8',
+  '24_25', '#4C8A3F', '25_26', '#2C6BB0', '26_27', '#B44A3C', '#3d7a5a');
+
+// "25_26" -> "2025–26", the way the team writes a grant round.
+var gy = $feature.Grant_year_1;
+var roundLabel = '';
+if (filled(gy)) { roundLabel = '20' + Left(gy, 2) + '–' + Right(gy, 2); }
+
+var h = '';
+
+// ---- header band ----------------------------------------------------------
+// The group name is deliberately not repeated here — the Feature Info widget
+// already puts it at the top of the panel as the record title.
+h += '<div style="background:#1c3438;padding:14px 16px 13px 16px">';
+h +=   '<div style="font-size:10px;font-weight:600;letter-spacing:0.11em;'
+     + 'text-transform:uppercase;color:#8ecf99">' + roundLabel + ' grant round</div>';
+h +=   '<div style="font-family:' + SERIF + ';font-size:18px;line-height:1.25;'
+     + 'color:#f4f8f4;margin-top:5px">' + esc($feature.ProjectNam_1) + '</div>';
+h += '</div>';
+
+// ---- award ----------------------------------------------------------------
+// Current_YearFund is text ("$3,763.00 "), so it is trimmed and shown as given
+// rather than reparsed. The award is what people open this popup for, so it
+// gets the largest type on the card rather than a row in a list of fields.
+if (filled($feature.Current_YearFund)) {
+  h += '<div style="background:#f5f4f0;border-bottom:1px solid #e2dfd8;'
+     + 'border-left:4px solid ' + accent + ';padding:11px 16px">'
+     +   '<div style="font-family:' + SERIF + ';font-size:23px;color:#1c3438;'
+     +     'line-height:1.1">' + esc($feature.Current_YearFund) + '</div>'
+     +   '<div style="font-size:11px;color:#5a7060;margin-top:2px">'
+     +     'awarded this grant year</div>'
+     + '</div>';
+}
+
+// ---- district + grant years -----------------------------------------------
+// No_of_GrantYears counts the year within a consecutive multi-year award, not
+// how many times the project has been funded — and 1 can mean either a
+// standalone one-year grant or the first year of a multi-year one. So it is
+// shown as the plain field value, with no wording that would read into it.
+if (filled($feature.District) || filled($feature.No_of_GrantYears)) {
+  h += '<table width="100%" cellpadding="0" cellspacing="0" '
+     + 'style="border-collapse:collapse;border-bottom:1px solid #e2dfd8;'
+     + 'font-size:12px"><tr>'
+     +   '<td style="padding:9px 16px;color:#33453a">'
+     +     esc($feature.District) + '</td>'
+     +   '<td align="right" style="padding:9px 16px;color:#7b8b7f">';
+  if (filled($feature.No_of_GrantYears)) {
+    h += 'Grant years <span style="color:#33453a;font-weight:600">'
+       + Text($feature.No_of_GrantYears) + '</span>';
+  }
+  h += '</td></tr></table>';
+}
+
+// ---- description ----------------------------------------------------------
+if (filled($feature.Prog_desc_1)) {
+  h += '<div style="padding:12px 16px 2px 16px;font-size:13px;line-height:1.55;'
+     + 'color:#33453a">' + esc($feature.Prog_desc_1) + '</div>';
+}
+
+// ---- activities and what the grant paid for -------------------------------
+// Four slots, not three — Project Tongariro uses all four. Bars are
+// proportional to the largest activity, drawn as table cells so they survive
+// the popup sanitiser.
+//
+// Activities funded at 0 are left off the card. A 0 is a deliberate statement
+// in this dataset — the activity happened, no grant money went to it — so this
+// does understate what a project did, but a row reading "$0" under a heading
+// that says "Activities funded" reads as a data error to everyone who is not
+// holding that context. 16 of 176 grants have one, and none of them is left
+// with an empty section. A null fund is different and is kept: that activity
+// has simply not been split yet.
+var types = [$feature.ProjectType,      $feature.ProjectType_2,
+             $feature.ProjectType_3,    $feature.ProjectType_4];
+var funds = [$feature.ProjectType_fund, $feature.ProjectType_fund2,
+             $feature.ProjectType_fund3, $feature.ProjectType_fund4];
+
+function shown(t, f) { return filled(t) && (IsEmpty(f) || f != 0); }
+
+var nActs = 0;
+var maxFund = 0;
+for (var i in types) {
+  if (shown(types[i], funds[i])) {
+    nActs = nActs + 1;
+    if (!IsEmpty(funds[i]) && funds[i] > maxFund) { maxFund = funds[i]; }
+  }
+}
+if (maxFund == 0) { maxFund = 1; }
+
+if (nActs > 0) {
+  h += '<div style="padding:12px 16px 4px 16px">';
+  h +=   '<div style="font-size:9.5px;font-weight:600;letter-spacing:0.1em;'
+       + 'text-transform:uppercase;color:#7a9a82;border-bottom:1px solid #e2dfd8;'
+       + 'padding-bottom:5px;margin-bottom:8px">Activities funded</div>';
+  h +=   '<table width="100%" cellpadding="0" cellspacing="0" '
+       + 'style="border-collapse:collapse;font-size:12.5px">';
+
+  for (var j in types) {
+    if (shown(types[j], funds[j])) {
+      var f = funds[j];
+      var amount = '';
+      var pct = 0;
+      if (IsEmpty(f)) {
+        amount = '<span style="color:#9aa89e;font-weight:400">not split</span>';
+      } else {
+        amount = Text(f, '$#,##0.00');
+        pct = Max([2, Round(f / maxFund * 100, 0)]);
+      }
+      // Label and amount are two cells rather than a floated span — float is
+      // one of the things the popup sanitiser is least reliable about.
+      h += '<tr>'
+         +   '<td style="padding:0;color:#33453a">' + esc(types[j]) + '</td>'
+         +   '<td align="right" style="padding:0;color:#1c3438;font-weight:600;'
+         +     'white-space:nowrap">' + amount + '</td>'
+         + '</tr>';
+      // The bar: a two-cell table, filled part then remainder. Only worth
+      // drawing when there is more than one activity to compare — on a
+      // single-activity grant it is always full.
+      if (nActs > 1) {
+        h += '<tr><td colspan="2" style="padding:4px 0 9px 0">'
+           +   '<table width="100%" cellpadding="0" cellspacing="0" '
+           +     'style="border-collapse:collapse"><tr>'
+           +     '<td width="' + pct + '%" style="background:' + accent + ';'
+           +       'height:5px;font-size:0;line-height:0">&nbsp;</td>'
+           +     '<td width="' + (100 - pct) + '%" style="background:#e6e9e4;'
+           +       'height:5px;font-size:0;line-height:0">&nbsp;</td>'
+           +   '</tr></table>'
+           + '</td></tr>';
+      }
+    }
+  }
+  h += '</table>';
+  // Only needed where there is a split to misread.
+  if (nActs > 1) {
+    h += '<div style="font-size:10.5px;color:#8b9d90;line-height:1.4;margin-top:2px">'
+       + 'Figures show grant money spent per activity, and may add up to less '
+       + 'than the total award.</div>';
+  }
+  h += '</div>';
+}
+
+// ---- links ----------------------------------------------------------------
+// Only drawn when there is something to link to. Roughly half the rows have no
+// website and two thirds no social media, and empty rows are exactly what makes
+// the default popup look unfinished.
+if (filled($feature.Report_Link) || filled($feature.Website)
+    || filled($feature.Social_media)) {
+  var btn = 'display:inline-block;text-decoration:none;font-size:12px;'
+          + 'font-weight:600;padding:6px 13px;border-radius:16px;'
+          + 'margin:0 6px 6px 0;border:1px solid #c8d2c8;color:#1c3438;'
+          + 'background:#fff';
+  h += '<div style="padding:9px 16px 13px 16px;border-top:1px solid #e2dfd8;'
+     + 'margin-top:6px">';
+
+  // The annual summary report, opened at this project's own page via the
+  // "#page=" fragment already baked into Report_Link. Given its own filled
+  // button above the others because it is a different kind of link: the
+  // group's website is theirs, this is Horizons' published account of the
+  // funded work, and it is the write-up the card is a summary of.
+  //
+  // Blank wherever there is no page to open - 26-27 has no report yet, and a
+  // couple of grants have no page in their year's report. Nothing is drawn in
+  // that case rather than a dead button, which is why this is a separate
+  // check and not part of the row below.
+  if (filled($feature.Report_Link)) {
+    var rptBtn = 'display:inline-block;text-decoration:none;font-size:12px;'
+               + 'font-weight:600;padding:7px 14px;border-radius:16px;'
+               + 'margin:0 6px 8px 0;border:1px solid ' + accent + ';'
+               + 'color:#fff;background:' + accent;
+    h += '<div><a href="' + esc($feature.Report_Link) + '" target="_blank" '
+       + 'style="' + rptBtn + '">Read the '
+       + (roundLabel == '' ? 'project' : roundLabel) + ' report &#8599;</a></div>';
+  }
+
+  if (filled($feature.Website)) {
+    h += '<a href="' + esc($feature.Website) + '" target="_blank" style="' + btn
+       + '">Website &#8599;</a>';
+  }
+  if (filled($feature.Social_media)) {
+    h += '<a href="' + esc($feature.Social_media) + '" target="_blank" style="'
+       + btn + '">Social media &#8599;</a>';
+  }
+  h += '</div>';
+}
+
+return { type: 'text', text: h };
