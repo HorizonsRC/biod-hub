@@ -301,7 +301,21 @@ if (filled($feature.Website) || filled($feature.Social_media)
 // Only the lead image is loaded eagerly for that reason; the strip is marked
 // loading="lazy" so six 5 MB files are not fetched before the reader has
 // scrolled to them.
-var atts = Attachments($feature, { types: ['jpg', 'jpeg', 'png'] });
+//
+// NO `types` FILTER, deliberately. The first version passed
+// { types: ['jpg','jpeg','png'] } and drew nothing at all on the feature it was
+// first tested against (OID 118, David and Harriet Eade). Arcade filters on the
+// file extension as stored, and that match is case-sensitive: 43 of the 184
+// attachments on this layer are uppercase .JPG or .JPEG, so a lowercase list
+// silently drops them. OID 118's two photos are both .JPG, so it filtered to
+// zero and skipped the whole section - which read as "images don't display"
+// rather than as a filter bug.
+//
+// Nothing here needs filtering anyway: the layer holds 183 JPEGs and 1 PNG,
+// all of them photos. Taking every attachment is both correct and immune to
+// the casing trap. If a non-image is ever attached, filter on CONTENTTYPE
+// rather than the extension - that is the reliable field.
+var atts = Attachments($feature);
 var nPhotos = Count(atts);
 
 if (nPhotos > 0) {
