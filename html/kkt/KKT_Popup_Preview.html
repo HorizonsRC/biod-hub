@@ -42,11 +42,6 @@
   Sample records are real rows from <b>KKT_Projects_Layer</b>. Photos are drawn
   here as a placeholder strip — in the real popup they come from the built-in
   Attachments element sitting under this card, not from the HTML.
-  <br><br>
-  Drawing them in the card instead, to avoid that element's thumbnail
-  compression, was tried on 1 Sep 2026 and does not work: attachment URLs need
-  an auth header, and an <code>&lt;img&gt;</code> cannot send one. See the
-  comment at the foot of <b>KKT_Popup_Arcade.txt</b>.
 </div>
 
 <script>
@@ -419,15 +414,12 @@ function cardHtml(r) {
 
 // Placeholder for the attachments element, which sits under the card in the
 // real popup. Preview only — not part of the markup that goes to AGOL.
-// Photos: grey placeholder squares standing in for the built-in Attachments
-// element, which is what actually renders them in the real popup.
 //
-// Drawing them in the card instead - <img> pointing at each attachment's REST
-// URL, to get the original rather than the element's upscaled thumbnail - was
-// tried on 1 Sep 2026 and does not work. The attachment endpoint needs an auth
-// header and an <img> can only send a query string or a cookie. The full
-// reasoning is at the foot of KKT_Popup_Arcade.txt; don't rebuild it here
-// without reading that first.
+// Drawing the photos in the card instead - <img> pointing at each attachment's
+// REST URL, to get the original rather than the element's upscaled thumbnail -
+// was tried on 1 Sep 2026 and does not work: the attachment endpoint needs an
+// auth header and an <img> can only send a query string or a cookie. Written
+// up under "Image quality in the Feature Info panel" in KKTcontext.md.
 function photoStrip(n) {
   if (!n) return '';
   let s = '<div style="padding:0 17px 16px 17px">'
