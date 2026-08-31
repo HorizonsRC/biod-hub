@@ -157,7 +157,25 @@ const RECORDS = [
     ProjectType_fund: 2500, ProjectType_fund2: null, ProjectType_fund3: null,
     ProjectType_fund4: null, Current_YearFund: "$2,500.00 ",
     Report_Link: null, Website: null, Social_media: null,
-    Project_ID: "KKT-006", photos: 0 }
+    Project_ID: "KKT-006", photos: 0 },
+
+  // Two Trap.NZ links in one field. Pikiariki is the only group in six years
+  // that runs two trap.nz projects, and rather than a second column sitting
+  // empty on 175 rows the field holds both newline-separated. The buttons are
+  // numbered only in this case.
+  { label: "OID 178 — Pikiariki Restoration (two Trap.NZ links)",
+    OBJECTID: 178, Group_name_1: "Pikiariki Restoration",
+    ProjectNam_1: "Pikiariki Restoration Rat Control Project",
+    Grant_year_1: "26_27",
+    Prog_desc_1: "Rat control to protect regenerating podocarp forest",
+    District: "Waitomo District", Prev_Act_Grant_1: "Previous",
+    No_of_GrantYears: 1, ProjectType: "Pest Animal Control",
+    ProjectType_2: null, ProjectType_3: null, ProjectType_4: null,
+    ProjectType_fund: 12204, ProjectType_fund2: null, ProjectType_fund3: null,
+    ProjectType_fund4: null, Current_YearFund: "$12,204.00",
+    Report_Link: null, Website: null, Social_media: null,
+    TrapNZ_Link: "https://trap.nz/project/28850078/info\r\nhttps://trap.nz/project/13676077/info",
+    Project_ID: "KKT-089", photos: 0 }
 ];
 
 // Same fixed grant-year colours the charts use, so a year reads the same
@@ -351,8 +369,24 @@ function cardHtml(r) {
                                 + 'style="' + btn + '">Website &#8599;</a>';
     if (has(r.Social_media)) h += '<a href="' + esc(r.Social_media) + '" target="_blank" '
                                 + 'style="' + btn + '">Social media &#8599;</a>';
-    if (has(r.TrapNZ_Link))  h += '<a href="' + esc(r.TrapNZ_Link) + '" target="_blank" '
-                                + 'style="' + btn + '">Trap.NZ &#8599;</a>';
+    // One button per URL. A group can run more than one trap.nz project — OID
+    // 178 Pikiariki has two — and the field holds them newline-separated rather
+    // than in a second column, which would sit empty on 175 rows to serve one
+    // and still break on a third. Splitting here costs nothing and has no
+    // ceiling.
+    //
+    // They are only numbered when there is more than one; two pills both
+    // reading "Trap.NZ" give the reader no way to tell them apart, but
+    // numbering a single one implies a missing sibling.
+    if (has(r.TrapNZ_Link)) {
+      const tnzUrls = String(r.TrapNZ_Link).split(/[\r\n]+/)
+                        .map(u => u.trim()).filter(u => u !== '');
+      tnzUrls.forEach(function (u, i) {
+        const tnzLabel = tnzUrls.length > 1 ? 'Trap.NZ ' + (i + 1) : 'Trap.NZ';
+        h += '<a href="' + esc(u) + '" target="_blank" style="' + btn + '">'
+           + tnzLabel + ' &#8599;</a>';
+      });
+    }
     h += '</div>';
   } else {
     h += '<div style="padding:0 0 8px 0"></div>';
