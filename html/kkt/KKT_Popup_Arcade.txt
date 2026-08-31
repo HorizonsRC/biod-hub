@@ -235,9 +235,27 @@ if (filled($feature.Website) || filled($feature.Social_media)
     h += '<a href="' + esc($feature.Social_media) + '" target="_blank" style="'
        + btn + '">Social media &#8599;</a>';
   }
+  // One button per URL. A group can run more than one trap.nz project - OID 178
+  // Pikiariki has two - and the field holds them newline-separated rather than
+  // in a second column, which would sit empty on 175 rows to serve one and
+  // still break on a third. Splitting here costs nothing and has no ceiling.
+  //
+  // They are only numbered when there is more than one; two pills both reading
+  // "Trap.NZ" give the reader no way to tell them apart, but numbering a single
+  // one implies a missing sibling.
   if (filled($feature.TrapNZ_Link)) {
-    h += '<a href="' + esc($feature.TrapNZ_Link) + '" target="_blank" style="'
-       + btn + '">Trap.NZ &#8599;</a>';
+    var tnzUrls = [];
+    var tnzParts = Split(Replace(Trim(Text($feature.TrapNZ_Link)), '\r', '\n', true), '\n');
+    for (var t in tnzParts) {
+      var one = Trim(tnzParts[t]);
+      if (one != '') { Push(tnzUrls, one); }
+    }
+    for (var u in tnzUrls) {
+      var tnzLabel = 'Trap.NZ';
+      if (Count(tnzUrls) > 1) { tnzLabel = 'Trap.NZ ' + Text(u + 1); }
+      h += '<a href="' + esc(tnzUrls[u]) + '" target="_blank" style="' + btn
+         + '">' + tnzLabel + ' &#8599;</a>';
+    }
   }
   h += '</div>';
 }
