@@ -2,8 +2,12 @@
 // KKT project popup — Arcade expression
 //
 // Paste into: Map Viewer > the KKT_Projects_Layer > Pop-ups > Add content >
-// Arcade. Delete the "Fields list" element that is there now, and add an
-// "Attachments" element UNDER this one for the photos.
+// Arcade. Delete the "Fields list" element that is there now.
+//
+// PHOTOS ARE DRAWN BY THIS EXPRESSION — there should be NO "Attachments"
+// element on the popup. If one is still there from the 31 Aug setup, remove
+// it, or every photo appears twice: once sharp from here, once soft from it.
+// See the "photos" section at the foot of this file for why.
 //
 // It returns HTML, which the popup renders. The ExB Feature Info widget draws
 // the same popup definition, so the panel and the map popup both pick this up
@@ -257,6 +261,94 @@ if (filled($feature.Website) || filled($feature.Social_media)
          + '">' + tnzLabel + ' &#8599;</a>';
     }
   }
+  h += '</div>';
+}
+
+// ---- photos ---------------------------------------------------------------
+// Drawn here rather than by an "Attachments" popup element, for image quality.
+//
+// The Attachments element renders each photo as a THUMBNAIL — it asks the REST
+// endpoint for a small derivative and scales it up to fill the panel, which is
+// the softness visible in the ExB Feature Info widget. There is no setting for
+// it in Map Viewer or ExB; it is how that element works. The Image widget looks
+// better because it loads the original, but it is not reactive — it sits blank
+// until a feature is selected, so a year tab opens with an empty panel, and it
+// has none of the Feature Info widget's map actions.
+//
+// An <img> pointing at the attachment's own REST URL gets the ORIGINAL file:
+//
+//     <service>/4/<OBJECTID>/attachments/<attachmentId>
+//
+// so the browser scales a full-size photo DOWN to the panel width instead of
+// scaling a thumbnail UP. Same reactivity as before, because this is still the
+// popup, and the map actions are untouched.
+//
+// The service is token-protected (499 anonymously, checked again 1 Sep 2026),
+// but these load for a signed-in viewer: the request goes to the same host the
+// user already has an ArcGIS session with, so the browser attaches it — the
+// same way the built-in Attachments element fetches its thumbnails from this
+// same protected service. This is also why it CANNOT be moved to a public page
+// outside AGOL.
+//
+// Sizing, given the spread of what is attached (184 photos over 102 features,
+// 1 Sep 2026): 56 features have one photo, 46 have two to six, the most is six
+// (OID 28). A 2x3 grid at 340px gives ~105px tiles, which is worse than the
+// thumbnails this is meant to replace. So: one lead image at full panel width,
+// the rest as a strip of thumbnails beneath it. Every one links to its own
+// original, so a click opens the full-size photo in a new tab.
+//
+// Originals are big — median 282 KB but up to 9.5 MB (OID 16's are ~5 MB each).
+// Only the lead image is loaded eagerly for that reason; the strip is marked
+// loading="lazy" so six 5 MB files are not fetched before the reader has
+// scrolled to them.
+var atts = Attachments($feature, { types: ['jpg', 'jpeg', 'png'] });
+var nPhotos = Count(atts);
+
+if (nPhotos > 0) {
+  var attBase = 'https://services1.arcgis.com/VuN78wcRdq1Oj69W/arcgis/rest/'
+              + 'services/Biodiversity_KKT_Projects/FeatureServer/4/'
+              + Text($feature.OBJECTID) + '/attachments/';
+
+  h += '<div style="padding:11px 16px 14px 16px;border-top:1px solid #e2dfd8">';
+  h +=   '<div style="font-size:9.5px;font-weight:600;letter-spacing:0.1em;'
+       + 'text-transform:uppercase;color:#7a9a82;padding-bottom:7px">Photos</div>';
+
+  // Lead image. max-width:100% keeps it inside the panel at any width; height
+  // auto preserves the aspect ratio, which varies - these are field photos in
+  // both orientations.
+  var lead = attBase + Text(atts[0]['id']);
+  h += '<a href="' + lead + '" target="_blank" style="text-decoration:none">'
+     +   '<img src="' + lead + '" alt="" '
+     +     'style="display:block;width:100%;max-width:100%;height:auto;'
+     +     'border-radius:3px;border:1px solid #e2dfd8" />'
+     + '</a>';
+
+  // The rest, as a thumbnail strip. Table cells rather than flexbox - same
+  // sanitiser constraint as the activity bars above. Fixed 54px tall with
+  // object-fit:cover so mixed orientations still line up.
+  if (nPhotos > 1) {
+    h += '<table cellpadding="0" cellspacing="0" '
+       + 'style="border-collapse:separate;border-spacing:4px 0;margin:5px -4px 0 -4px">'
+       + '<tr>';
+    for (var p in atts) {
+      if (p > 0) {
+        var thumb = attBase + Text(atts[p]['id']);
+        h += '<td style="padding:0">'
+           +   '<a href="' + thumb + '" target="_blank" '
+           +     'style="text-decoration:none">'
+           +     '<img src="' + thumb + '" alt="" loading="lazy" '
+           +       'style="display:block;height:54px;width:100%;object-fit:cover;'
+           +       'border-radius:2px;border:1px solid #e2dfd8" />'
+           +   '</a>'
+           + '</td>';
+      }
+    }
+    h += '</tr></table>';
+  }
+
+  var cap = 'Tap a photo to open it full size.';
+  if (nPhotos > 1) { cap = Text(nPhotos) + ' photos. ' + cap; }
+  h += '<div style="font-size:10.5px;color:#8b9d90;margin-top:6px">' + cap + '</div>';
   h += '</div>';
 }
 
