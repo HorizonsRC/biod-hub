@@ -2,11 +2,11 @@
 // KKT project popup — Arcade expression
 //
 // Paste into: Map Viewer > the KKT_Projects_Layer > Pop-ups > Add content >
-// Arcade. Delete the "Fields list" element that is there now.
+// Arcade. Delete the "Fields list" element that is there now, and add an
+// "Attachments" element UNDER this one for the photos.
 //
-// Photos come from a separate "Attachments" popup element placed UNDER this
-// one, not from this expression. Drawing them here was tried on 1 Sep 2026 to
-// get around the element's thumbnail compression, and does not work - see
+// Drawing the photos in this expression instead, to get around that element's
+// thumbnail compression, was tried on 1 Sep 2026 and does not work — see
 // "Photos: why they are not drawn here" at the foot of this file before trying
 // it again.
 //
