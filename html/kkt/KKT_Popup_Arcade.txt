@@ -4,10 +4,11 @@
 // Paste into: Map Viewer > the KKT_Projects_Layer > Pop-ups > Add content >
 // Arcade. Delete the "Fields list" element that is there now.
 //
-// PHOTOS ARE DRAWN BY THIS EXPRESSION — there should be NO "Attachments"
-// element on the popup. If one is still there from the 31 Aug setup, remove
-// it, or every photo appears twice: once sharp from here, once soft from it.
-// See the "photos" section at the foot of this file for why.
+// Photos come from a separate "Attachments" popup element placed UNDER this
+// one, not from this expression. Drawing them here was tried on 1 Sep 2026 to
+// get around the element's thumbnail compression, and does not work - see
+// "Photos: why they are not drawn here" at the foot of this file before trying
+// it again.
 //
 // It returns HTML, which the popup renders. The ExB Feature Info widget draws
 // the same popup definition, so the panel and the map popup both pick this up
@@ -264,106 +265,54 @@ if (filled($feature.Website) || filled($feature.Social_media)
   h += '</div>';
 }
 
-// ---- photos ---------------------------------------------------------------
-// Drawn here rather than by an "Attachments" popup element, for image quality.
+// ---- photos: why they are not drawn here ---------------------------------
+// TRIED AND FAILED, 1 Sep 2026. Do not rebuild this without reading below.
 //
-// The Attachments element renders each photo as a THUMBNAIL — it asks the REST
-// endpoint for a small derivative and scales it up to fill the panel, which is
-// the softness visible in the ExB Feature Info widget. There is no setting for
-// it in Map Viewer or ExB; it is how that element works. The Image widget looks
-// better because it loads the original, but it is not reactive — it sits blank
-// until a feature is selected, so a year tab opens with an empty panel, and it
-// has none of the Feature Info widget's map actions.
-//
-// An <img> pointing at the attachment's own REST URL gets the ORIGINAL file:
+// The goal was image quality. The built-in Attachments element renders each
+// photo as a THUMBNAIL and scales it up to fill the panel, which is the
+// softness visible in the ExB Feature Info widget. There is no setting for it
+// in Map Viewer or ExB. The Image widget does load originals and looks better,
+// but it is not reactive - it sits blank until a feature is selected, so a
+// year tab opens empty - and it has none of the Feature Info widget's map
+// actions. So the idea was to draw the photos in this expression instead,
+// pointing <img> at each attachment's own REST URL:
 //
 //     <service>/4/<OBJECTID>/attachments/<attachmentId>
 //
-// so the browser scales a full-size photo DOWN to the panel width instead of
-// scaling a thumbnail UP. Same reactivity as before, because this is still the
-// popup, and the map actions are untouched.
+// That URL is correct and the endpoint works - it returns the full original
+// (verified: OID 118 attachment 162 downloads all 4.7 MB through an
+// authenticated connection). The expression ran cleanly and the popup
+// sanitiser KEPT the <img> tags. The blocker is authentication, and it is not
+// something this card can solve:
 //
-// The service is token-protected (499 anonymously, checked again 1 Sep 2026),
-// but these load for a signed-in viewer: the request goes to the same host the
-// user already has an ArcGIS session with, so the browser attaches it — the
-// same way the built-in Attachments element fetches its thumbnails from this
-// same protected service. This is also why it CANNOT be moved to a public page
-// outside AGOL.
+//   * The service is secured. The attachment endpoint rejects an anonymous
+//     request with 499 Token Required.
+//   * It does NOT accept the token as a `?token=` query parameter - that form
+//     returns "Token Required" even with a valid token. It wants an
+//     Authorization header, which is how the SDK and Esri's own widgets fetch
+//     attachments.
+//   * An <img src="..."> cannot set a header. A browser can only send a query
+//     string or a cookie, so there is no way to authenticate an <img> here.
 //
-// Sizing, given the spread of what is attached (184 photos over 102 features,
-// 1 Sep 2026): 56 features have one photo, 46 have two to six, the most is six
-// (OID 28). A 2x3 grid at 340px gives ~105px tiles, which is worse than the
-// thumbnails this is meant to replace. So: one lead image at full panel width,
-// the rest as a strip of thumbnails beneath it. Every one links to its own
-// original, so a click opens the full-size photo in a new tab.
+// The symptom, if this is ever reintroduced by accident: the Photos heading
+// and the "N photos" caption render correctly, and each image is a broken-image
+// icon. That combination means the markup survived and the fetch failed - it
+// is the signature of this specific problem, not a sanitiser or a syntax one.
 //
-// Originals are big — median 282 KB but up to 9.5 MB (OID 16's are ~5 MB each).
-// Only the lead image is loaded eagerly for that reason; the strip is marked
-// loading="lazy" so six 5 MB files are not fetched before the reader has
-// scrolled to them.
+// A prior dead end on the way here: the first version filtered with
+// { types: ['jpg','jpeg','png'] } and drew nothing at all, because Arcade
+// matches the file extension case-sensitively and 43 of this layer's 184
+// attachments are uppercase .JPG. If attachments are ever enumerated here for
+// some other purpose, take them all or filter on CONTENTTYPE - never on a
+// lowercase extension list.
 //
-// NO `types` FILTER, deliberately. The first version passed
-// { types: ['jpg','jpeg','png'] } and drew nothing at all on the feature it was
-// first tested against (OID 118, David and Harriet Eade). Arcade filters on the
-// file extension as stored, and that match is case-sensitive: 43 of the 184
-// attachments on this layer are uppercase .JPG or .JPEG, so a lowercase list
-// silently drops them. OID 118's two photos are both .JPG, so it filtered to
-// zero and skipped the whole section - which read as "images don't display"
-// rather than as a filter bug.
-//
-// Nothing here needs filtering anyway: the layer holds 183 JPEGs and 1 PNG,
-// all of them photos. Taking every attachment is both correct and immune to
-// the casing trap. If a non-image is ever attached, filter on CONTENTTYPE
-// rather than the extension - that is the reliable field.
-var atts = Attachments($feature);
-var nPhotos = Count(atts);
-
-if (nPhotos > 0) {
-  var attBase = 'https://services1.arcgis.com/VuN78wcRdq1Oj69W/arcgis/rest/'
-              + 'services/Biodiversity_KKT_Projects/FeatureServer/4/'
-              + Text($feature.OBJECTID) + '/attachments/';
-
-  h += '<div style="padding:11px 16px 14px 16px;border-top:1px solid #e2dfd8">';
-  h +=   '<div style="font-size:9.5px;font-weight:600;letter-spacing:0.1em;'
-       + 'text-transform:uppercase;color:#7a9a82;padding-bottom:7px">Photos</div>';
-
-  // Lead image. max-width:100% keeps it inside the panel at any width; height
-  // auto preserves the aspect ratio, which varies - these are field photos in
-  // both orientations.
-  var lead = attBase + Text(atts[0]['id']);
-  h += '<a href="' + lead + '" target="_blank" style="text-decoration:none">'
-     +   '<img src="' + lead + '" alt="" '
-     +     'style="display:block;width:100%;max-width:100%;height:auto;'
-     +     'border-radius:3px;border:1px solid #e2dfd8" />'
-     + '</a>';
-
-  // The rest, as a thumbnail strip. Table cells rather than flexbox - same
-  // sanitiser constraint as the activity bars above. Fixed 54px tall with
-  // object-fit:cover so mixed orientations still line up.
-  if (nPhotos > 1) {
-    h += '<table cellpadding="0" cellspacing="0" '
-       + 'style="border-collapse:separate;border-spacing:4px 0;margin:5px -4px 0 -4px">'
-       + '<tr>';
-    for (var p in atts) {
-      if (p > 0) {
-        var thumb = attBase + Text(atts[p]['id']);
-        h += '<td style="padding:0">'
-           +   '<a href="' + thumb + '" target="_blank" '
-           +     'style="text-decoration:none">'
-           +     '<img src="' + thumb + '" alt="" loading="lazy" '
-           +       'style="display:block;height:54px;width:100%;object-fit:cover;'
-           +       'border-radius:2px;border:1px solid #e2dfd8" />'
-           +   '</a>'
-           + '</td>';
-      }
-    }
-    h += '</tr></table>';
-  }
-
-  var cap = 'Tap a photo to open it full size.';
-  if (nPhotos > 1) { cap = Text(nPhotos) + ' photos. ' + cap; }
-  h += '<div style="font-size:10.5px;color:#8b9d90;margin-top:6px">' + cap + '</div>';
-  h += '</div>';
-}
+// What is left, if the compression is still worth attacking:
+//   * Live with the Attachments element. It is reactive and it works.
+//   * The Image widget, accepting that it is blank until a feature is picked.
+//   * Re-attaching smaller, pre-resized copies so the thumbnail derivative is
+//     generated from a less oversized source. Untested, and it means editing
+//     184 attachments.
+//   * Asking Esri whether the attachment element's thumbnail size is
+//     configurable in a newer ExB version.
 
 return { type: 'text', text: h };

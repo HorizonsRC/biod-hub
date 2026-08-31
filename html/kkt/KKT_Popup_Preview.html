@@ -39,15 +39,14 @@
 <div class="stage" id="stage" style="width:340px"></div>
 
 <div class="note">
-  Sample records are real rows from <b>KKT_Projects_Layer</b>. Photos are now
-  drawn <b>by the card itself</b>, not by the built-in Attachments element —
-  that element serves thumbnails and scales them up, which is what made images
-  look soft in the ExB Feature Info panel. The real card points at each
-  attachment's REST URL and gets the original.
+  Sample records are real rows from <b>KKT_Projects_Layer</b>. Photos are drawn
+  here as a placeholder strip — in the real popup they come from the built-in
+  Attachments element sitting under this card, not from the HTML.
   <br><br>
-  The placeholders here are grey SVGs: loading the real photos needs an ArcGIS
-  session this page does not have. <b>Use this page to judge layout at a given
-  width; image quality has to be checked in ExB itself.</b>
+  Drawing them in the card instead, to avoid that element's thumbnail
+  compression, was tried on 1 Sep 2026 and does not work: attachment URLs need
+  an auth header, and an <code>&lt;img&gt;</code> cannot send one. See the
+  comment at the foot of <b>KKT_Popup_Arcade.txt</b>.
 </div>
 
 <script>
@@ -118,9 +117,8 @@ const RECORDS = [
     Project_ID: "KKT-022", photos: 3 },
 
   // The most photos any grant carries - six, checked against the layer 1 Sep
-  // 2026. Here so the thumbnail strip is always designed against its worst
-  // case: five thumbnails under the lead image, which at 340px is where they
-  // get tight.
+  // 2026 (184 photos over 102 features: 56 have one, 46 have two to six).
+  // Kept as the worst case for however the photo block is laid out.
   { label: "OID 28 — Manaaki Ruahine (6 photos, the most in the layer)",
     OBJECTID: 28, Group_name_1: "Manaaki Ruahine",
     ProjectNam_1: "Mākāretu Restoration Project - Ngamoko/Norsewood Trapline Section",
@@ -421,56 +419,26 @@ function cardHtml(r) {
 
 // Placeholder for the attachments element, which sits under the card in the
 // real popup. Preview only — not part of the markup that goes to AGOL.
-// Photos, drawn the way the Arcade expression draws them: one lead image at
-// full panel width, the rest as a thumbnail strip beneath.
+// Photos: grey placeholder squares standing in for the built-in Attachments
+// element, which is what actually renders them in the real popup.
 //
-// This mirrors KKT_Popup_Arcade.txt - if the layout changes there it changes
-// here, by hand, as with the rest of this file. It used to draw grey squares
-// standing in for the built-in Attachments element; that element is no longer
-// used, because it serves thumbnails and scales them UP, which is the softness
-// visible in the ExB Feature Info panel.
-//
-// The real card points <img> at the attachment's REST URL, which needs an
-// ArcGIS session. There is none here, so this harness substitutes inline SVG
-// placeholders at plausible photo aspect ratios - this file is for judging
-// LAYOUT at a given width, not image quality. Quality has to be checked in
-// ExB itself.
-function ph(w, h, label) {
-  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '">'
-            + '<rect width="100%" height="100%" fill="#cfdacf"/>'
-            + '<text x="50%" y="50%" fill="#6d8472" font-family="sans-serif" '
-            + 'font-size="' + Math.round(Math.min(w, h) / 5) + '" text-anchor="middle" '
-            + 'dominant-baseline="middle">' + label + '</text></svg>';
-  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-}
-
+// Drawing them in the card instead - <img> pointing at each attachment's REST
+// URL, to get the original rather than the element's upscaled thumbnail - was
+// tried on 1 Sep 2026 and does not work. The attachment endpoint needs an auth
+// header and an <img> can only send a query string or a cookie. The full
+// reasoning is at the foot of KKT_Popup_Arcade.txt; don't rebuild it here
+// without reading that first.
 function photoStrip(n) {
   if (!n) return '';
-  let s = '<div style="padding:11px 16px 14px 16px;border-top:1px solid #e2dfd8">'
+  let s = '<div style="padding:0 17px 16px 17px">'
         + '<div style="font-size:9.5px;font-weight:600;letter-spacing:0.1em;'
-        + 'text-transform:uppercase;color:#7a9a82;padding-bottom:7px">Photos</div>';
-
-  s += '<img src="' + ph(800, 533, '1') + '" alt="" '
-     + 'style="display:block;width:100%;max-width:100%;height:auto;'
-     + 'border-radius:3px;border:1px solid #e2dfd8" />';
-
-  if (n > 1) {
-    s += '<table cellpadding="0" cellspacing="0" '
-       + 'style="border-collapse:separate;border-spacing:4px 0;margin:5px -4px 0 -4px">'
-       + '<tr>';
-    for (let i = 1; i < n; i++) {
-      s += '<td style="padding:0">'
-         +   '<img src="' + ph(200, 150, i + 1) + '" alt="" '
-         +     'style="display:block;height:54px;width:100%;object-fit:cover;'
-         +     'border-radius:2px;border:1px solid #e2dfd8" />'
-         + '</td>';
-    }
-    s += '</tr></table>';
+        + 'text-transform:uppercase;color:#7a9a82;border-top:1px solid #e2dfd8;'
+        + 'padding-top:10px;margin-bottom:8px">Photos ('
+        + n + ') &mdash; attachments element</div>';
+  for (let i = 0; i < n; i++) {
+    s += '<div style="display:inline-block;width:72px;height:72px;'
+       + 'background:#dbe2db;border-radius:4px;margin:0 6px 6px 0"></div>';
   }
-
-  let cap = 'Tap a photo to open it full size.';
-  if (n > 1) cap = n + ' photos. ' + cap;
-  s += '<div style="font-size:10.5px;color:#8b9d90;margin-top:6px">' + cap + '</div>';
   return s + '</div>';
 }
 
