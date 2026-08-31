@@ -188,16 +188,52 @@ function cardHtml(r) {
        + 'color:#f4f8f4;margin-top:5px">' + esc(r.ProjectNam_1) + '</div>';
   h += '</div>';
 
-  // ---- award ------------------------------------------------------------
+  // ---- award, and the report link ----------------------------------------
   // The award is what people open this popup for, so it gets the largest
   // type on the card rather than a row in a list of fields.
-  h += '<div style="background:#f5f4f0;border-bottom:1px solid #e2dfd8;'
-     + 'border-left:4px solid ' + accent + ';padding:11px 16px">'
-     +   '<div style="font-family:' + SERIF + ';font-size:23px;color:#1c3438;'
-     +     'line-height:1.1">' + esc(String(r.Current_YearFund).trim()) + '</div>'
-     +   '<div style="font-size:11px;color:#5a7060;margin-top:2px">'
-     +     'awarded this grant year</div>'
-     + '</div>';
+  //
+  // The report button sits in this band, right-aligned against the award,
+  // rather than down with the website and social pills. Two reasons: the award
+  // band has dead space on its right at every panel width, and three buttons in
+  // a row at the foot of the card read as one undifferentiated group — which is
+  // the clutter it was moved away from. Up here it reads as part of the grant.
+  //
+  // Label is just "Report" and not "the 2021–22 report": the round is already
+  // stated in the header band directly above, and the full wording does not fit
+  // beside the award at the 340px Feature Info width.
+  let rptCell = '';
+  if (has(r.Report_Link)) {
+    const rptBtn = 'display:inline-block;text-decoration:none;font-size:11.5px;'
+                 + 'font-weight:600;padding:6px 12px;border-radius:15px;'
+                 + 'border:1px solid ' + accent + ';color:#fff;background:'
+                 + accent + ';white-space:nowrap';
+    rptCell = '<a href="' + esc(r.Report_Link) + '" target="_blank" style="'
+            + rptBtn + '">Report &#8599;</a>';
+  }
+
+  if (has(r.Current_YearFund)) {
+    h += '<div style="background:#f5f4f0;border-bottom:1px solid #e2dfd8;'
+       + 'border-left:4px solid ' + accent + ';padding:11px 16px">'
+       +   '<table width="100%" cellpadding="0" cellspacing="0" '
+       +     'style="border-collapse:collapse"><tr>'
+       +     '<td style="padding:0">'
+       +       '<div style="font-family:' + SERIF + ';font-size:23px;'
+       +         'color:#1c3438;line-height:1.1">'
+       +         esc(String(r.Current_YearFund).trim()) + '</div>'
+       +       '<div style="font-size:11px;color:#5a7060;margin-top:2px">'
+       +         'awarded this grant year</div>'
+       +     '</td>'
+       +     '<td align="right" valign="middle" style="padding:0 0 0 8px">'
+       +       rptCell + '</td>'
+       +   '</tr></table>'
+       + '</div>';
+  } else if (rptCell !== '') {
+    // No award figure to sit beside — rare, but the link should not vanish
+    // with it. Its own band, so the card still opens with the report to hand.
+    h += '<div style="background:#f5f4f0;border-bottom:1px solid #e2dfd8;'
+       + 'border-left:4px solid ' + accent + ';padding:11px 16px">'
+       + rptCell + '</div>';
+  }
 
   // ---- district + grant years -------------------------------------------
   // No_of_GrantYears counts the year within a consecutive multi-year award,
@@ -289,36 +325,15 @@ function cardHtml(r) {
   // Only drawn when there is something to link to. Roughly half the rows have
   // no website and two thirds no social media, and empty rows are exactly
   // what makes the default popup look unfinished.
-  if (has(r.Report_Link) || has(r.Website) || has(r.Social_media)) {
+  // The report link is NOT here — it sits in the award band at the top of the
+  // card. See the comment there for why.
+  if (has(r.Website) || has(r.Social_media)) {
     const btn = 'display:inline-block;text-decoration:none;font-size:12px;'
               + 'font-weight:600;padding:6px 13px;border-radius:16px;'
               + 'margin:0 6px 6px 0;border:1px solid #c8d2c8;color:#1c3438;'
               + 'background:#fff';
     h += '<div style="padding:9px 16px 13px 16px;border-top:1px solid #e2dfd8;'
        + 'margin-top:6px">';
-
-    // The annual summary report, opened at this project's own page via the
-    // "#page=" fragment already baked into Report_Link. Given its own filled
-    // button above the others because it is a different kind of link: the
-    // group's website is theirs, this is Horizons' published account of the
-    // funded work, and it is the write-up the card is a summary of.
-    //
-    // Blank wherever there is no page to open - 26-27 has no report yet, and a
-    // couple of grants have no page in their year's report. Nothing is drawn
-    // in that case rather than a dead button.
-    if (has(r.Report_Link)) {
-      const rptBtn = 'display:inline-block;text-decoration:none;font-size:12px;'
-                   + 'font-weight:600;padding:7px 14px;border-radius:16px;'
-                   + 'margin:0 6px 8px 0;border:1px solid ' + accent + ';'
-                   + 'color:#fff;background:' + accent;
-      // Kept as an if/else to mirror the Arcade version line for line - Arcade
-      // has no ternary operator, and the two files are matched by hand.
-      let rptWhich = 'project';
-      const rl = yearLabel(r.Grant_year_1);
-      if (rl !== '') { rptWhich = esc(rl); }
-      h += '<div><a href="' + esc(r.Report_Link) + '" target="_blank" style="'
-         + rptBtn + '">Read the ' + rptWhich + ' report &#8599;</a></div>';
-    }
 
     if (has(r.Website))      h += '<a href="' + esc(r.Website) + '" target="_blank" '
                                 + 'style="' + btn + '">Website &#8599;</a>';
