@@ -213,7 +213,13 @@ if (nActs > 0) {
 // the default popup look unfinished.
 // The report link is NOT here - it sits in the award band at the top of the
 // card. See the comment there for why.
-if (filled($feature.Website) || filled($feature.Social_media)) {
+//
+// Trap.NZ is a separate field from Website because a group can have both, and
+// a single field cannot hold two links. Where a group runs its trapping
+// records publicly on trap.nz that page is often more current than its own
+// website, so it gets equal billing rather than being folded in.
+if (filled($feature.Website) || filled($feature.Social_media)
+    || filled($feature.TrapNZ_Link)) {
   var btn = 'display:inline-block;text-decoration:none;font-size:12px;'
           + 'font-weight:600;padding:6px 13px;border-radius:16px;'
           + 'margin:0 6px 6px 0;border:1px solid #c8d2c8;color:#1c3438;'
@@ -228,6 +234,10 @@ if (filled($feature.Website) || filled($feature.Social_media)) {
   if (filled($feature.Social_media)) {
     h += '<a href="' + esc($feature.Social_media) + '" target="_blank" style="'
        + btn + '">Social media &#8599;</a>';
+  }
+  if (filled($feature.TrapNZ_Link)) {
+    h += '<a href="' + esc($feature.TrapNZ_Link) + '" target="_blank" style="'
+       + btn + '">Trap.NZ &#8599;</a>';
   }
   h += '</div>';
 }

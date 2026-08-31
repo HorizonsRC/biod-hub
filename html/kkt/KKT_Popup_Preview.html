@@ -91,6 +91,11 @@ const RECORDS = [
     Report_Link: "https://www.horizons.govt.nz/media/osmikher/kanorau-koiora-taketake-report-summary-report-2023-24.pdf#page=23",
     Website: "https://www.rwp.org.nz/",
     Social_media: "https://www.facebook.com/people/Ruahine-Whio-Protectors/100066318196849/",
+    // All three link types at once — the widest the button row ever gets, and
+    // the case that decides whether it wraps at 340px. Ruahine Whio really does
+    // have all three (OID 179 held the website and the trap.nz link jammed into
+    // Website together, before TrapNZ_Link existed to separate them).
+    TrapNZ_Link: "https://trap.nz/project/8155837/info",
     Project_ID: "KKT-016", photos: 2 },
 
   { label: "OID 1 — Gribble Family Trust (no website or social)",
@@ -329,7 +334,12 @@ function cardHtml(r) {
   // what makes the default popup look unfinished.
   // The report link is NOT here — it sits in the award band at the top of the
   // card. See the comment there for why.
-  if (has(r.Website) || has(r.Social_media)) {
+  //
+  // Trap.NZ is a separate field from Website because a group can have both, and
+  // a single field cannot hold two links. Where a group runs its trapping
+  // records publicly on trap.nz that page is often more current than its own
+  // website, so it gets equal billing rather than being folded in.
+  if (has(r.Website) || has(r.Social_media) || has(r.TrapNZ_Link)) {
     const btn = 'display:inline-block;text-decoration:none;font-size:12px;'
               + 'font-weight:600;padding:6px 13px;border-radius:16px;'
               + 'margin:0 6px 6px 0;border:1px solid #c8d2c8;color:#1c3438;'
@@ -341,6 +351,8 @@ function cardHtml(r) {
                                 + 'style="' + btn + '">Website &#8599;</a>';
     if (has(r.Social_media)) h += '<a href="' + esc(r.Social_media) + '" target="_blank" '
                                 + 'style="' + btn + '">Social media &#8599;</a>';
+    if (has(r.TrapNZ_Link))  h += '<a href="' + esc(r.TrapNZ_Link) + '" target="_blank" '
+                                + 'style="' + btn + '">Trap.NZ &#8599;</a>';
     h += '</div>';
   } else {
     h += '<div style="padding:0 0 8px 0"></div>';
