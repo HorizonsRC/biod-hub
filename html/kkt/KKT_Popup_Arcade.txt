@@ -5,11 +5,6 @@
 // Arcade. Delete the "Fields list" element that is there now, and add an
 // "Attachments" element UNDER this one for the photos.
 //
-// Drawing the photos in this expression instead, to get around that element's
-// thumbnail compression, was tried on 1 Sep 2026 and does not work — see
-// "Photos: why they are not drawn here" at the foot of this file before trying
-// it again.
-//
 // It returns HTML, which the popup renders. The ExB Feature Info widget draws
 // the same popup definition, so the panel and the map popup both pick this up
 // and both stay tied to whichever feature is selected.
@@ -264,55 +259,5 @@ if (filled($feature.Website) || filled($feature.Social_media)
   }
   h += '</div>';
 }
-
-// ---- photos: why they are not drawn here ---------------------------------
-// TRIED AND FAILED, 1 Sep 2026. Do not rebuild this without reading below.
-//
-// The goal was image quality. The built-in Attachments element renders each
-// photo as a THUMBNAIL and scales it up to fill the panel, which is the
-// softness visible in the ExB Feature Info widget. There is no setting for it
-// in Map Viewer or ExB. The Image widget does load originals and looks better,
-// but it is not reactive - it sits blank until a feature is selected, so a
-// year tab opens empty - and it has none of the Feature Info widget's map
-// actions. So the idea was to draw the photos in this expression instead,
-// pointing <img> at each attachment's own REST URL:
-//
-//     <service>/4/<OBJECTID>/attachments/<attachmentId>
-//
-// That URL is correct and the endpoint works - it returns the full original
-// (verified: OID 118 attachment 162 downloads all 4.7 MB through an
-// authenticated connection). The expression ran cleanly and the popup
-// sanitiser KEPT the <img> tags. The blocker is authentication, and it is not
-// something this card can solve:
-//
-//   * The service is secured. The attachment endpoint rejects an anonymous
-//     request with 499 Token Required.
-//   * It does NOT accept the token as a `?token=` query parameter - that form
-//     returns "Token Required" even with a valid token. It wants an
-//     Authorization header, which is how the SDK and Esri's own widgets fetch
-//     attachments.
-//   * An <img src="..."> cannot set a header. A browser can only send a query
-//     string or a cookie, so there is no way to authenticate an <img> here.
-//
-// The symptom, if this is ever reintroduced by accident: the Photos heading
-// and the "N photos" caption render correctly, and each image is a broken-image
-// icon. That combination means the markup survived and the fetch failed - it
-// is the signature of this specific problem, not a sanitiser or a syntax one.
-//
-// A prior dead end on the way here: the first version filtered with
-// { types: ['jpg','jpeg','png'] } and drew nothing at all, because Arcade
-// matches the file extension case-sensitively and 43 of this layer's 184
-// attachments are uppercase .JPG. If attachments are ever enumerated here for
-// some other purpose, take them all or filter on CONTENTTYPE - never on a
-// lowercase extension list.
-//
-// What is left, if the compression is still worth attacking:
-//   * Live with the Attachments element. It is reactive and it works.
-//   * The Image widget, accepting that it is blank until a feature is picked.
-//   * Re-attaching smaller, pre-resized copies so the thumbnail derivative is
-//     generated from a less oversized source. Untested, and it means editing
-//     184 attachments.
-//   * Asking Esri whether the attachment element's thumbnail size is
-//     configurable in a newer ExB version.
 
 return { type: 'text', text: h };
