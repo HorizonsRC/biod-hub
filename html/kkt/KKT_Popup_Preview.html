@@ -311,10 +311,13 @@ function cardHtml(r) {
                    + 'font-weight:600;padding:7px 14px;border-radius:16px;'
                    + 'margin:0 6px 8px 0;border:1px solid ' + accent + ';'
                    + 'color:#fff;background:' + accent;
+      // Kept as an if/else to mirror the Arcade version line for line - Arcade
+      // has no ternary operator, and the two files are matched by hand.
+      let rptWhich = 'project';
       const rl = yearLabel(r.Grant_year_1);
+      if (rl !== '') { rptWhich = esc(rl); }
       h += '<div><a href="' + esc(r.Report_Link) + '" target="_blank" style="'
-         + rptBtn + '">Read the ' + (rl === '' ? 'project' : esc(rl))
-         + ' report &#8599;</a></div>';
+         + rptBtn + '">Read the ' + rptWhich + ' report &#8599;</a></div>';
     }
 
     if (has(r.Website))      h += '<a href="' + esc(r.Website) + '" target="_blank" '

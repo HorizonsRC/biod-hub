@@ -200,9 +200,12 @@ if (filled($feature.Report_Link) || filled($feature.Website)
                + 'font-weight:600;padding:7px 14px;border-radius:16px;'
                + 'margin:0 6px 8px 0;border:1px solid ' + accent + ';'
                + 'color:#fff;background:' + accent;
+    // Arcade has no ternary operator - an if/else, not `a ? b : c`.
+    var rptWhich = 'project';
+    if (roundLabel != '') { rptWhich = roundLabel; }
     h += '<div><a href="' + esc($feature.Report_Link) + '" target="_blank" '
-       + 'style="' + rptBtn + '">Read the '
-       + (roundLabel == '' ? 'project' : roundLabel) + ' report &#8599;</a></div>';
+       + 'style="' + rptBtn + '">Read the ' + rptWhich
+       + ' report &#8599;</a></div>';
   }
 
   if (filled($feature.Website)) {
