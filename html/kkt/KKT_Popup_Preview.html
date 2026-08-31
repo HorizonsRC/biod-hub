@@ -198,9 +198,11 @@ function cardHtml(r) {
   // a row at the foot of the card read as one undifferentiated group — which is
   // the clutter it was moved away from. Up here it reads as part of the grant.
   //
-  // Label is just "Report" and not "the 2021–22 report": the round is already
-  // stated in the header band directly above, and the full wording does not fit
-  // beside the award at the 340px Feature Info width.
+  // The label carries no year — "Summary Report", not "Read the 2021–22 summary
+  // report". The round is already stated in the header band directly above, and
+  // the year is what made the label too wide to sit here at all. Checked at
+  // 340px against the widest award in the dataset ($40,650.00, OIDs 2 and 67):
+  // it fits with room to spare. Anything longer than this does not.
   let rptCell = '';
   if (has(r.Report_Link)) {
     const rptBtn = 'display:inline-block;text-decoration:none;font-size:11.5px;'
@@ -208,7 +210,7 @@ function cardHtml(r) {
                  + 'border:1px solid ' + accent + ';color:#fff;background:'
                  + accent + ';white-space:nowrap';
     rptCell = '<a href="' + esc(r.Report_Link) + '" target="_blank" style="'
-            + rptBtn + '">Report &#8599;</a>';
+            + rptBtn + '">Summary Report &#8599;</a>';
   }
 
   if (has(r.Current_YearFund)) {
