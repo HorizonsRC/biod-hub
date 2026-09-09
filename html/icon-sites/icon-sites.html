@@ -26,17 +26,29 @@
 
   html, body {
     width: 100%; height: 100%;
-    overflow-y: auto; overflow-x: hidden;
+    overflow: hidden;
+    margin: 0;
     background: var(--bg);
     font-family: 'DM Sans', sans-serif;
     color: var(--navy);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  /* Width and height are set by the fit script below; it lays the grid out
+     wider than the iframe and scales it back down, so the cards always fill
+     the full width and never need a scrollbar. */
+  .wrapper {
+    width: 100%;
+    transform-origin: top left;
   }
 
   .grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: clamp(8px, 1.2vw, 18px);
-    padding: clamp(12px, 1.5vw, 22px) clamp(14px, 1.8vw, 26px);
+    gap: 18px;
+    padding: 22px 26px;
     width: 100%;
     align-content: start;
   }
@@ -49,8 +61,8 @@
     border-top: 4px solid var(--c);
     display: flex;
     flex-direction: column;
-    padding: clamp(14px, 1.4vw, 20px) clamp(14px, 1.5vw, 24px) clamp(12px, 1.2vw, 18px);
-    gap: clamp(6px, 0.7vw, 11px);
+    padding: 20px 24px 18px;
+    gap: 11px;
     overflow: hidden;
     opacity: 0;
     transform: translateY(14px);
@@ -78,7 +90,7 @@
   .card > div:first-child { flex-shrink: 0; }
 
   .card-label {
-    font-size: clamp(9px, 0.65vw, 10px);
+    font-size: 10px;
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -87,13 +99,13 @@
   }
   .card-title {
     font-family: 'Source Serif 4', serif;
-    font-size: clamp(16px, 1.3vw, 22px);
+    font-size: 22px;
     font-weight: 600;
     color: var(--navy);
     line-height: 1.2;
   }
   .card-desc {
-    font-size: clamp(10px, 0.78vw, 12px);
+    font-size: 12px;
     line-height: 1.55;
     color: var(--muted);
     font-weight: 300;
@@ -103,18 +115,18 @@
     margin-top: auto;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: clamp(3px, 0.35vw, 5px);
+    gap: 5px;
     flex-shrink: 0;
   }
   .meta-box {
     border: 1px solid var(--border);
     border-radius: 4px;
-    padding: clamp(3px, 0.3vw, 5px) clamp(5px, 0.5vw, 8px);
+    padding: 5px 8px;
     background: var(--c-lt);
     overflow: hidden;
   }
   .meta-key {
-    font-size: clamp(7px, 0.5vw, 8.5px);
+    font-size: 8.5px;
     font-weight: 600;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -122,7 +134,7 @@
     margin-bottom: 1px;
   }
   .meta-val {
-    font-size: clamp(9px, 0.7vw, 11px);
+    font-size: 11px;
     font-weight: 500;
     color: var(--navy);
     line-height: 1.2;
@@ -133,11 +145,11 @@
 
   .card-involvement {
     border-top: 1px solid var(--border);
-    padding-top: clamp(4px, 0.4vw, 6px);
+    padding-top: 6px;
     flex-shrink: 0;
   }
   .card-involvement-label {
-    font-size: clamp(7px, 0.5vw, 8.5px);
+    font-size: 8.5px;
     font-weight: 600;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -145,7 +157,7 @@
     margin-bottom: 2px;
   }
   .card-involvement p {
-    font-size: clamp(10px, 0.78vw, 12px);
+    font-size: 12px;
     line-height: 1.5;
     color: var(--muted);
     font-weight: 300;
@@ -160,9 +172,9 @@
     color: #fff;
     border: none;
     border-radius: 4px;
-    padding: clamp(7px, 0.65vw, 10px) clamp(12px, 1.1vw, 17px);
+    padding: 10px 17px;
     font-family: 'DM Sans', sans-serif;
-    font-size: clamp(11px, 0.85vw, 13px);
+    font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     text-decoration: none;
@@ -176,6 +188,7 @@
 </style>
 </head>
 <body>
+<div class="wrapper">
 <div class="grid">
 
   <!-- 1. Bushy Park — green -->
@@ -299,5 +312,60 @@
   </div>
 
 </div>
+</div>
+
+<script>
+/* ── FIT TO VIEWPORT ─────────────────────────────────────────────────────────
+   The six cards are taller than most iframes give us, and a scrollbar is not
+   wanted. A fixed reference canvas (as the per-site dashboards use) would fit
+   the height but waste a third of the width on a wide embed, because the
+   canvas can only scale uniformly.
+
+   So the fit is *measured* rather than assumed, the same way the KKT overview
+   panel does it. The grid is laid out wider than the iframe and scaled back
+   down: laying it out wider makes the cards wider, so the prose wraps to fewer
+   lines and the grid gets shorter, which means less scaling is needed. That is
+   circular, so it is solved by iterating — each pass measures the real laid-out
+   height and re-derives the scale, converging in a few rounds.
+
+   Never scales above 1: on a tall enough iframe the cards render at their
+   natural size and nothing happens.                                          */
+(function fitToViewport() {
+  const wrapper = document.querySelector('.wrapper');
+  const grid    = document.querySelector('.grid');
+
+  function resize() {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    let scale = 1;
+
+    // Converge on a scale where the laid-out grid height fits the viewport.
+    // offsetHeight is a layout value, so it ignores the transform already set.
+    for (let i = 0; i < 6; i++) {
+      wrapper.style.width = Math.round(vw / scale) + 'px';
+      const h = grid.offsetHeight;
+      if (!h) break;
+      const next = Math.min(1, vh / h);
+      if (Math.abs(next - scale) < 0.004) { scale = next; break; }
+      scale = next;
+    }
+
+    // Safety pass: if the final layout still overflows, take the measured
+    // shortfall rather than trusting the loop to have converged.
+    wrapper.style.width = Math.round(vw / scale) + 'px';
+    const finalH = grid.offsetHeight;
+    if (finalH && finalH * scale > vh) scale = vh / finalH;
+
+    wrapper.style.width  = Math.round(vw / scale) + 'px';
+    wrapper.style.height = Math.round(vh / scale) + 'px';
+    wrapper.style.transform = `scale(${scale})`;
+  }
+
+  resize();
+  window.addEventListener('resize', resize);
+  // Re-fit once webfonts land — they change how the prose wraps.
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(resize);
+})();
+</script>
 </body>
 </html>
