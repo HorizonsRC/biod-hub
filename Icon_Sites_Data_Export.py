@@ -93,7 +93,8 @@ TRAPNZ_TE_APITI_NODE  = getattr(config, "TRAPNZ_TE_APITI_NODE", "20690899")
 TRAPNZ_ME_URL         = getattr(config, "TRAPNZ_ME_URL",
                                 "https://trap.nz/project/32658221/killcount.json")
 
-# Community trapping projects covering Te Āpiti / Manawatū Gorge.
+# TrapNZ projects covering Te Āpiti / Manawatū Gorge. Who runs each one is not
+# published on the endpoint, so they are not described as community projects.
 # Public killcount endpoints — no API key required.
 # These replaced the authenticated WFS feed in Sep 2026 (see process_te_apiti).
 TRAPNZ_TE_APITI_PROJECTS = getattr(config, "TRAPNZ_TE_APITI_PROJECTS", [
@@ -638,7 +639,7 @@ def process_te_apiti(wp: pd.DataFrame, pl: pd.DataFrame, gis: GIS) -> dict:
     except Exception as exc:
         log.warning(f"  Trap layer query failed — skipping trap data. Error: {exc}")
 
-    # -- Community trap data (Trap.NZ public killcount endpoints) --------------
+    # -- TrapNZ trap data (public killcount endpoints) -------------------------
     # Replaces the authenticated WFS feed, which returned zero features without
     # raising an error and so wrote an empty result over good data (Sep 2026).
     # The public endpoint needs no API key, but carries no per-record dates -- so there is no

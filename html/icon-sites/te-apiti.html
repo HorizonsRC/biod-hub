@@ -401,8 +401,8 @@
     </div>
 
     <div class="panel">
-      <div class="panel-title green">Community Trapping</div>
-      <div class="panel-sub" id="trapnz-sub">Trap.NZ projects</div>
+      <div class="panel-title green">TrapNZ Kills</div>
+      <div class="panel-sub" id="trapnz-sub">TrapNZ projects</div>
       <div class="chart-wrap">
         <canvas id="trapnzChart"></canvas>
       </div>
@@ -1368,12 +1368,16 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
   });
 })();
 
-/* ── COMMUNITY TRAPPING — Trap.NZ projects, combined (bottom row) ────────────
-   Public Trap.NZ killcount endpoints carry no record dates, so these cannot be
-   split by financial year like the HRC traps. Trap.NZ's own two windows are
+/* ── TRAPNZ KILLS — the gorge's TrapNZ projects, combined (bottom row) ───────
+   Public TrapNZ killcount endpoints carry no record dates, so these cannot be
+   split by financial year like the HRC traps. TrapNZ's own two windows are
    shown instead: "all time" since each project began, and its trailing
    12-month window — which is NOT the NZ financial year, so it is not labelled
-   as one.                                                                    */
+   as one.
+
+   Deliberately not called "community" trapping: who runs each project is not
+   published on the endpoint, and at least some are understood to be managed by
+   DOC rather than community groups.                                          */
 (function () {
   const tn = DATA.trapnz || {};
   const sub = document.getElementById('trapnz-sub');
@@ -1382,12 +1386,12 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
   const traps    = tn.traps || 0;
   if (sub) {
     sub.textContent = projects
-      ? `${projects} Trap.NZ project${projects === 1 ? '' : 's'} · ${traps.toLocaleString()} traps`
-      : 'Trap.NZ data unavailable';
+      ? `${projects} TrapNZ project${projects === 1 ? '' : 's'} · ${traps.toLocaleString()} traps`
+      : 'TrapNZ data unavailable';
   }
 
   // Same species groupings and colours as the HRC catches chart, so the two
-  // read as one system. Trap.NZ reports "Mustelid" singular.
+  // read as one system. TrapNZ reports "Mustelid" singular.
   const GROUPS = [
     { label: 'Rat',       keys: ['Rat'],                  color: '#6b4423' },
     { label: 'Possum',    keys: ['Possum'],               color: '#4a4a4a' },
