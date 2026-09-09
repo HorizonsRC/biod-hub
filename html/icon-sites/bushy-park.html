@@ -79,9 +79,11 @@
   }
 
   /* ── BOTTOM ROW ─────────────────────────────── */
+  /* Revegetation is only two bars, so it gets the narrow column and the two
+     species charts get the width they need for their axis labels. */
   .row-bottom {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 0.62fr 1.19fr 1.19fr;
     gap: 10px;
     padding: 5px 0 0;
     min-height: 0;
@@ -335,7 +337,7 @@
 
     <div class="panel">
       <div class="panel-title">Revegetation 2025–26</div>
-      <div class="panel-sub">Native plants planted and raised by volunteers</div>
+      <div class="panel-sub">Grown and planted by volunteers</div>
       <div class="chart-wrap">
         <canvas id="revetChart"></canvas>
       </div>
@@ -346,6 +348,14 @@
       <div class="panel-sub">Stems removed under the HRC grant, by species</div>
       <div class="chart-wrap">
         <canvas id="weedChart"></canvas>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Halo Trap Catches 2025–26</div>
+      <div class="panel-sub">Pests removed from the 800 ha buffer, by species</div>
+      <div class="chart-wrap">
+        <canvas id="catchChart"></canvas>
       </div>
     </div>
 
@@ -417,8 +427,8 @@ new Chart(document.getElementById('revetChart'), {
   data: {
     labels: ['Native Plants'],
     datasets: [
-      { label: 'Planted in ground', data: [2450], backgroundColor: green, borderRadius: 3, barThickness: 60 },
-      { label: 'Raised in nursery', data: [2500], backgroundColor: greenLt, borderRadius: 3, barThickness: 60 }
+      { label: 'Planted in ground', data: [2450], backgroundColor: green, borderRadius: 3, barThickness: 42 },
+      { label: 'Raised in nursery', data: [2500], backgroundColor: greenLt, borderRadius: 3, barThickness: 42 }
     ]
   },
   options: {
@@ -464,7 +474,44 @@ new Chart(document.getElementById('weedChart'), {
         ticks: { font: { size: 10 } },
         title: { display: true, text: 'Stems controlled', font: { size: 10 }, color: '#8a8a82' }
       },
-      y: { grid: { display: false }, ticks: { font: { size: 9.5 } } }
+      /* autoSkip off: Chart.js drops every other species name at this panel
+         width, which reads as if those species were not controlled. */
+      y: { grid: { display: false }, ticks: { font: { size: 11.5 }, autoSkip: false } }
+    }
+  }
+});
+
+/* ── HALO TRAP CATCHES ──
+   Species totals for 2025-26, from Table 1 of the annual report.
+   HAND-ENTERED, and it has to be: that table is a pasted image in the PDF, not
+   text, so Icon_Sites_Report_Check.py cannot read it. Re-key it from the report
+   each year and check the total still comes to the figure quoted in the
+   Activity Summary (610 for 2025-26). */
+new Chart(document.getElementById('catchChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Rat', 'Mouse', 'Hedgehog', 'Possum', 'Rabbit', 'Stoat', 'Weasel', 'Ferret', 'Cat'],
+    datasets: [{
+      label: 'Caught',
+      data: [304, 117, 73, 44, 36, 17, 8, 6, 5],
+      backgroundColor: green,
+      borderRadius: 3,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.x.toLocaleString()} caught` } }
+    },
+    scales: {
+      x: {
+        grid: { color: border },
+        ticks: { font: { size: 10 } },
+        title: { display: true, text: 'Pests caught', font: { size: 10 }, color: '#8a8a82' }
+      },
+      y: { grid: { display: false }, ticks: { font: { size: 11.5 }, autoSkip: false } }
     }
   }
 });

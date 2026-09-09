@@ -639,6 +639,21 @@ def compare_bushy_park(figures):
     add("Plants in nursery (chart)", nursery[0] if nursery else None,
         fig["value"] if fig else None, "annual report (prose)")
 
+    # The halo catches chart is hand-entered — its source table is a pasted
+    # image in the report, not text, so it cannot be extracted. The caption
+    # above it is text, though, so the chart's total can still be checked.
+    halo = figures.get("Halo Pests Removed")
+    if halo and halo["value"]:
+        charted = read_chart_dataset(html_path, "catchChart", "Caught")
+        total = sum(charted) if charted else None
+        findings.append({
+            "field": "Halo catches — chart total vs report",
+            "published": total,
+            "reported": halo["value"],
+            "status": "match" if total == halo["value"] else "CHANGED",
+            "source": "hand-entered chart, total checked against the report",
+        })
+
     stems = figures.get("Pest Plant Stems")
     if stems:
         published = read_chart_dataset(html_path, "weedChart", "2025–26")
