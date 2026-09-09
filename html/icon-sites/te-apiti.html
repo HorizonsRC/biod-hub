@@ -98,7 +98,7 @@
   /* ── BOTTOM ROW ─────────────────────────────── */
   .row-bottom {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr 0.85fr 1fr;
     gap: 8px;
     padding: 4px 0 0;
     min-height: 0;
@@ -273,11 +273,11 @@
         </div>
         <div class="stat-box">
           <div class="s-val" id="val-trap-stat">–</div>
-          <div class="s-key">Traps Deployed</div>
+          <div class="s-key">HRC Traps Deployed</div>
         </div>
         <div class="stat-box">
           <div class="s-val" id="val-trap-catches">–</div>
-          <div class="s-key">Total Trap Catches</div>
+          <div class="s-key">HRC Trap Catches</div>
         </div>
         <div class="stat-box">
           <div class="s-val" id="val-trap-species">–</div>
@@ -352,18 +352,24 @@
   <div class="row-bottom">
 
     <div class="panel">
-      <div class="panel-title">Pest Animal Catches by Year</div>
-      <div class="panel-sub">HRC + DoC Traps</div>
+      <div class="panel-title">HRC Pest Animal Catches by Year</div>
       <div class="chart-wrap">
         <canvas id="catchesChart"></canvas>
       </div>
     </div>
 
     <div class="panel">
-      <div class="panel-title">Trap Network by Type</div>
-      <div class="panel-sub">HRC + DoC Traps</div>
+      <div class="panel-title">HRC Trap Network by Type</div>
       <div class="chart-wrap">
         <canvas id="trapTypeChart"></canvas>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title green">Community Trapping</div>
+      <div class="panel-sub" id="trapnz-sub">Trap.NZ projects</div>
+      <div class="chart-wrap">
+        <canvas id="trapnzChart"></canvas>
       </div>
     </div>
 
@@ -398,11 +404,11 @@ const border  = '#ddddd8';
    DATA — auto-updated by Icon_Sites_Data_Export.py
    Source: BioD Contractor Data feature layer (Palm05 / Manawatū Gorge)
    ───────────────────────────────────────────────────────────────── */
-/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-09-09 16:04 */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-09-09 16:48 */
 const DATA = {
   "fy": "24-25",
   "site": "Te Apiti \u2013 Manawatu Gorge",
-  "generated": "2026-09-09T16:04:59.315363",
+  "generated": "2026-09-09T16:48:07.201705",
   "stats": {
     "km": 1130,
     "visits": 26,
@@ -868,13 +874,52 @@ const DATA = {
       }
     }
   },
-  "docTraps": {
-    "total": 0,
-    "byType": {
-      "labels": [],
-      "data": []
+  "trapnz": {
+    "projects": [
+      {
+        "id": "20690899",
+        "name": "Te \u0100piti Manawat\u016b Gorge",
+        "traps": 234,
+        "year": 479,
+        "all": 1183
+      },
+      {
+        "id": "8266243",
+        "name": "Manawat\u016b Gorge",
+        "traps": 109,
+        "year": 154,
+        "all": 167
+      },
+      {
+        "id": "8265879",
+        "name": "Northern Manawat\u016b Gorge Traps",
+        "traps": 154,
+        "year": 0,
+        "all": 248
+      }
+    ],
+    "projectCount": 3,
+    "traps": 497,
+    "totals": {
+      "year": 633,
+      "all": 1598
     },
-    "catchesByFy": {}
+    "bySpecies": {
+      "year": {
+        "Mustelid": 38,
+        "Rat": 253,
+        "Other": 36,
+        "Possum": 215,
+        "Hedgehog": 91
+      },
+      "all": {
+        "Possum": 589,
+        "Rat": 676,
+        "Hedgehog": 153,
+        "Mustelid": 106,
+        "Other": 74
+      }
+    }
   },
   "allYears": [
     {
@@ -975,7 +1020,7 @@ if (DATA.fy) {
 }
 
 // Stat grid
-document.getElementById('val-trap-stat').textContent = fmt(((DATA.traps || {}).total || 0) + ((DATA.docTraps || {}).total || 0));
+document.getElementById('val-trap-stat').textContent = fmt((DATA.traps || {}).total || 0);
 document.getElementById('val-adults').textContent    = fmt(DATA.stats.adults);
 document.getElementById('val-species').textContent   = fmt(DATA.stats.species);
 
@@ -1018,14 +1063,6 @@ document.getElementById('pill-km').textContent       = fmt(DATA.summary.kmTotal,
       if (v > 0) spSet.add(sp);
     });
   }
-  // Add DoC catches for current FY (normalise "2024-25" → "24-25")
-  const docByFy = {};
-  Object.entries((DATA.docTraps && DATA.docTraps.catchesByFy) || {}).forEach(([k, v]) => {
-    docByFy[k.replace(/^\d{2}(\d{2})-/, '$1-')] = v;
-  });
-  Object.entries(docByFy[DATA.fy] || {}).forEach(([sp, n]) => {
-    if (sp !== 'Bird' && n > 0) { total += n; spSet.add(sp); }
-  });
   document.getElementById('val-trap-catches').textContent = fmt(total || null);
   document.getElementById('val-trap-species').textContent = fmt(spSet.size || null);
 })();
@@ -1091,15 +1128,8 @@ new Chart(document.getElementById('speciesChart'), {
     ? DATA.traps.catchesBySpecies
     : { labels: [], species: [], data: {} };
 
-  // Normalise DoC FY keys ("2023-24") → short format ("23-24") to match HRC labels
-  const _docByFy = {};
-  Object.entries((DATA.docTraps && DATA.docTraps.catchesByFy) || {}).forEach(([k, v]) => {
-    _docByFy[k.replace(/^\d{2}(\d{2})-/, '$1-')] = v;
-  });
-
   const _fyLbls = _cs.labels || [];
   const hrcCt = (fy, sp) => { const i = _fyLbls.indexOf(fy); return i >= 0 ? ((_cs.data[sp] || [])[i] || 0) : 0; };
-  const docCt = (fy, sp) => (_docByFy[fy] || {})[sp] || 0;
 
   // Display groups — Bird excluded; Ferret/Stoat/Weasel → Mustelids; Cat/Rabbit/Mouse → Other
   const GROUPS = [
@@ -1111,13 +1141,12 @@ new Chart(document.getElementById('speciesChart'), {
   ];
 
   const grpHrc = (g, fy) => g.species.reduce((s, sp) => s + hrcCt(fy, sp), 0);
-  const grpDoc = (g, fy) => g.species.reduce((s, sp) => s + docCt(fy, sp), 0);
 
   const _datasets = GROUPS
-    .filter(g => _fyLbls.some(fy => grpHrc(g, fy) + grpDoc(g, fy) > 0))
+    .filter(g => _fyLbls.some(fy => grpHrc(g, fy) > 0))
     .map(g => ({
       label: g.label,
-      data: _fyLbls.map(fy => grpHrc(g, fy) + grpDoc(g, fy)),
+      data: _fyLbls.map(fy => grpHrc(g, fy)),
       backgroundColor: g.color,
       borderRadius: 2,
       stack: 'catches',
@@ -1137,25 +1166,14 @@ new Chart(document.getElementById('speciesChart'), {
               const fy  = ctx.label;
               const tot = ctx.parsed.y;
               if (!tot || !g) return null;
-              const hrc = grpHrc(g, fy);
-              const doc = grpDoc(g, fy);
               const lines = [` ${g.label}: ${tot.toLocaleString()} catches`];
-              if (hrc) {
-                lines.push(`   HRC: ${hrc.toLocaleString()}`);
-                if (g.species.length > 1) {
-                  g.species.forEach(sp => { const n = hrcCt(fy, sp); if (n) lines.push(`     ${sp}: ${n}`); });
-                } else {
-                  const pcoDet = ((_cs.pcoDetail || {})[fy] || {})[g.species[0]] || {};
-                  Object.entries(pcoDet).sort((a, b) => b[1] - a[1]).forEach(([z, n]) => {
-                    lines.push(`     ${z.replace(/^Bio Te Apiti\s*/i, '') || z}: ${n}`);
-                  });
-                }
-              }
-              if (doc) {
-                lines.push(`   DoC: ${doc.toLocaleString()}`);
-                if (g.species.length > 1) {
-                  g.species.forEach(sp => { const n = docCt(fy, sp); if (n) lines.push(`     ${sp}: ${n}`); });
-                }
+              if (g.species.length > 1) {
+                g.species.forEach(sp => { const n = hrcCt(fy, sp); if (n) lines.push(`   ${sp}: ${n}`); });
+              } else {
+                const pcoDet = ((_cs.pcoDetail || {})[fy] || {})[g.species[0]] || {};
+                Object.entries(pcoDet).sort((a, b) => b[1] - a[1]).forEach(([z, n]) => {
+                  lines.push(`   ${z.replace(/^Bio Te Apiti\s*/i, '') || z}: ${n}`);
+                });
               }
               return lines;
             },
@@ -1222,64 +1240,46 @@ new Chart(document.getElementById('trendsChart'), {
   }
 });
 
-/* ── TRAP TYPE CHART — HRC + DoC stacked per type (bottom right) ── */
+/* ── TRAP TYPE CHART — HRC traps per type (bottom row) ── */
 (function () {
   const _traps    = DATA.traps    || {};
-  const _doc      = DATA.docTraps || {};
   const _ttByZone = _traps.byTypeByZone || {};
 
-  // Normalise type name for matching (lowercase, no spaces): "DOC 200" == "DOC200"
-  const norm = t => t.toLowerCase().replace(/\s+/g, '');
-
-  // HRC types: normalised key → {label, count}
-  const hrcTypes = {};
+  // Types carrying at least 5 traps; smaller ones would be invisible bars
+  const hrcTypes = [];
   (_traps.byType && _traps.byType.labels || []).forEach((lbl, i) => {
     const count = _traps.byType.data[i] || 0;
-    if (count >= 5) hrcTypes[norm(lbl)] = { label: lbl, count };
+    if (count >= 5) hrcTypes.push({ label: lbl, count });
   });
 
-  // DoC types: normalised key → {label, count}
-  const docTypes = {};
-  (_doc.byType && _doc.byType.labels || []).forEach((lbl, i) => {
-    docTypes[norm(lbl)] = { label: lbl, count: _doc.byType.data[i] || 0 };
-  });
-
-  // Union of normalised keys; prefer HRC label for display
-  const allNorm    = [...new Set([...Object.keys(hrcTypes), ...Object.keys(docTypes)])];
-  const dispLabels = allNorm.map(k => (hrcTypes[k] || docTypes[k]).label);
-  const hrcData    = allNorm.map(k => (hrcTypes[k] || {}).count || 0);
-  const docData    = allNorm.map(k => (docTypes[k]  || {}).count || 0);
-  // Original HRC label (for byTypeByZone lookup)
-  const hrcOrigLbls = allNorm.map(k => (hrcTypes[k] || {}).label || null);
+  const dispLabels  = hrcTypes.map(t => t.label);
+  const hrcData     = hrcTypes.map(t => t.count);
+  // Label as stored, for the byTypeByZone tooltip lookup
+  const hrcOrigLbls = hrcTypes.map(t => t.label);
 
   new Chart(document.getElementById('trapTypeChart'), {
     type: 'bar',
     data: {
       labels: dispLabels,
       datasets: [
-        { label: 'HRC', data: hrcData, backgroundColor: teal,      borderRadius: 3, stack: 'trap' },
-        { label: 'DoC', data: docData, backgroundColor: '#1f2e35', borderRadius: 3, stack: 'trap' },
+        { label: 'HRC', data: hrcData, backgroundColor: teal, borderRadius: 3, stack: 'trap' },
       ]
     },
     options: {
       indexAxis: 'y',
       maintainAspectRatio: false,
       plugins: {
-        legend: {
-          display: true,
-          position: 'bottom',
-          labels: { font: { size: 10 }, boxWidth: 10, padding: 8 }
-        },
+        legend: { display: false },
         tooltip: {
           callbacks: {
             label: ctx => {
               const n = ctx.parsed.x;
               if (!n) return null;
-              return ` ${ctx.dataset.label}: ${n.toLocaleString()} traps`;
+              return ` ${n.toLocaleString()} traps`;
             },
             afterBody: items => {
               const lines = [];
-              const hrcItem = items.find(i => i.dataset.label === 'HRC' && i.parsed.x);
+              const hrcItem = items.find(i => i.parsed.x);
               if (hrcItem) {
                 const zones = _ttByZone[hrcOrigLbls[hrcItem.dataIndex]] || {};
                 const rows  = Object.entries(zones).sort((a, b) => b[1] - a[1]);
@@ -1300,6 +1300,86 @@ new Chart(document.getElementById('trendsChart'), {
           title: { display: true, text: 'No. of traps', font: { size: 10 }, color: '#8a8a82' }
         },
         y: { grid: { display: false }, stacked: true, ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+})();
+
+/* ── COMMUNITY TRAPPING — Trap.NZ projects, combined (bottom row) ────────────
+   Public Trap.NZ killcount endpoints carry no record dates, so these cannot be
+   split by financial year like the HRC traps. Trap.NZ's own two windows are
+   shown instead: "all time" since each project began, and its trailing
+   12-month window — which is NOT the NZ financial year, so it is not labelled
+   as one.                                                                    */
+(function () {
+  const tn = DATA.trapnz || {};
+  const sub = document.getElementById('trapnz-sub');
+
+  const projects = tn.projectCount || 0;
+  const traps    = tn.traps || 0;
+  if (sub) {
+    sub.textContent = projects
+      ? `${projects} Trap.NZ project${projects === 1 ? '' : 's'} · ${traps.toLocaleString()} traps`
+      : 'Trap.NZ data unavailable';
+  }
+
+  // Same species groupings and colours as the HRC catches chart, so the two
+  // read as one system. Trap.NZ reports "Mustelid" singular.
+  const GROUPS = [
+    { label: 'Rat',       keys: ['Rat'],                  color: '#6b4423' },
+    { label: 'Possum',    keys: ['Possum'],               color: '#4a4a4a' },
+    { label: 'Hedgehog',  keys: ['Hedgehog'],             color: '#c8a84b' },
+    { label: 'Mustelids', keys: ['Mustelid', 'Mustelids'], color: '#2d6a4f' },
+    { label: 'Other',     keys: ['Other'],                color: '#9a9a9a' },
+  ];
+
+  const sumFor = (period, g) =>
+    g.keys.reduce((s, k) => s + (((tn.bySpecies || {})[period] || {})[k] || 0), 0);
+
+  const shown  = GROUPS.filter(g => sumFor('all', g) > 0 || sumFor('year', g) > 0);
+  const labels = shown.map(g => g.label);
+  const allDat = shown.map(g => sumFor('all', g));
+  const yrDat  = shown.map(g => sumFor('year', g));
+
+  new Chart(document.getElementById('trapnzChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'All time',      data: allDat, backgroundColor: teal, borderRadius: 3 },
+        { label: 'Last 12 months', data: yrDat, backgroundColor: gold, borderRadius: 3 },
+      ]
+    },
+    options: {
+      indexAxis: 'y',
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true, position: 'bottom',
+          labels: { font: { size: 9.5 }, boxWidth: 10, padding: 6 }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const n = ctx.parsed.x;
+              if (!n) return null;
+              return ` ${ctx.dataset.label}: ${n.toLocaleString()} caught`;
+            },
+            footer: () => {
+              const rows = (tn.projects || [])
+                .map(p => `  ${p.name}: ${(p.all || 0).toLocaleString()}`);
+              return rows.length ? ['By project (all time):', ...rows].join('\n') : '';
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: border }, beginAtZero: true,
+          ticks: { font: { size: 10 } },
+          title: { display: true, text: 'Animals caught', font: { size: 10 }, color: '#8a8a82' }
+        },
+        y: { grid: { display: false }, ticks: { font: { size: 10.5 } } }
       }
     }
   });

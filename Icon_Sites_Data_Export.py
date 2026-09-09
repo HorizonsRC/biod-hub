@@ -93,6 +93,15 @@ TRAPNZ_TE_APITI_NODE  = getattr(config, "TRAPNZ_TE_APITI_NODE", "20690899")
 TRAPNZ_ME_URL         = getattr(config, "TRAPNZ_ME_URL",
                                 "https://trap.nz/project/32658221/killcount.json")
 
+# Community trapping projects covering Te Āpiti / Manawatū Gorge.
+# Public killcount endpoints — no API key required.
+# These replaced the authenticated WFS feed in Sep 2026 (see process_te_apiti).
+TRAPNZ_TE_APITI_PROJECTS = getattr(config, "TRAPNZ_TE_APITI_PROJECTS", [
+    {"id": "20690899", "name": "Te Āpiti Manawatū Gorge"},
+    {"id": "8266243",  "name": "Manawatū Gorge"},
+    {"id": "8265879",  "name": "Northern Manawatū Gorge Traps"},
+])
+
 if not CONTRACTOR_ITEM_ID or not TRAP_SERVICE_URL:
     sys.exit(
         "ERROR: CONTRACTOR_ITEM_ID and TRAP_SERVICE_URL must be set in config.py. "
@@ -629,60 +638,64 @@ def process_te_apiti(wp: pd.DataFrame, pl: pd.DataFrame, gis: GIS) -> dict:
     except Exception as exc:
         log.warning(f"  Trap layer query failed — skipping trap data. Error: {exc}")
 
-    # ── DoC trap data (Trap.NZ WFS — authenticated API) ───────────────────────
-    import collections as _col
-    doc_traps: dict = {
-        "total":      None,
-        "byType":     {"labels": [], "data": []},
-        "catchesByFy": {},
+    # -- Community trap data (Trap.NZ public killcount endpoints) --------------
+    # Replaces the authenticated WFS feed, which returned zero features without
+    # raising an error and so wrote an empty result over good data (Sep 2026).
+    # The public endpoint needs no API key, but carries no per-record dates -- so there is no
+    # financial-year breakdown here, only Trap.NZ's own rollups: "year" (its own
+    # trailing 12-month window, NOT the NZ financial year) and "all" (since the
+    # project began). HRC traps remain the only source with true FY resolution.
+    trapnz: dict = {
+        "projects":     [],
+        "projectCount": 0,
+        "traps":        0,
+        "totals":       {"year": 0, "all": 0},
+        "bySpecies":    {"year": {}, "all": {}},
     }
-    if TRAPNZ_API_KEY and TRAPNZ_TE_APITI_NODE:
-        try:
-            # Trap installations → counts by type
-            trap_feats = _fetch_trapnz_wfs_all(
-                TRAPNZ_API_KEY, TRAPNZ_TE_APITI_NODE, "default-project-traps"
-            )
-            type_counts = _col.Counter(
-                f["properties"].get("trap_type", "Unknown") for f in trap_feats
-            )
-            doc_traps["total"]  = len(trap_feats)
-            doc_traps["byType"] = {
-                "labels": [t for t, _ in type_counts.most_common()],
-                "data":   [n for _, n in type_counts.most_common()],
-            }
-            log.info(f"  DoC traps: {doc_traps['total']} | {dict(type_counts)}")
+    for _proj in TRAPNZ_TE_APITI_PROJECTS:
+        _pid   = str(_proj["id"])
+        _cache = OUTPUT_DIR / f"trapnz_teapiti_{_pid}_cache.json"
+        _kc    = fetch_trapnz_json(
+            f"https://trap.nz/project/{_pid}/killcount.json", _cache
+        )
+        if not _kc:
+            log.warning(f"  Trap.NZ project {_pid} ({_proj['name']}): no data, skipping.")
+            continue
 
-            # Catch records (paginated) → catches by species per NZ financial year
-            rec_feats = _fetch_trapnz_wfs_all(
-                TRAPNZ_API_KEY, TRAPNZ_TE_APITI_NODE, "default-project-trap-records"
-            )
-            log.info(f"  DoC catch records fetched: {len(rec_feats)}")
-            fy_sp: dict = _col.defaultdict(lambda: _col.defaultdict(int))
-            for feat in rec_feats:
-                p  = feat["properties"]
-                sp = (p.get("species_caught") or "").strip()
-                if not sp or sp == "None":
-                    continue
-                dt_str = p.get("record_date", "")
-                if not dt_str:
-                    continue
-                dt = datetime.datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
-                fy = (f"{dt.year-1}-{str(dt.year)[2:]}" if dt.month < 7
-                      else f"{dt.year}-{str(dt.year+1)[2:]}")
-                # Normalise: all Rat variants → "Rat"; Stoat/Weasel kept separately
-                if sp.startswith("Rat"):
-                    sp = "Rat"
-                fy_sp[fy][sp] += int(p.get("strikes") or 1)
+        _traps   = int(_kc.get("traps") or 0)
+        _catches = _kc.get("catches", {}) or {}
+        _yr      = _catches.get("year", {}) or {}
+        _all     = _catches.get("all",  {}) or {}
+        _yr_tot  = int(_yr.get("total")  or 0)
+        _all_tot = int(_all.get("total") or 0)
 
-            doc_traps["catchesByFy"] = {
-                fy: dict(counts) for fy, counts in sorted(fy_sp.items())
-            }
-            log.info(f"  DoC catches by FY: {doc_traps['catchesByFy']}")
+        trapnz["traps"]          += _traps
+        trapnz["totals"]["year"] += _yr_tot
+        trapnz["totals"]["all"]  += _all_tot
+        for _period, _src in (("year", _yr), ("all", _all)):
+            for _sp, _n in (_src.get("species", {}) or {}).items():
+                _bucket = trapnz["bySpecies"][_period]
+                _bucket[_sp] = _bucket.get(_sp, 0) + int(_n or 0)
 
-        except Exception as exc:
-            log.warning(f"  DoC Trap.NZ WFS fetch failed — skipping. Error: {exc}")
-    else:
-        log.info("  TRAPNZ_API_KEY not set — skipping DoC trap data.")
+        trapnz["projects"].append({
+            "id":    _pid,
+            "name":  _proj["name"],
+            "traps": _traps,
+            "year":  _yr_tot,
+            "all":   _all_tot,
+        })
+        log.info(
+            f"  Trap.NZ {_proj['name']}: {_traps} traps, "
+            f"{_all_tot} catches all-time, {_yr_tot} last 12 months"
+        )
+
+    trapnz["projectCount"] = len(trapnz["projects"])
+    log.info(
+        f"  Trap.NZ combined: {trapnz['projectCount']} project(s), "
+        f"{trapnz['traps']} traps, {trapnz['totals']['all']} catches all-time, "
+        f"{trapnz['totals']['year']} last 12 months"
+    )
+    log.info(f"  Trap.NZ species (all-time): {trapnz['bySpecies']['all']}")
 
     # -- PCO RTCI monitoring results --------------------------------------------------
     TE_APITI_PCO_RTCI_WHERE = (
@@ -768,7 +781,7 @@ def process_te_apiti(wp: pd.DataFrame, pl: pd.DataFrame, gis: GIS) -> dict:
             "byTypeByZone":     trap_by_type_by_zone,
             "catchesBySpecies": catches_by_species,
         },
-        "docTraps": doc_traps,
+        "trapnz":   trapnz,
         "allYears": all_years_rows,
         "pcoRtci":  pco_rtci,
     }
