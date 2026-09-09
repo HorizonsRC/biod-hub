@@ -98,7 +98,7 @@
   /* ── BOTTOM ROW ─────────────────────────────── */
   .row-bottom {
     display: grid;
-    grid-template-columns: 1fr 1fr 0.85fr 1fr;
+    grid-template-columns: 1fr 1fr 0.9fr;
     gap: 8px;
     padding: 4px 0 0;
     min-height: 0;
@@ -138,6 +138,33 @@
     position: relative;
     min-height: 0;
   }
+
+  /* ── PANEL HEAD WITH VIEW TOGGLE ─────────────── */
+  .panel-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .panel-head-text { min-width: 0; }
+  .toggle { display: flex; gap: 3px; flex-shrink: 0; }
+  .tg-btn {
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    padding: 3px 8px;
+    border: 1px solid var(--teal-md);
+    border-radius: 3px;
+    background: var(--surface);
+    color: var(--teal);
+    line-height: 1.3;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .tg-btn:hover  { background: var(--teal-lt); }
+  .tg-btn.active { background: var(--teal); border-color: var(--teal); color: #fff; }
 
   /* ── STAT PANEL ──────────────────────────────── */
   .stat-grid {
@@ -294,12 +321,20 @@
       </div>
     </div>
 
-    <!-- Middle: Weed species composition -->
+    <!-- Middle: Weed control — species and by-year views share one panel -->
     <div class="panel">
-      <div class="panel-title">Weed Species Composition</div>
-      <div class="panel-sub">Pest plant records by species</div>
+      <div class="panel-head">
+        <div class="panel-head-text">
+          <div class="panel-title">Weed Control</div>
+          <div class="panel-sub" id="weed-sub">Pest plant records by species</div>
+        </div>
+        <div class="toggle" role="group" aria-label="Weed chart view">
+          <button type="button" class="tg-btn active" data-view="species">By species</button>
+          <button type="button" class="tg-btn" data-view="year">By year</button>
+        </div>
+      </div>
       <div class="chart-wrap">
-        <canvas id="speciesChart"></canvas>
+        <canvas id="weedChart"></canvas>
       </div>
     </div>
 
@@ -373,13 +408,6 @@
       </div>
     </div>
 
-    <div class="panel">
-      <div class="panel-title">Weeds Controlled by Year</div>
-      <div class="panel-sub">Records by life stage per financial year</div>
-      <div class="chart-wrap">
-        <canvas id="trendsChart"></canvas>
-      </div>
-    </div>
 
   </div>
 
@@ -1073,54 +1101,133 @@ document.getElementById('pill-seedlings').textContent = fmt(DATA.summary.seedlin
 /* Helper — replace nulls with 0 for charting */
 const toArr = arr => (arr || []).map(v => v ?? 0);
 
-/* ── WEED SPECIES COMPOSITION (top panel middle) ── */
-new Chart(document.getElementById('speciesChart'), {
-  type: 'bar',
-  data: {
-    labels: DATA.speciesComp.labels,
-    datasets: [{
-      label: 'Records',
-      data: toArr(DATA.speciesComp.data),
-      backgroundColor: [teal, green, teal2, gold, green2, tealLt],
-      borderRadius: 3,
-    }]
-  },
-  options: {
-    indexAxis: 'y',
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: ctx => {
-            const sp  = ctx.label;
-            const val = ctx.parsed.x;
-            if (sp === 'Other') {
-              const others = DATA.speciesComp.otherSpecies || [];
-              return [` ${val.toLocaleString()} records`, '', ' Includes:']
-                .concat(others.map(s => `   · ${s}`));
+/* ── WEED CONTROL — two views in one panel ───────────────────────────────────
+   "By species" is the current financial year's records per species; "By year"
+   is every year's records split by life stage. They answer different questions
+   off different slices of the data, so they share a panel and a canvas rather
+   than being forced onto one set of axes.                                    */
+(function () {
+  const canvas = document.getElementById('weedChart');
+  const sub    = document.getElementById('weed-sub');
+  let chart = null;
+
+  /* View 1 — records per species, current FY */
+  function speciesView() {
+    return {
+      sub: 'Pest plant records by species',
+      config: {
+        type: 'bar',
+        data: {
+          labels: DATA.speciesComp.labels,
+          datasets: [{
+            label: 'Records',
+            data: toArr(DATA.speciesComp.data),
+            backgroundColor: [teal, green, teal2, gold, green2, tealLt],
+            borderRadius: 3,
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => {
+                  const sp  = ctx.label;
+                  const val = ctx.parsed.x;
+                  if (sp === 'Other') {
+                    const others = DATA.speciesComp.otherSpecies || [];
+                    return [` ${val.toLocaleString()} records`, '', ' Includes:']
+                      .concat(others.map(s => `   · ${s}`));
+                  }
+                  const ages = (DATA.speciesComp.ageBySpecies || {})[sp] || {};
+                  return [
+                    ` ${val.toLocaleString()} records`,
+                    ` Adult: ${(ages.A || 0).toLocaleString()}`,
+                    ` Juvenile: ${(ages.J || 0).toLocaleString()}`,
+                    ` Seedling: ${(ages.S || 0).toLocaleString()}`,
+                  ];
+                }
+              }
             }
-            const ages = (DATA.speciesComp.ageBySpecies || {})[sp] || {};
-            return [
-              ` ${val.toLocaleString()} records`,
-              ` Adult: ${(ages.A || 0).toLocaleString()}`,
-              ` Juvenile: ${(ages.J || 0).toLocaleString()}`,
-              ` Seedling: ${(ages.S || 0).toLocaleString()}`,
-            ];
+          },
+          scales: {
+            x: {
+              grid: { color: border },
+              ticks: { font: { size: 10 } },
+              title: { display: true, text: 'Weed locations', font: { size: 10 }, color: '#8a8a82' }
+            },
+            y: { grid: { display: false }, ticks: { font: { size: 10.5 } } }
           }
         }
       }
-    },
-    scales: {
-      x: {
-        grid: { color: border },
-        ticks: { font: { size: 10 } },
-        title: { display: true, text: 'Weed locations', font: { size: 10 }, color: '#8a8a82' }
-      },
-      y: { grid: { display: false }, ticks: { font: { size: 10.5 } } }
-    }
+    };
   }
-});
+
+  /* View 2 — records per financial year, split by life stage */
+  function yearView() {
+    const ay        = DATA.allYears || [];
+    const fyLabels  = ay.map(r => r.fy);
+    const speciesFY = ay.map(r => r.species || 0);
+    return {
+      sub: 'Records by life stage per financial year',
+      config: {
+        type: 'bar',
+        data: {
+          labels: fyLabels,
+          datasets: [
+            { label: 'Adult',    data: ay.map(r => r.adults    || 0), backgroundColor: teal,   borderRadius: 2, stack: 'stage' },
+            { label: 'Juvenile', data: ay.map(r => r.juveniles || 0), backgroundColor: teal2,  borderRadius: 2, stack: 'stage' },
+            { label: 'Seedling', data: ay.map(r => r.seedlings || 0), backgroundColor: tealLt, borderRadius: 2, stack: 'stage' },
+          ]
+        },
+        options: {
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: true, position: 'bottom', labels: { font: { size: 10 }, boxWidth: 11, padding: 8 } },
+            tooltip: {
+              callbacks: {
+                footer: items => {
+                  const idx   = items[0].dataIndex;
+                  const total = items.reduce((s, i) => s + i.parsed.y, 0);
+                  return `Total: ${total.toLocaleString()} records\nSpecies targeted: ${speciesFY[idx] || 0}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 10.5 } }, stacked: true },
+            y: {
+              grid: { color: border },
+              stacked: true,
+              ticks: { font: { size: 10 } },
+              title: { display: true, text: 'Records', font: { size: 10 }, color: '#8a8a82' }
+            }
+          }
+        }
+      }
+    };
+  }
+
+  const buttons = Array.from(document.querySelectorAll('.toggle .tg-btn'));
+
+  function render(view) {
+    const spec = view === 'year' ? yearView() : speciesView();
+    if (chart) chart.destroy();
+    if (sub) sub.textContent = spec.sub;
+    chart = new Chart(canvas, spec.config);
+  }
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      buttons.forEach(b => b.classList.toggle('active', b === btn));
+      render(btn.dataset.view);
+    });
+  });
+
+  render('species');
+})();
 
 /* ── PEST ANIMAL CATCHES BY YEAR × SPECIES (bottom left) ── */
 (function () {
@@ -1195,50 +1302,6 @@ new Chart(document.getElementById('speciesChart'), {
     }
   });
 })();
-
-/* ── WEEDS CONTROLLED BY YEAR × LIFE STAGE (bottom middle) ── */
-const _ay = DATA.allYears || [];
-const _fyLabels   = _ay.map(r => r.fy);
-const _adultsData = _ay.map(r => r.adults    || 0);
-const _juvData    = _ay.map(r => r.juveniles || 0);
-const _seedData   = _ay.map(r => r.seedlings || 0);
-const _speciesFY  = _ay.map(r => r.species   || 0);
-new Chart(document.getElementById('trendsChart'), {
-  type: 'bar',
-  data: {
-    labels: _fyLabels,
-    datasets: [
-      { label: 'Adult',    data: _adultsData, backgroundColor: teal,   borderRadius: 2, stack: 'stage' },
-      { label: 'Juvenile', data: _juvData,    backgroundColor: teal2,  borderRadius: 2, stack: 'stage' },
-      { label: 'Seedling', data: _seedData,   backgroundColor: tealLt, borderRadius: 2, stack: 'stage' },
-    ]
-  },
-  options: {
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: true, position: 'bottom', labels: { font: { size: 10 }, boxWidth: 11, padding: 8 } },
-      tooltip: {
-        callbacks: {
-          footer: items => {
-            const idx = items[0].dataIndex;
-            const total = items.reduce((s, i) => s + i.parsed.y, 0);
-            const sp = _speciesFY[idx] || 0;
-            return `Total: ${total.toLocaleString()} records\nSpecies targeted: ${sp}`;
-          }
-        }
-      }
-    },
-    scales: {
-      x: { grid: { display: false }, ticks: { font: { size: 10.5 } }, stacked: true },
-      y: {
-        grid: { color: border },
-        stacked: true,
-        ticks: { font: { size: 10 } },
-        title: { display: true, text: 'Records', font: { size: 10 }, color: '#8a8a82' }
-      }
-    }
-  }
-});
 
 /* ── TRAP TYPE CHART — HRC traps per type (bottom row) ── */
 (function () {
