@@ -24,6 +24,10 @@
     --c-navy:   #273747;
   }
 
+  /* Deliberately NOT a flex container. The fit script sets .wrapper to a width
+     wider than the iframe and scales it back down; as a flex item that width
+     would be shrunk straight back to the container, and centring would shift
+     the oversized block sideways. Both break the fit. */
   html, body {
     width: 100%; height: 100%;
     overflow: hidden;
@@ -31,9 +35,6 @@
     background: var(--bg);
     font-family: 'DM Sans', sans-serif;
     color: var(--navy);
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
   }
 
   /* Width and height are set by the fit script below; it lays the grid out
@@ -41,6 +42,7 @@
      the full width and never need a scrollbar. */
   .wrapper {
     width: 100%;
+    flex-shrink: 0;
     transform-origin: top left;
   }
 
