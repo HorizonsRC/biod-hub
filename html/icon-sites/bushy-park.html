@@ -60,6 +60,14 @@
     letter-spacing: -0.01em;
     line-height: 1;
   }
+  /* Sanctuary manager sits beside the title — the Activity Summary panel has
+     no room for it once the three summary sections are in. */
+  .title-strip .managed-by {
+    font-size: 12px;
+    color: var(--muted);
+    margin-left: 10px;
+    line-height: 1.1;
+  }
 
   /* ── TOP ROW — cards with gap ──────────────── */
   .row-top {
@@ -238,6 +246,7 @@
   <!-- TITLE — WBP style -->
   <div class="title-strip">
     <h1>Bushy Park Tarapuruhi</h1>
+    <span class="managed-by">(Sanctuary Manager: Forest &amp; Bird / Bushy Park Trust)</span>
   </div>
 
   <!-- TOP ROW -->
@@ -246,19 +255,19 @@
     <!-- Left: Stats -->
     <div class="panel">
       <div class="panel-title">Programme at a Glance</div>
-      <div class="panel-sub">2024–25 Financial Year</div>
+      <div class="panel-sub">2025–26 Financial Year</div>
       <div class="stat-grid">
         <div class="stat-box">
-          <div class="s-val">7,330</div>
+          <div class="s-val">6,885</div>
           <div class="s-key">Volunteer Hours</div>
         </div>
         <div class="stat-box">
-          <div class="s-val">100+</div>
+          <div class="s-val">131</div>
           <div class="s-key">Volunteers</div>
         </div>
         <div class="stat-box">
-          <div class="s-val">13</div>
-          <div class="s-key">Forest Audits Completed</div>
+          <div class="s-val">4</div>
+          <div class="s-key">Quarterly Forest Audits</div>
         </div>
         <div class="stat-box">
           <div class="s-val">89 ha</div>
@@ -269,16 +278,16 @@
           <div class="s-key">Halo Zone Covered</div>
         </div>
         <div class="stat-box">
-          <div class="s-val sm">&lt;2 wks</div>
-          <div class="s-key">Rat Incursion Response Time</div>
+          <div class="s-val">22</div>
+          <div class="s-key">Hihi Chicks Fledged</div>
         </div>
       </div>
     </div>
 
     <!-- Middle: Trap network -->
     <div class="panel">
-      <div class="panel-title">Biosecurity Infrastructure</div>
-      <div class="panel-sub">Trap network and monitoring equipment</div>
+      <div class="panel-title">Trap Network</div>
+      <div class="panel-sub">Traps funded by the HRC grant, by type and network</div>
       <div class="chart-wrap">
         <canvas id="trapChart"></canvas>
       </div>
@@ -290,36 +299,33 @@
 
       <div class="summary-section">
         <div class="sum-heading">Incursion Response</div>
-        <div><span class="sum-hero">120+</span> <span class="sum-unit">kg bait deployed</span></div>
-        <div class="sum-detail">Rat entry via fence breach following tree fall. Eradicated within 2 weeks using 50×50 bait grid and 4,500 tracking cards. 9-week follow-up confirmed success.</div>
+        <div><span class="sum-hero">4</span> <span class="sum-unit">rats eradicated</span></div>
+        <div class="sum-detail">Detected through the February quarterly audit and contained by a 12-week response of baiting, daily tracking and trapping.</div>
         <div class="pill-row">
-          <span class="pill">4,500 tracking cards</span>
-          <span class="pill">2.5 month response</span>
+          <span class="pill">50×50 bait grid</span>
+          <span class="pill">12-week response</span>
         </div>
       </div>
 
       <div class="summary-section">
-        <div class="sum-heading gold">Mouse Control</div>
-        <div class="sum-detail">11-week sanctuary-wide knockdown triggered at 16.6% mouse tracking rate in February. Trap network upgraded and expanded during the year.</div>
+        <div class="sum-heading gold">Halo Project</div>
+        <div><span class="sum-hero">610</span> <span class="sum-unit">pests removed</span></div>
+        <div class="sum-detail">Monthly trapping across the 800 ha buffer; catch rates up 25% after trapline improvements.</div>
         <div class="pill-row">
-          <span class="pill gold">16.6% trigger rate</span>
-          <span class="pill gold">11-week programme</span>
+          <span class="pill gold">25 new traps</span>
+          <span class="pill gold">+25% catch rate</span>
         </div>
       </div>
 
       <div class="summary-section">
-        <div class="sum-heading navy">Weed Species Targeted</div>
-        <div class="sum-detail">Selaginella · Banana Passionfruit · Chocolate Vine · Agapanthus · Thistle · Inkweed</div>
+        <div class="sum-heading navy">Mouse Control</div>
+        <div class="sum-detail">Sanctuary-wide Brodifacoum knockdown cut mouse tracking from 95% in February to 22% by May.</div>
         <div class="pill-row">
-          <span class="pill navy">6+ species</span>
-          <span class="pill navy">Bi-monthly fence spraying</span>
+          <span class="pill navy">95% → 22% tracking</span>
+          <span class="pill navy">13-week knockdown</span>
         </div>
       </div>
 
-      <div class="contractor-row">
-        <div class="contractor-label">Sanctuary Manager</div>
-        <div class="contractor-val">Forest &amp; Bird / Bushy Park Trust</div>
-      </div>
     </div>
 
   </div>
@@ -328,7 +334,7 @@
   <div class="row-bottom">
 
     <div class="panel">
-      <div class="panel-title">Revegetation 2024–25</div>
+      <div class="panel-title">Revegetation 2025–26</div>
       <div class="panel-sub">Native plants planted and raised by volunteers</div>
       <div class="chart-wrap">
         <canvas id="revetChart"></canvas>
@@ -336,10 +342,10 @@
     </div>
 
     <div class="panel">
-      <div class="panel-title">Monitoring &amp; Control Activity</div>
-      <div class="panel-sub">Key metrics for the 2024–25 year</div>
+      <div class="panel-title">Pest Plant Stems Controlled</div>
+      <div class="panel-sub">Stems removed under the HRC grant, by species</div>
       <div class="chart-wrap">
-        <canvas id="activityChart"></canvas>
+        <canvas id="weedChart"></canvas>
       </div>
     </div>
 
@@ -372,32 +378,35 @@ const gold    = '#c8a84b';
 const goldLt  = '#e8d9b5';
 const border  = '#ddddd8';
 
-/* ── TRAP NETWORK ── */
+/* ── TRAP NETWORK ──
+   Sanctuary (inside the fence) and Halo (800 ha buffer) networks, stacked by
+   trap type. Counts are the itemised breakdown from the annual report; the
+   report's own stated halo total (271) exceeds its itemised parts, so no
+   network total is shown here. */
 new Chart(document.getElementById('trapChart'), {
   type: 'bar',
   data: {
-    labels: ['DOC200 Traps', 'Victor Traps', 'New Halo Traps (24-25)', 'Incl. Hood Traps', 'Trail Cameras'],
-    datasets: [{
-      label: 'Count',
-      data: [110, 10, 25, 12, 15],
-      backgroundColor: [green, green2, gold, goldLt, greenLt],
-      borderRadius: 3,
-    }]
+    labels: ['DOC200', 'Victor', 'A24', 'Trapinator', 'AT220', 'Other'],
+    datasets: [
+      { label: 'Sanctuary', data: [110, 31, 53, 0, 0, 0], backgroundColor: green,  borderRadius: 3 },
+      { label: 'Halo',      data: [14,  76,  3, 30, 8, 5], backgroundColor: goldLt, borderRadius: 3 }
+    ]
   },
   options: {
     indexAxis: 'y',
     maintainAspectRatio: false,
     plugins: {
-      legend: { display: false },
-      tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.x} units` } }
+      legend: { display: true, position: 'bottom', labels: { font: { size: 10.5 }, boxWidth: 12, padding: 10 } },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.x} traps` } }
     },
     scales: {
       x: {
+        stacked: true,
         grid: { color: border },
         ticks: { font: { size: 10 } },
-        title: { display: true, text: 'Count', font: { size: 10 }, color: '#8a8a82' }
+        title: { display: true, text: 'Traps', font: { size: 10 }, color: '#8a8a82' }
       },
-      y: { grid: { display: false }, ticks: { font: { size: 10.5 } } }
+      y: { stacked: true, grid: { display: false }, ticks: { font: { size: 10.5 } } }
     }
   }
 });
@@ -408,8 +417,8 @@ new Chart(document.getElementById('revetChart'), {
   data: {
     labels: ['Native Plants'],
     datasets: [
-      { label: 'Planted in ground', data: [2500], backgroundColor: green, borderRadius: 3, barThickness: 60 },
-      { label: 'Raised in nursery', data: [3000], backgroundColor: greenLt, borderRadius: 3, barThickness: 60 }
+      { label: 'Planted in ground', data: [2450], backgroundColor: green, borderRadius: 3, barThickness: 60 },
+      { label: 'Raised in nursery', data: [2500], backgroundColor: greenLt, borderRadius: 3, barThickness: 60 }
     ]
   },
   options: {
@@ -429,40 +438,33 @@ new Chart(document.getElementById('revetChart'), {
   }
 });
 
-/* ── MONITORING ACTIVITY ── */
-new Chart(document.getElementById('activityChart'), {
+/* ── PEST PLANT STEMS ──
+   Year on year, from the "Stems controlled" row of the annual report's
+   funding-agreement table. Linear scale: the species mix is the point, and a
+   log scale would flatten the difference between 510 and 1. */
+new Chart(document.getElementById('weedChart'), {
   type: 'bar',
   data: {
-    labels: ['Forest Audits', 'Dog Audits', 'Bait Deployed (kg)', 'Tracking Cards Used', 'New Halo Traps Added', 'Trail Cameras Deployed', 'Weed Species Targeted'],
-    datasets: [{
-      label: 'Value',
-      data: [13, 4, 120, 4500, 25, 15, 6],
-      backgroundColor: [green, green, gold, gold, green2, green2, greenLt],
-      borderRadius: 3,
-    }]
+    labels: ['Selaginella', 'Thistle', 'Inkweed', 'Chocolate vine', 'Banana passionfruit', 'Ivy', "Old man's beard"],
+    datasets: [
+      { label: '2024–25', data: [400, 280, 44, 45, 20, 10, 2], backgroundColor: greenLt, borderRadius: 3 },
+      { label: '2025–26', data: [510, 100, 55, 32, 13, 10, 1], backgroundColor: green,   borderRadius: 3 }
+    ]
   },
   options: {
     indexAxis: 'y',
     maintainAspectRatio: false,
     plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: ctx => {
-            const units = ['audits','audits','kg','cards','traps','cameras','species'];
-            return ` ${ctx.parsed.x.toLocaleString()} ${units[ctx.dataIndex]}`;
-          }
-        }
-      }
+      legend: { display: true, position: 'bottom', labels: { font: { size: 10.5 }, boxWidth: 12, padding: 10 } },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.x.toLocaleString()} stems` } }
     },
     scales: {
       x: {
-        type: 'logarithmic',
         grid: { color: border },
         ticks: { font: { size: 10 } },
-        title: { display: true, text: 'Value (log scale)', font: { size: 10 }, color: '#8a8a82' }
+        title: { display: true, text: 'Stems controlled', font: { size: 10 }, color: '#8a8a82' }
       },
-      y: { grid: { display: false }, ticks: { font: { size: 10.5 } } }
+      y: { grid: { display: false }, ticks: { font: { size: 9.5 } } }
     }
   }
 });
