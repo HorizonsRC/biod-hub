@@ -619,7 +619,7 @@ const DATA = {
     ],
     "data": [
       367,
-      424,
+      524,
       401
     ],
     "species": {
@@ -636,6 +636,7 @@ const DATA = {
       "Ground Cover Pests": {
         "Fleabane": 113,
         "Caper Spurge": 103,
+        "Marram Grass": 100,
         "Goat's Rue": 80,
         "Periwinkle": 57,
         "Osteospermum (African Daisy)": 55,
@@ -673,7 +674,7 @@ const DATA = {
       "Ground Cover Pests": [
         27,
         340,
-        424
+        524
       ],
       "Climbing Pests": [
         26,
@@ -683,7 +684,7 @@ const DATA = {
       "Other": [
         31,
         88,
-        304
+        204
       ]
     },
     "totals": [
@@ -1085,6 +1086,9 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
               titleFont: { size: 12 },
               boxPadding: 3,
               padding: 6,
+              // Biggest category first. Without this Chart.js lists them in
+              // stack order, which buries the year's largest contributor.
+              itemSort: (a, b) => (b.parsed.y || 0) - (a.parsed.y || 0),
               callbacks: {
                 footer: items => {
                   const i = items[0].dataIndex;
@@ -1352,6 +1356,8 @@ const toArr = arr => (arr || []).map(v => v ?? 0);
           labels: { font: { size: 11 }, color: '#5a5a52', boxWidth: 11, padding: 6 }
         },
         tooltip: {
+          // Most-caught species first, rather than stack order.
+          itemSort: (a, b) => (b.parsed.y || 0) - (a.parsed.y || 0),
           callbacks: {
             label: ctx => {
               const val = ctx.parsed.y;

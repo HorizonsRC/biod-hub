@@ -1090,9 +1090,12 @@ def process_manawatu_estuary(wp: pd.DataFrame, gis: GIS) -> dict:
         "Boneseed", "Boxthorn", "Brush Wattle", "Elaeagnus", "Gorse", "Inkweed",
         "Karo", "Poplar", "Sydney Golden Wattle", "Tree Lupin", "Yucca",
     }
+    # Marram is a sand-binding dune grass rather than a garden escape, so it sits
+    # here only because ground cover is the closest of the three buckets. Move it
+    # if the categories are ever split more finely.
     GROUND_COVER_PESTS = {
         "African Iceplant", "Agapanthus", "Arum Lily", "Caper Spurge", "Fleabane",
-        "Formosa Lily", "Goat's Rue", "Japanese Holly Fern",
+        "Formosa Lily", "Goat's Rue", "Japanese Holly Fern", "Marram Grass",
         "Osteospermum (African Daisy)", "Pampas Grass", "Periwinkle",
         "Senecio (Pink Ragwort)", "Stinking Iris",
     }
