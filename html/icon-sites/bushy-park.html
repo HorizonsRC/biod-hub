@@ -105,8 +105,16 @@
 
   /* The Activity Summary is prose, so it doesn't stretch to fill its panel the
      way a chart does. Spreading the sections spends the leftover space evenly
-     instead of leaving it all at the bottom. */
-  .panel-activity { justify-content: space-between; }
+     instead of leaving it all at the bottom. The title is deliberately outside
+     this wrapper — including it gives the heading an equal share of the extra
+     space, which reads as a drifted title rather than an even layout. */
+  .summary-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 0;
+  }
 
   .panel-title {
     font-size: 12px;
@@ -302,9 +310,10 @@
     </div>
 
     <!-- Right: Activity summary -->
-    <div class="panel panel-activity">
+    <div class="panel">
       <div class="panel-title">Activity Summary</div>
 
+      <div class="summary-body">
       <div class="summary-section">
         <div class="sum-heading">Incursion Response</div>
         <div><span class="sum-hero">4</span> <span class="sum-unit">rats eradicated</span></div>
@@ -332,6 +341,7 @@
           <span class="pill navy">95% → 22% tracking</span>
           <span class="pill navy">13-week knockdown</span>
         </div>
+      </div>
       </div>
 
     </div>
