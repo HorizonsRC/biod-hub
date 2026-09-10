@@ -131,6 +131,37 @@
     min-height: 0;
   }
 
+  /* ── PANEL HEAD WITH VIEW TOGGLE ─────────────── */
+  /* The toggle sits on the subtitle row, not beside the title: measured in the
+     embed, "Weed Species Controlled" needs ~180px and the panel only leaves
+     ~150px next to a toggle, so a title-row toggle wrapped both lines and ate
+     the chart's height. */
+  .panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .panel-head .panel-sub { margin-top: 0; min-width: 0; }
+  .toggle { display: flex; gap: 3px; flex-shrink: 0; }
+  .tg-btn {
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    padding: 3px 8px;
+    border: 1px solid var(--slate-md);
+    border-radius: 3px;
+    background: var(--surface);
+    color: var(--slate);
+    line-height: 1.3;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .tg-btn:hover  { background: var(--slate-lt); }
+  .tg-btn.active { background: var(--slate); border-color: var(--slate); color: #fff; }
+
   /* ── STAT PANEL ──────────────────────────────── */
   .stat-grid {
     display: grid;
@@ -415,9 +446,16 @@
   <!-- BOTTOM ROW -->
   <div class="row-bottom">
 
+    <!-- Weed control — category and by-year views share one panel -->
     <div class="panel">
       <div class="panel-title">Weed Species Controlled</div>
-      <div class="panel-sub">Weed locations by category · Plateau + Wetland MU1–5</div>
+      <div class="panel-head">
+        <div class="panel-sub" id="weed-sub">Weed locations by category</div>
+        <div class="toggle" role="group" aria-label="Weed chart view">
+          <button type="button" class="tg-btn active" data-view="category">By category</button>
+          <button type="button" class="tg-btn" data-view="year">By year</button>
+        </div>
+      </div>
       <div class="chart-wrap">
         <canvas id="weedCountChart"></canvas>
       </div>
@@ -602,6 +640,51 @@ const DATA = {
         "English Ivy": 5
       }
     }
+  },
+  "weedByYear": {
+    "labels": [
+      "23-24",
+      "24-25",
+      "25-26"
+    ],
+    "categories": [
+      "Woody Pests",
+      "Ground Cover Pests",
+      "Climbing Pests",
+      "Other"
+    ],
+    "data": {
+      "Woody Pests": [
+        32,
+        179,
+        367
+      ],
+      "Ground Cover Pests": [
+        27,
+        340,
+        424
+      ],
+      "Climbing Pests": [
+        26,
+        318,
+        401
+      ],
+      "Other": [
+        31,
+        88,
+        304
+      ]
+    },
+    "totals": [
+      116,
+      925,
+      1496
+    ],
+    "speciesCount": [
+      21,
+      36,
+      38
+    ]
   },
   "pcoRtci": {
     "labels": [
@@ -870,59 +953,146 @@ document.getElementById('val-weed-species').textContent = fmt(DATA.stats.species
 
 const toArr = arr => (arr || []).map(v => v ?? 0);
 
-/* ── WEED SPECIES BY CATEGORY (bottom left — FY 24-25) ── */
+/* ── WEED CONTROL — two views behind one toggle (bottom left) ──
+   "By category" is the current FY broken down by category; "By year" is every
+   FY the site has records for, stacked by the same categories. They are not on
+   shared axes: the year view adds an "Other" band for species outside the three
+   category sets, so its bars total the year's real record count while the
+   category view shows the named categories alone. Same arrangement as
+   te-apiti.html — different slices answering different questions.
+   The chart is destroyed and rebuilt on switch. ── */
 (function () {
-  const wc = DATA.weedByCategory;
-  if (!wc || !wc.labels || !wc.labels.length) return;
+  const catColors  = ['#6b4423', '#2a5898', '#c8a84b'];
+  const otherColor = '#a8a8a0';   // muted grey — uncategorised, not a category
+  const canvas = document.getElementById('weedCountChart');
+  const sub    = document.getElementById('weed-sub');
+  let chart = null;
 
-  const catColors = ['#6b4423', '#2a5898', '#c8a84b'];
-
-  new Chart(document.getElementById('weedCountChart'), {
-    type: 'bar',
-    data: {
-      labels: wc.labels,
-      datasets: [{
-        data: wc.data,
-        backgroundColor: catColors.slice(0, wc.labels.length),
-        borderRadius: 3,
-      }]
-    },
-    options: {
-      indexAxis: 'y',
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          bodyFont:  { size: 11 },
-          titleFont: { size: 12 },
-          boxPadding: 3,
-          padding: 6,
-          callbacks: {
-            label: ctx => {
-              const cat  = ctx.label;
-              const val  = ctx.parsed.x;
-              const spp  = (wc.species && wc.species[cat]) ? wc.species[cat] : {};
-              const lines = [` ${val.toLocaleString()} locations`];
-              const sorted = Object.entries(spp).sort((a, b) => b[1] - a[1]);
-              if (sorted.length) {
-                lines.push('');
-                sorted.forEach(([sp, cnt]) => lines.push(`   · ${sp} (${cnt})`));
+  /* View 1 — current FY, by category */
+  function categoryView() {
+    const wc = DATA.weedByCategory || { labels: [], data: [] };
+    // FY comes from the data so this view can't claim a year the bars aren't from.
+    return {
+      sub: '20' + DATA.fy.replace('-', '–') + ' · by category',
+      config: {
+        type: 'bar',
+        data: {
+          labels: wc.labels,
+          datasets: [{
+            data: wc.data,
+            backgroundColor: catColors.slice(0, wc.labels.length),
+            borderRadius: 3,
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              bodyFont:  { size: 11 },
+              titleFont: { size: 12 },
+              boxPadding: 3,
+              padding: 6,
+              callbacks: {
+                label: ctx => {
+                  const cat  = ctx.label;
+                  const val  = ctx.parsed.x;
+                  const spp  = (wc.species && wc.species[cat]) ? wc.species[cat] : {};
+                  const lines = [` ${val.toLocaleString()} locations`];
+                  const sorted = Object.entries(spp).sort((a, b) => b[1] - a[1]);
+                  if (sorted.length) {
+                    lines.push('');
+                    sorted.forEach(([sp, cnt]) => lines.push(`   · ${sp} (${cnt})`));
+                  }
+                  return lines;
+                }
               }
-              return lines;
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: border },
+              ticks: { font: { size: 11 }, color: '#5a5a52' },
+              title: { display: true, text: 'Weed locations', font: { size: 11 }, color: '#5a5a52' }
+            },
+            y: { grid: { display: false }, ticks: { font: { size: 12 }, color: '#5a5a52' } }
+          }
+        }
+      }
+    };
+  }
+
+  /* View 2 — every FY on record, stacked by category */
+  function yearView() {
+    const wy   = DATA.weedByYear || { labels: [], categories: [], data: {} };
+    const cats = wy.categories || [];
+    const colourFor = cat =>
+      cat === 'Other' ? otherColor : catColors[cats.indexOf(cat)] || otherColor;
+
+    return {
+      sub: 'All years on record · by category',
+      config: {
+        type: 'bar',
+        data: {
+          labels: wy.labels,
+          datasets: cats.map(cat => ({
+            label: cat.replace(' Pests', ''),
+            data: toArr((wy.data || {})[cat]),
+            backgroundColor: colourFor(cat),
+            borderRadius: 2,
+            stack: 'cat',
+          }))
+        },
+        options: {
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: true, position: 'bottom', labels: { font: { size: 10 }, boxWidth: 11, padding: 8 } },
+            tooltip: {
+              bodyFont:  { size: 11 },
+              titleFont: { size: 12 },
+              boxPadding: 3,
+              padding: 6,
+              callbacks: {
+                footer: items => {
+                  const i = items[0].dataIndex;
+                  return `Total: ${(wy.totals[i] || 0).toLocaleString()} locations\n` +
+                         `Species targeted: ${wy.speciesCount[i] || 0}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: { grid: { display: false }, stacked: true, ticks: { font: { size: 11 }, color: '#5a5a52' } },
+            y: {
+              grid: { color: border },
+              stacked: true,
+              ticks: { font: { size: 11 }, color: '#5a5a52' },
+              title: { display: true, text: 'Weed locations', font: { size: 11 }, color: '#5a5a52' }
             }
           }
         }
-      },
-      scales: {
-        x: {
-          grid: { color: border },
-          ticks: { font: { size: 11 }, color: '#5a5a52' },
-          title: { display: true, text: 'Weed locations', font: { size: 11 }, color: '#5a5a52' }
-        },
-        y: { grid: { display: false }, ticks: { font: { size: 12 }, color: '#5a5a52' } }
       }
-    }
+    };
+  }
+
+  const buttons = Array.from(document.querySelectorAll('.toggle .tg-btn'));
+
+  function render(view) {
+    const spec = view === 'year' ? yearView() : categoryView();
+    if (chart) chart.destroy();
+    if (sub) sub.textContent = spec.sub;
+    chart = new Chart(canvas, spec.config);
+  }
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      buttons.forEach(b => b.classList.toggle('active', b === btn));
+      render(btn.dataset.view);
+    });
   });
+
+  render('category');
 })();
 
 /* ── PREDATOR CONTROL STATS (activity summary) ── */
