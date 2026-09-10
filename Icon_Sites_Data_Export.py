@@ -712,10 +712,50 @@ def process_te_apiti(wp: pd.DataFrame, pl: pd.DataFrame, gis: GIS) -> dict:
         "F19_20_Monitor_Results",
         "F18_19_Monitor_Results",
     ]
+    # Bait station counts for Te Apiti's own pest control areas. These replaced
+    # the RTCI pills on the dashboard: the three Bio Te Apiti areas have no
+    # recorded RTCI result in any year (planned, then deferred, never
+    # completed), so the pills only ever showed Whakarongo and Woodville, which
+    # are adjacent zones rather than Te Apiti itself. Bait_Stns is populated for
+    # all three and was verified against the bait station point layer by
+    # selection-by-location.
+    TE_APITI_BAIT_LABELS = [
+        "Bio Te Apiti Buffer",
+        "Bio Te Apiti North",
+        "Bio Te Apiti South",
+    ]
+
+    def _bait_label(raw: str) -> str:
+        """PCO name as shown on the dashboard: drop the internal 'Bio ' prefix
+        and carry the macron the rest of the page uses."""
+        return str(raw).replace("Bio ", "", 1).replace("Te Apiti", "Te Āpiti")
+
+    bait_stations: dict = {"labels": [], "data": [], "total": None}
+
     pco_rtci: dict = {"labels": [], "data": [], "years": []}
     if PCO_MONITORING_URL:
         try:
             pco_df = fetch_service_url_as_df(gis, PCO_MONITORING_URL, 0, where=TE_APITI_PCO_RTCI_WHERE)
+
+            # Same query serves both — no second round trip.
+            for label in TE_APITI_BAIT_LABELS:
+                match = pco_df[pco_df["Label"] == label]
+                if match.empty:
+                    log.warning(f"  No PCO row for '{label}' -- bait stations incomplete.")
+                    continue
+                val = match.iloc[0].get("Bait_Stns")
+                if val is None or str(val).strip() in ("", "None", "null", "nan", "<NA>"):
+                    log.warning(f"  '{label}' has no Bait_Stns value.")
+                    continue
+                bait_stations["labels"].append(_bait_label(label))
+                bait_stations["data"].append(int(float(val)))
+            if bait_stations["data"]:
+                bait_stations["total"] = sum(bait_stations["data"])
+            log.info(
+                f"  Te Apiti bait stations: {list(zip(bait_stations['labels'], bait_stations['data']))}"
+                f" total={bait_stations['total']}"
+            )
+
             for _, row in pco_df.iterrows():
                 label = row.get("Label")
                 rtci_val, rtci_yr = None, None
@@ -785,6 +825,7 @@ def process_te_apiti(wp: pd.DataFrame, pl: pd.DataFrame, gis: GIS) -> dict:
         "trapnz":   trapnz,
         "allYears": all_years_rows,
         "pcoRtci":  pco_rtci,
+        "baitStations": bait_stations,
     }
 
 

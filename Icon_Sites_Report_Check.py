@@ -706,10 +706,10 @@ def compare_report_link(meeting, icc_sections):
 
     The button deep-links into the agenda PDF at the site's own table
     (`...pdf#page=N`), so it goes stale the moment a newer agenda is published.
-    Only Bushy Park carries one so far.
+    Add a site's key here once its page carries a report button.
     """
     findings = []
-    for key in ("bushy-park",):
+    for key in ("bushy-park", "te-apiti"):
         html_path = HTML_DIR / f"{key}.html"
         if not html_path.exists():
             continue
