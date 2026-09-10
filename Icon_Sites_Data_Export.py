@@ -70,6 +70,13 @@ CONTRACTOR_ITEM_ID = getattr(config, "CONTRACTOR_ITEM_ID", None)
 WAYPOINTS_LAYER_ID = getattr(config, "WAYPOINTS_LAYER_ID", 0)
 POLYLINES_LAYER_ID = getattr(config, "POLYLINES_LAYER_ID", 1)
 
+# Icon Sites web map. Its pest plant layers carry the species-to-category
+# groupings the Biodiversity team maintains, read at run time by
+# fetch_species_categories() so the dashboards follow the map.
+ICON_SITES_WEBMAP_ID = getattr(config, "ICON_SITES_WEBMAP_ID", None)
+# Layer titles within that map, matched case-insensitively on a substring.
+ME_WEBMAP_LAYER = "Pest Plant Control - Manawatū Estuary"
+
 TRAP_SERVICE_URL   = getattr(config, "TRAP_SERVICE_URL", None)
 TRAP_LAYER_ID      = getattr(config, "TRAP_LAYER_ID", 0)
 INSP_TABLE_ID      = getattr(config, "INSP_TABLE_ID", 1)
@@ -232,6 +239,79 @@ def connect_gis() -> GIS:
     gis = GIS("pro")
     log.info(f"Connected as: {gis.properties.user.username}")
     return gis
+
+
+def fetch_species_categories(gis: GIS, layer_title: str) -> dict:
+    """Species → category, read from a web map layer's own symbology.
+
+    The pest plant layers in the Icon Sites web map use a unique-value renderer
+    whose groups are the categories ("Woody Pests" and so on). The Biodiversity
+    team maintains those groupings there, so reading them at run time keeps one
+    source of truth: a species added to a group in the map is categorised on the
+    dashboard at the next run, with no code edit here.
+
+    Returns ``{}`` when the map, layer or groups cannot be read. The caller then
+    falls back to its own sets — losing every category would empty the chart, and
+    an empty result is not the same as there being nothing.
+
+    Keys are casefolded: the renderer and the data disagree on case for at least
+    one species ("Japanese honeysuckle" against "Japanese Honeysuckle").
+    """
+    if not ICON_SITES_WEBMAP_ID:
+        log.warning("  ICON_SITES_WEBMAP_ID not set in config.py — using built-in categories.")
+        return {}
+
+    def find_layer(layers, title):
+        for lyr in layers or []:
+            name = str(lyr.get("title", ""))
+            if name.casefold() == title.casefold() or title.casefold() in name.casefold():
+                return lyr
+            hit = find_layer(lyr.get("layers"), title)
+            if hit:
+                return hit
+        return None
+
+    try:
+        item = gis.content.get(ICON_SITES_WEBMAP_ID)
+        if item is None:
+            log.warning(f"  Web map {ICON_SITES_WEBMAP_ID} not found — using built-in categories.")
+            return {}
+        layer = find_layer((item.get_data() or {}).get("operationalLayers"), layer_title)
+        if layer is None:
+            log.warning(f"  '{layer_title}' not found in the web map — using built-in categories.")
+            return {}
+
+        renderer = (
+            layer.get("layerDefinition", {}).get("drawingInfo", {}).get("renderer", {})
+        )
+        groups = renderer.get("uniqueValueGroups") or []
+        if not groups:
+            log.warning(
+                f"  '{layer_title}' has no grouped unique-value renderer "
+                "— using built-in categories."
+            )
+            return {}
+
+        mapping = {}
+        for group in groups:
+            heading = group.get("heading")
+            if not heading:
+                continue
+            for cls in group.get("classes", []):
+                for value in cls.get("values", []):
+                    for name in (value if isinstance(value, list) else [value]):
+                        if name:
+                            mapping[str(name).casefold()] = heading
+
+        log.info(
+            f"  Species categories from the web map: "
+            f"{ {h: sum(1 for v in mapping.values() if v == h) for h in {v for v in mapping.values()}} }"
+        )
+        return mapping
+
+    except Exception as exc:
+        log.warning(f"  Could not read categories from the web map ({exc}) — using built-in.")
+        return {}
 
 
 def fetch_layer_as_df(gis: GIS, item_id: str, layer_id: int) -> pd.DataFrame:
@@ -1085,36 +1165,56 @@ def process_manawatu_estuary(wp: pd.DataFrame, gis: GIS) -> dict:
     count_2425 = get_counts(sc_primary, top_species, bool(other_species))
     count_2324 = get_counts(sc_prior,   top_species, bool(other_species))
 
-    # ── Weed species by category (24-25 only) ─────────────────────────────────
-    WOODY_PESTS = {
-        "Boneseed", "Boxthorn", "Brush Wattle", "Elaeagnus", "Gorse", "Inkweed",
-        "Karo", "Poplar", "Sydney Golden Wattle", "Tree Lupin", "Yucca",
-    }
-    # Marram is a sand-binding dune grass rather than a garden escape, so it sits
-    # here only because ground cover is the closest of the three buckets. Move it
-    # if the categories are ever split more finely.
-    GROUND_COVER_PESTS = {
-        "African Iceplant", "Agapanthus", "Arum Lily", "Caper Spurge", "Fleabane",
-        "Formosa Lily", "Goat's Rue", "Japanese Holly Fern", "Marram Grass",
-        "Osteospermum (African Daisy)", "Pampas Grass", "Periwinkle",
-        "Senecio (Pink Ragwort)", "Stinking Iris",
-    }
-    CLIMBING_PESTS = {
-        "Climbing Dock", "English Ivy", "Cape Ivy", "Convolvulus",
-        "Everlasting Pea", "German Ivy", "Japanese Honeysuckle", "Smilax spp.",
+    # ── Weed species by category ──────────────────────────────────────────────
+    # Membership comes from the web map's own symbology (see
+    # fetch_species_categories), so a species regrouped there is regrouped here
+    # at the next run. These sets are only the fallback for when the map cannot
+    # be read: without them a failed fetch would empty every category rather
+    # than fall back to last known good.
+    #
+    # They are deliberately not kept in step with the map by hand — that is what
+    # this change exists to stop. Expect them to lag; the log says when they are
+    # in use.
+    FALLBACK_CATEGORIES = {
+        "Woody Pests": {
+            "Boneseed", "Boxthorn", "Brush Wattle", "Elaeagnus", "Gorse", "Inkweed",
+            "Karo", "Poplar", "Sydney Golden Wattle", "Tree Lupin", "Yucca",
+        },
+        "Ground Cover Pests": {
+            "African Iceplant", "Agapanthus", "Arum Lily", "Caper Spurge", "Fleabane",
+            "Formosa Lily", "Goat's Rue", "Japanese Holly Fern", "Marram Grass",
+            "Osteospermum (African Daisy)", "Pampas", "Pampas Grass", "Periwinkle",
+            "Pink Ragwort", "Stinking Iris",
+        },
+        "Climbing Pests": {
+            "Climbing Dock", "English Ivy", "Cape Ivy", "Convolvulus",
+            "Everlasting Pea", "German Ivy", "Japanese Honeysuckle", "Smilax spp.",
+        },
     }
 
+    # Display order, and the colours the page assigns by position — the web map
+    # lists its groups in a different order, so this stays fixed here.
     CATEGORY_LABELS = ["Woody Pests", "Ground Cover Pests", "Climbing Pests"]
 
+    species_category = fetch_species_categories(gis, ME_WEBMAP_LAYER)
+    if not species_category:
+        species_category = {
+            sp.casefold(): cat
+            for cat, names in FALLBACK_CATEGORIES.items()
+            for sp in names
+        }
+
+    unknown = {c for c in species_category.values() if c not in CATEGORY_LABELS}
+    if unknown:
+        log.warning(
+            f"  Web map categories the page has no column for: {sorted(unknown)}. "
+            "Those species count as Other until the page is given a colour for them."
+        )
+
     def categorise(species: str):
-        """Category label for a species name, or None if it is in none of the sets."""
-        if species in WOODY_PESTS:
-            return "Woody Pests"
-        if species in GROUND_COVER_PESTS:
-            return "Ground Cover Pests"
-        if species in CLIMBING_PESTS:
-            return "Climbing Pests"
-        return None
+        """Category label for a species name, or None if it belongs to no category."""
+        category = species_category.get(str(species).casefold())
+        return category if category in CATEGORY_LABELS else None
 
     cat_sp: dict = {c: {} for c in CATEGORY_LABELS}
     for sp, cnt in sc_primary.items():
