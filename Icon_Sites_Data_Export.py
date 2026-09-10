@@ -1101,26 +1101,79 @@ def process_manawatu_estuary(wp: pd.DataFrame, gis: GIS) -> dict:
         "Everlasting Pea", "German Ivy", "Japanese Honeysuckle", "Smilax spp.",
     }
 
-    cat_sp: dict = {"Woody Pests": {}, "Ground Cover Pests": {}, "Climbing Pests": {}}
+    CATEGORY_LABELS = ["Woody Pests", "Ground Cover Pests", "Climbing Pests"]
+
+    def categorise(species: str):
+        """Category label for a species name, or None if it is in none of the sets."""
+        if species in WOODY_PESTS:
+            return "Woody Pests"
+        if species in GROUND_COVER_PESTS:
+            return "Ground Cover Pests"
+        if species in CLIMBING_PESTS:
+            return "Climbing Pests"
+        return None
+
+    cat_sp: dict = {c: {} for c in CATEGORY_LABELS}
     for sp, cnt in sc_primary.items():
-        sp_str = str(sp)
-        if sp_str in WOODY_PESTS:
-            cat_sp["Woody Pests"][sp_str] = int(cnt)
-        elif sp_str in GROUND_COVER_PESTS:
-            cat_sp["Ground Cover Pests"][sp_str] = int(cnt)
-        elif sp_str in CLIMBING_PESTS:
-            cat_sp["Climbing Pests"][sp_str] = int(cnt)
+        cat = categorise(str(sp))
+        if cat:
+            cat_sp[cat][str(sp)] = int(cnt)
 
     weed_by_category = {
-        "labels": ["Woody Pests", "Ground Cover Pests", "Climbing Pests"],
-        "data": [
-            sum(cat_sp["Woody Pests"].values()),
-            sum(cat_sp["Ground Cover Pests"].values()),
-            sum(cat_sp["Climbing Pests"].values()),
-        ],
+        "labels": CATEGORY_LABELS,
+        "data": [sum(cat_sp[c].values()) for c in CATEGORY_LABELS],
         "species": {k: dict(sorted(v.items(), key=lambda x: -x[1])) for k, v in cat_sp.items()},
     }
     log.info(f"  Weed by category: { {k: d for k, d in zip(weed_by_category['labels'], weed_by_category['data'])} }")
+
+    # ── Weed locations per FY, same categories ────────────────────────────────
+    # Drives the "By year" view of the weed panel. Covers every FY the site has
+    # records for, not just the two the species comparison uses, so the toggle
+    # shows the whole control history.
+    #
+    # Species outside the three sets go to "Other" rather than being dropped, so
+    # each bar totals the year's real record count. That is why this view's
+    # totals run higher than the by-category view's, which shows the named
+    # categories alone — the same deliberate split as Te Āpiti's two views.
+    YEAR_CATEGORIES = CATEGORY_LABELS + ["Other"]
+    weed_by_year: dict = {
+        "labels":       [],
+        "categories":   YEAR_CATEGORIES,
+        "data":         {c: [] for c in YEAR_CATEGORIES},
+        "totals":       [],
+        "speciesCount": [],
+    }
+
+    if FY_COL in wp.columns and SPECIES_COL in wp.columns:
+        for fy in sorted(wp[FY_COL].dropna().unique()):
+            fy_str = str(fy).strip()
+            # FinYr is free text, so a typo ('24-26') can invent a reporting year.
+            # Only consecutive two-digit pairs are charted; anything else is logged
+            # and skipped rather than drawn as a real year.
+            parts = fy_str.split("-")
+            valid = (
+                len(parts) == 2
+                and all(p.isdigit() and len(p) == 2 for p in parts)
+                and int(parts[1]) == (int(parts[0]) + 1) % 100
+            )
+            if not valid:
+                log.warning(f"  Skipping malformed FinYr value in weed-by-year: '{fy_str}'")
+                continue
+
+            wp_fy  = wp[wp[FY_COL] == fy]
+            counts = {c: 0 for c in YEAR_CATEGORIES}
+            for sp, cnt in wp_fy[SPECIES_COL].value_counts().items():
+                counts[categorise(str(sp)) or "Other"] += int(cnt)
+
+            weed_by_year["labels"].append(fy_str)
+            for c in YEAR_CATEGORIES:
+                weed_by_year["data"][c].append(counts[c])
+            weed_by_year["totals"].append(int(len(wp_fy)))
+            weed_by_year["speciesCount"].append(int(wp_fy[SPECIES_COL].nunique()))
+
+        log.info(
+            f"  Weed by year: { dict(zip(weed_by_year['labels'], weed_by_year['totals'])) }"
+        )
 
     # ── Trap data (Animal Pest Control layer) ─────────────────────────────────
     trap_total         = 0
@@ -1592,6 +1645,7 @@ def process_manawatu_estuary(wp: pd.DataFrame, gis: GIS) -> dict:
             "otherSpecies": other_species,
         },
         "weedByCategory":  weed_by_category,
+        "weedByYear":      weed_by_year,
         "pcoRtci":         pco_rtci,
         "birdSightings": bird_sightings,
         "traps": {
