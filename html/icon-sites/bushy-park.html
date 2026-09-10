@@ -75,9 +75,11 @@
     font-weight: 600;
     padding: 6px 12px;
     border-radius: 15px;
-    border: 1px solid var(--green);
-    color: #fff;
-    background: var(--green);
+    /* Same soft green as .pill, so the button sits in the page's existing
+       visual language rather than being the only solid-filled element on it. */
+    border: 1px solid var(--green-md);
+    color: var(--green);
+    background: var(--green-lt);
     white-space: nowrap;
   }
 
