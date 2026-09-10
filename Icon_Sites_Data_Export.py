@@ -134,7 +134,64 @@ MANAWATU_ESTUARY_PCO_WHERE = (
 
 # Financial year label used in log messages and CSV filenames
 # Each site processor uses its own FY field/value for filtering.
-FY_LABEL = "2024-25"  # used only for log/CSV naming; actual FY filter is per-site
+def previous_financial_year(today=None):
+    """The financial year that has most recently finished, as ('25-26',
+    '2025-26'). NZ FYs run 1 July - 30 June, so in September 2026 the year just
+    finished is 25-26.
+
+    The dashboards deliberately report on a **completed** year: the current FY's
+    records are not all in until it closes, so reporting on it would understate
+    every figure. Rolls over on its own each July - no annual code edit.
+
+    Same derivation as Hub_Stats_Export.previous_financial_year, which returns
+    a four-digit start ('2025-26'); the icon site data uses the two-digit form
+    ('25-26') because that is what the FinYr field holds.
+    """
+    today = today or datetime.datetime.now()
+    # July onwards we are in the FY starting this calendar year, so the one just
+    # finished started last year. Jan-June we are still in the FY that started
+    # last year, so the finished one started the year before that.
+    start = today.year - 1 if today.month >= 7 else today.year - 2
+    return f"{str(start)[2:]}-{str(start + 1)[2:]}", f"{start}-{str(start + 1)[2:]}"
+
+
+def fy_before(fy: str) -> str:
+    """The financial year before `fy`, e.g. '25-26' -> '24-25'.
+
+    Used where a page compares one year against the one before it: the prior
+    year has to be derived from the primary, or rolling the primary forward
+    leaves the comparison pointing two years back.
+    """
+    start = int(fy.split("-")[0])
+    return f"{start - 1:02d}-{start:02d}"
+
+
+def latest_fy_with_records(df, fy_col: str, wanted: str, what: str = "records"):
+    """`wanted` if it has rows in `df`, else the newest FY that does.
+
+    Source data arrives well after a financial year closes, so the FY the
+    calendar says we should be reporting on is not always the FY that has
+    records yet. Publishing the empty year would silently zero every figure
+    on the dashboard, so the label follows the data rather than leading it,
+    and picks the new year up on its own once the records land.
+    """
+    if fy_col not in df.columns:
+        return wanted
+    if not df[df[fy_col] == wanted].empty:
+        return wanted
+    available = sorted(df[fy_col].dropna().unique())
+    if not available:
+        return wanted
+    fallback = available[-1]
+    log.warning(
+        f"  No {what} for FY {wanted} yet -- showing FY {fallback} instead. "
+        f"The page label follows the data, and will roll to {wanted} once its "
+        f"records land."
+    )
+    return fallback
+
+
+FY_SHORT, FY_LABEL = previous_financial_year()  # e.g. ('25-26', '2025-26')
 
 # Regex that matches everything between the two marker comments (inclusive)
 _DATA_BLOCK_RE = re.compile(
@@ -346,7 +403,7 @@ def process_te_apiti(wp: pd.DataFrame, pl: pd.DataFrame, gis: GIS) -> dict:
     CONT_COL    = "Cont_name"     # contractor name
     LEN_COL     = "Shape__Length" # polyline length in metres
     SITE_ID     = "Palm05"
-    FY_VAL      = "24-25"
+    FY_VAL      = FY_SHORT        # rolls with the financial year; see previous_financial_year()
     TOP_N       = 5               # species shown individually; remainder → "Other"
     # ─────────────────────────────────────────────────────────────────────────
 
@@ -398,6 +455,13 @@ def process_te_apiti(wp: pd.DataFrame, pl: pd.DataFrame, gis: GIS) -> dict:
         log.info(f"  All-years summary: {len(all_years_rows)} FY row(s) for {SITE_ID}")
 
     # ── Filter to HTML display FY ─────────────────────────────────────────────
+    # FY_VAL rolls with the calendar (see previous_financial_year), but the pest
+    # plant contractor data arrives well after the year closes. Publishing the
+    # new FY before its records land would silently zero every weed figure on
+    # the dashboard, so fall back to the most recent FY that actually has
+    # records and let the page label follow the data. It picks the new year up
+    # on its own once the records arrive — no code edit needed.
+    FY_VAL = latest_fy_with_records(wp, FY_COL, FY_VAL, f"{SITE_ID} weed records")
     if FY_COL in wp.columns:
         wp = wp[wp[FY_COL] == FY_VAL].copy()
     if FY_COL in pl.columns:
@@ -874,6 +938,7 @@ def process_kia_wharite() -> dict:
         return {
             "site":      "Kia Wharite",
             "generated": datetime.datetime.now().isoformat(),
+            "fy":        FY_SHORT,
             "pcoRtci":   {"labels": [], "data": [], "years": []},
         }
 
@@ -927,6 +992,11 @@ def process_kia_wharite() -> dict:
     return {
         "site":              "Kia Wharite",
         "generated":         datetime.datetime.now().isoformat(),
+        # Emitted so the FY label rolls with the other pages. Caveat: unlike the
+        # other sites, nothing here is filtered by financial year — the RTCI
+        # comes from the local GDB and the trap catches are year-to-date TrapNZ
+        # counts. So this labels the reporting period, not the data's own span.
+        "fy":                FY_SHORT,
         "pcoRtci":           {"labels": labels, "data": data, "years": years},
         "trapCatchesByArea": trap_catches_by_area,
     }
@@ -947,8 +1017,12 @@ def process_manawatu_estuary(wp: pd.DataFrame, gis: GIS) -> dict:
     SPECIES_COL = "SpeciesID"
     SIZE_COL    = "Size_sqm"
     SITE_ID     = "Horo34W"
-    FY_PRIMARY  = "24-25"
-    FY_PRIOR    = "23-24"
+    # Rolls with the financial year. FY_PRIOR is derived from FY_PRIMARY so the
+    # page always compares consecutive years — hardcoding it would leave the
+    # comparison pointing two years back once FY_PRIMARY moved on. Both are
+    # settled after the site filter below, once we know which years have records.
+    FY_PRIMARY  = FY_SHORT
+    FY_PRIOR    = fy_before(FY_PRIMARY)
     FY_CURRENT  = date_to_fy(datetime.datetime.today())
     TOP_N       = 5
 
@@ -962,6 +1036,9 @@ def process_manawatu_estuary(wp: pd.DataFrame, gis: GIS) -> dict:
     log.info(f"  {len(wp):,} waypoints for {SITE_ID}")
 
     # ── Split by FY ───────────────────────────────────────────────────────────
+    FY_PRIMARY = latest_fy_with_records(wp, FY_COL, FY_PRIMARY, f"{SITE_ID} weed records")
+    FY_PRIOR   = fy_before(FY_PRIMARY)   # keep the pair consecutive after any fallback
+
     wp_primary = wp[wp[FY_COL] == FY_PRIMARY].copy() if FY_COL in wp.columns else pd.DataFrame()
     wp_prior   = wp[wp[FY_COL] == FY_PRIOR].copy()   if FY_COL in wp.columns else pd.DataFrame()
 
@@ -1548,7 +1625,7 @@ def process_pukaha(wp: pd.DataFrame, pl: pd.DataFrame, gis: GIS) -> dict:
     SIZE_COL      = "Size_sqm"
     LEN_COL       = "Shape__Length"
     SITE_NAME     = "Pukaha extension"
-    FY_VAL        = "24-25"
+    FY_VAL        = FY_SHORT      # rolls with the financial year; see previous_financial_year()
     TOP_N         = 5
 
     CATCH_SPECIES = ["Cat", "Ferret", "Hedgehog", "Mouse", "Rabbit",
@@ -1575,6 +1652,7 @@ def process_pukaha(wp: pd.DataFrame, pl: pd.DataFrame, gis: GIS) -> dict:
     pl_site = pl.copy()
 
     # ── Filter to display FY ──────────────────────────────────────────────────
+    FY_VAL = latest_fy_with_records(wp, FY_COL, FY_VAL, f"{SITE_NAME} weed records")
     if FY_COL in wp.columns:
         wp = wp[wp[FY_COL] == FY_VAL].copy()
     if FY_COL in pl.columns:

@@ -323,7 +323,7 @@
     <!-- Left: Stats at a glance -->
     <div class="panel">
       <div class="panel-title">Programme at a Glance</div>
-      <div class="panel-sub">2024–25 Financial Year</div>
+      <div class="panel-sub" id="fy-sub">2024–25 Financial Year</div>
       <div class="stat-grid">
         <div class="stat-box">
           <div class="s-val sm">~690</div>
@@ -467,81 +467,87 @@ const border  = '#ddddd8';
    Source: BioD Contractor Data feature layer (Horo34W / Manawatū Estuary)
            Animal Pest Control feature layer (PCOName: Manawatu Estuaries variants)
    ───────────────────────────────────────────────────────────────── */
-/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-09-09 16:05 */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-09-10 16:39 */
 const DATA = {
-  "fy": "24-25",
+  "fy": "25-26",
   "site": "Manaw\u0101t\u016b Estuary",
-  "generated": "2026-09-09T16:05:48.444894",
+  "generated": "2026-09-10T16:39:52.423988",
   "stats": {
-    "records_2425": 925,
-    "records_2324": 116,
-    "area_sqm_2425": 11022,
-    "species_2425": 36,
+    "records_2425": 1496,
+    "records_2324": 925,
+    "area_sqm_2425": 14823,
+    "species_2425": 38,
     "trapTotal": 41
   },
   "weedByCount": {
     "labels": [
-      "Climbing Dock",
-      "Goat's Rue",
-      "Fleabane",
       "Everlasting Pea",
+      "Climbing Dock",
+      "Fleabane",
+      "Goat's Rue",
       "Caper Spurge",
       "Other"
     ],
     "data_2425": [
-      100,
-      107,
-      97,
+      138,
+      119,
+      113,
+      80,
+      103,
+      943
+    ],
+    "data_2324": [
       85,
+      100,
+      97,
+      107,
       76,
       460
     ],
-    "data_2324": [
-      25,
-      0,
-      1,
-      0,
-      3,
-      87
-    ],
     "otherSpecies": [
       "Japanese Honeysuckle",
-      "Pampas",
-      "Sydney Golden Wattle",
       "Tree Lupin",
       "Poplar",
-      "Gorse",
-      "Smilax spp.",
+      "Sydney Golden Wattle",
+      "Pampas",
+      "Vetch",
+      "Marram Grass",
       "Periwinkle",
       "Osteospermum (African Daisy)",
-      "Pink Ragwort",
-      "English Ivy",
-      "Agapanthus",
-      "African Iceplant",
-      "Japanese honeysuckle",
-      "Convolvulus",
-      "Boxthorn",
-      "Karo",
-      "Montbretia",
+      "Gorse",
+      "Smilax spp.",
       "Lily of the Valley Vine",
+      "Agapanthus",
       "Yucca",
+      "English Ivy",
+      "Boxthorn",
+      "Pink Ragwort",
+      "Convolvulus",
+      "Karo",
       "Ivy",
       "Fennel",
-      "Elaeagnus",
-      "Broom",
-      "Unknown",
-      "Arum Lily",
       "Tradescantia",
       "Boneseed",
-      "Stinking Iris",
-      "Radinosiphon leptostachya",
-      "Sea Bindweed",
-      "Inkweed",
-      "Brush Wattle",
-      "Cape Ivy",
+      "Sweet Pea Shrub",
+      "African Iceplant",
+      "Madeira Vine",
+      "Mallow spp.",
+      "Unknown",
       "Formosa Lily",
-      "Old man's beard",
-      "Japanese Holly Fern"
+      "Blackberry",
+      "Stinking Iris",
+      "Wild Ginger",
+      "Arum Lily",
+      "Japanese Holly Fern",
+      "Brush Wattle",
+      "Sea Bindweed",
+      "Large Flowered Evening Primrose",
+      "Cape Ivy",
+      "Elaeagnus",
+      "Gravel Groundsel",
+      "Montbretia",
+      "Inkweed",
+      "Radinosiphon leptostachya"
     ]
   },
   "weedByCategory": {
@@ -551,45 +557,37 @@ const DATA = {
       "Climbing Pests"
     ],
     "data": [
-      179,
-      340,
-      318
+      367,
+      424,
+      401
     ],
     "species": {
       "Woody Pests": {
-        "Poplar": 50,
-        "Sydney Golden Wattle": 45,
-        "Tree Lupin": 37,
-        "Gorse": 32,
-        "Boxthorn": 8,
-        "Yucca": 2,
-        "Elaeagnus": 1,
-        "Karo": 1,
-        "Inkweed": 1,
-        "Brush Wattle": 1,
-        "Boneseed": 1
+        "Tree Lupin": 120,
+        "Poplar": 98,
+        "Sydney Golden Wattle": 68,
+        "Gorse": 39,
+        "Yucca": 21,
+        "Boxthorn": 13,
+        "Karo": 6,
+        "Boneseed": 2
       },
       "Ground Cover Pests": {
-        "Goat's Rue": 107,
-        "Fleabane": 97,
-        "Caper Spurge": 76,
-        "Periwinkle": 24,
-        "Osteospermum (African Daisy)": 21,
-        "Agapanthus": 9,
-        "African Iceplant": 2,
-        "Arum Lily": 1,
-        "Stinking Iris": 1,
-        "Japanese Holly Fern": 1,
+        "Fleabane": 113,
+        "Caper Spurge": 103,
+        "Goat's Rue": 80,
+        "Periwinkle": 57,
+        "Osteospermum (African Daisy)": 55,
+        "Agapanthus": 15,
         "Formosa Lily": 1
       },
       "Climbing Pests": {
-        "Climbing Dock": 100,
-        "Everlasting Pea": 85,
-        "Japanese Honeysuckle": 76,
-        "Smilax spp.": 30,
-        "English Ivy": 16,
-        "Convolvulus": 10,
-        "Cape Ivy": 1
+        "Everlasting Pea": 138,
+        "Climbing Dock": 119,
+        "Japanese Honeysuckle": 102,
+        "Smilax spp.": 32,
+        "Convolvulus": 5,
+        "English Ivy": 5
       }
     }
   },
@@ -620,24 +618,24 @@ const DATA = {
       "Caspian Tern",
       "White-fronted Tern",
       "Wrybill",
-      "Sacred Kingfisher",
       "Double-banded Plover",
       "New Zealand Scaup",
+      "Sacred Kingfisher",
       "Australasian Shoveler",
       "Other"
     ],
     "data": [
       106,
-      61,
-      32,
-      26,
-      19,
+      60,
+      33,
+      27,
+      18,
       13,
       13,
       12,
       11,
       11,
-      11,
+      10,
       7,
       39
     ],
@@ -646,11 +644,11 @@ const DATA = {
       "Pied Stilt",
       "New Zealand Grebe",
       "Paradise Shelduck",
+      "New Zealand Fantail",
       "Red Knot",
       "Black Stilt",
       "Grey Teal",
       "Black-billed Gull",
-      "New Zealand Fantail",
       "Tui",
       "Australasian Bittern",
       "New Zealand Falcon",
@@ -739,8 +737,8 @@ const DATA = {
     },
     "catchesBySpecies": {
       "labels": [
-        "23-24",
-        "24-25"
+        "24-25",
+        "25-26"
       ],
       "species": [
         "Cat",
@@ -759,36 +757,36 @@ const DATA = {
           0
         ],
         "Ferret": [
-          1,
+          0,
           0
         ],
         "Hedgehog": [
-          8,
-          14
+          14,
+          25
         ],
         "Mouse": [
-          0,
-          1
+          1,
+          3
         ],
         "Rabbit": [
           0,
           0
         ],
         "Rat": [
-          8,
-          14
+          14,
+          9
         ],
         "Stoat": [
-          23,
-          8
+          8,
+          22
         ],
         "Possum": [
           0,
           0
         ],
         "Weasel": [
-          3,
-          4
+          4,
+          7
         ]
       }
     }
@@ -797,7 +795,7 @@ const DATA = {
     "bySpecies": {
       "Mustelid": 15,
       "Rat": 142,
-      "Other": 215,
+      "Other": 214,
       "Possum": 55,
       "Hedgehog": 54
     },
@@ -813,6 +811,11 @@ function fmt(v, suffix, decimals) {
 }
 
 // Stat boxes
+// Label follows the data so it cannot drift from the figures beneath it.
+// DATA.fy is the two-digit form ('25-26'); the pages show '2025–26 Financial
+// Year', matching bushy-park.html and the hub landing page.
+document.getElementById('fy-sub').textContent = '20' + DATA.fy.replace('-', '–') + ' Financial Year';
+
 document.getElementById('val-trap-total').textContent   = fmt(DATA.stats.trapTotal);
 document.getElementById('val-weed-records').textContent = fmt(DATA.stats.records_2425);
 document.getElementById('val-weed-species').textContent = fmt(DATA.stats.species_2425);

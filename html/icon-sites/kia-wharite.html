@@ -265,7 +265,7 @@
     <!-- Left: Stats at a glance -->
     <div class="panel">
       <div class="panel-title">Programme at a Glance</div>
-      <div class="panel-sub">2024–25 Financial Year</div>
+      <div class="panel-sub" id="fy-sub">2024–25 Financial Year</div>
       <div class="stat-grid">
         <div class="stat-box">
           <div class="s-val sm">180,000+</div>
@@ -407,10 +407,11 @@ const border  = '#ddddd8';
    DATA — auto-updated by Icon_Sites_Data_Export.py
    Source: Kia_Wharite_Project.gdb / PCO_Treatment_Area_ExportFeatures
    ───────────────────────────────────────────────────────────────── */
-/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-09-09 16:05 */
+/* ICON_SITE_DATA_START — auto-updated by Icon_Sites_Data_Export.py — last run 2026-09-10 16:51 */
 const DATA = {
   "site": "Kia Wharite",
-  "generated": "2026-09-09T16:05:26.757070",
+  "generated": "2026-09-10T16:51:03.312809",
+  "fy": "25-26",
   "pcoRtci": {
     "labels": [
       "Waimarino Pipipi",
@@ -475,21 +476,21 @@ const DATA = {
       "Manganui o te Ao"
     ],
     "rats": [
-      752,
+      755,
       157,
-      1671,
+      1656,
       883
     ],
     "mustelids": [
       63,
       12,
-      265,
+      264,
       85
     ],
     "other": [
       84,
       223,
-      151,
+      150,
       173
     ]
   }
@@ -507,6 +508,12 @@ const DATA = {
   const fmt = n => n.toLocaleString();
 
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+  // Label follows the data so it cannot drift from the figures beneath it.
+  // DATA.fy is the two-digit form ('25-26'); the pages show '2025–26 Financial
+  // Year', matching the other icon sites and the hub landing page.
+  if (DATA.fy) set('fy-sub', '20' + DATA.fy.replace('-', '–') + ' Financial Year');
+
   set('val-total-catches',  fmt(total));
   set('val-mustelids',      fmt(mustelids));
   set('sum-hero-catches',   fmt(total));
