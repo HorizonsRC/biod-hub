@@ -418,10 +418,18 @@
         <div class="sum-detail" style="margin-top:3px">6 management units · 2–3 control sweeps per season</div>
       </div>
 
-      <div class="summary-section">
-        <div class="sum-heading gold">Bird Monitoring</div>
-        <div><span class="sum-hero">54</span> <span class="sum-unit">Mātātā (fern birds) recorded in 1.5 hours</span></div>
-        <div class="sum-detail">Early December survey with MEMT and Bird NZ volunteers.</div>
+      <!-- Dune restoration — figures come from DATA.speciesFocus, so this
+           section follows the weed data instead of being hand-typed. It hides
+           itself when the focus species has no records for the year. -->
+      <div class="summary-section" id="focus-section" style="display:none">
+        <div class="sum-heading gold">Dune Restoration</div>
+        <div>
+          <span class="sum-hero" id="focus-val">–</span>
+          <span class="sum-unit" id="focus-unit">locations controlled</span>
+        </div>
+        <!-- Prose stays hand-written and report-sourced (ICC agenda, 29 July
+             2026); only the figures are injected. -->
+        <div class="sum-detail"><span id="focus-area"></span>Chemical control on the dunes, ahead of community spinifex planting.</div>
       </div>
 
       <div class="summary-section">
@@ -686,6 +694,12 @@ const DATA = {
       38
     ]
   },
+  "speciesFocus": {
+    "species": "Marram Grass",
+    "fy": "25-26",
+    "records": 100,
+    "areaSqm": 3067
+  },
   "pcoRtci": {
     "labels": [
       "Coastal Foxton",
@@ -949,6 +963,21 @@ document.getElementById('val-weed-species').textContent = fmt(DATA.stats.species
   document.getElementById('val-trap-catches').textContent = fmt((hrcCatches + tzCatches) || null);
   document.getElementById('sub-trap-catches').innerHTML   = split(hrcCatches, tzCatches);
   document.getElementById('val-trap-species').textContent = fmt(spCount || null);
+})();
+
+/* ── DUNE RESTORATION — focus species (activity summary) ──
+   Replaces a hand-typed one-off survey figure. The numbers come from the weed
+   data for the reporting year, so they roll with it; the sentence beneath them
+   is hand-written from the ICC agenda.
+   The section stays hidden when the focus species has no records for the year —
+   an empty result means "not worked on", which is not a zero worth publishing. ── */
+(function () {
+  const f = DATA.speciesFocus;
+  if (!f || !f.records) return;
+  document.getElementById('focus-val').textContent  = fmt(f.records);
+  document.getElementById('focus-unit').textContent = f.species.toLowerCase() + ' locations controlled';
+  document.getElementById('focus-area').textContent = f.areaSqm ? fmt(f.areaSqm) + ' m² treated · ' : '';
+  document.getElementById('focus-section').style.display = '';
 })();
 
 const toArr = arr => (arr || []).map(v => v ?? 0);

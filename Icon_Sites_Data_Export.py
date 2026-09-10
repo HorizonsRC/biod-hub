@@ -1175,6 +1175,38 @@ def process_manawatu_estuary(wp: pd.DataFrame, gis: GIS) -> dict:
             f"  Weed by year: { dict(zip(weed_by_year['labels'], weed_by_year['totals'])) }"
         )
 
+    # ── Focus species ─────────────────────────────────────────────────────────
+    # The Activity Summary carries one figure that follows what the site is
+    # actually working on, rather than a hand-typed number that goes stale.
+    # Marram is the current focus: it is being chemically controlled on the dunes
+    # ahead of community spinifex planting (ICC agenda, 29 July 2026).
+    #
+    # Change FOCUS_SPECIES when the programme moves on. The page renders whatever
+    # is emitted and hides the section when the species has no records for the
+    # year, so a species that stops being worked on goes quiet instead of showing
+    # a stale claim.
+    FOCUS_SPECIES = "Marram Grass"
+
+    focus_rows = pd.DataFrame()
+    if SPECIES_COL in wp_primary.columns and not wp_primary.empty:
+        focus_rows = wp_primary[
+            wp_primary[SPECIES_COL].astype(str).str.casefold() == FOCUS_SPECIES.casefold()
+        ]
+
+    species_focus = {
+        "species": FOCUS_SPECIES,
+        "fy":      FY_PRIMARY,
+        "records": int(len(focus_rows)),
+        "areaSqm": (
+            int(round(float(focus_rows[SIZE_COL].sum())))
+            if SIZE_COL in focus_rows.columns and not focus_rows.empty else 0
+        ),
+    }
+    log.info(
+        f"  Focus species {FOCUS_SPECIES} ({FY_PRIMARY}): "
+        f"{species_focus['records']} records, {species_focus['areaSqm']} sqm"
+    )
+
     # ── Trap data (Animal Pest Control layer) ─────────────────────────────────
     trap_total         = 0
     trap_types         = {"labels": [], "data": []}
@@ -1646,6 +1678,7 @@ def process_manawatu_estuary(wp: pd.DataFrame, gis: GIS) -> dict:
         },
         "weedByCategory":  weed_by_category,
         "weedByYear":      weed_by_year,
+        "speciesFocus":    species_focus,
         "pcoRtci":         pco_rtci,
         "birdSightings": bird_sightings,
         "traps": {

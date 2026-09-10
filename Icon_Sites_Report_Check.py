@@ -103,6 +103,40 @@ ANNUAL_REPORT_DIR = ROOT / "Data" / "Icon site data"
 ICC_CACHE_DIR = ROOT / "Data" / "icc-reports"
 REVIEW_DIR = ROOT / "Data" / "icon-sites-review"
 
+# ── Table rows ────────────────────────────────────────────────────────────────
+# The ICC site tables shade their background rows grey — Governance, Horizons'
+# role and Finance as at July 2026. Those rows restate standing arrangements and
+# are refreshed rarely, so they lag the live data: the July 2026 agenda still
+# says 36 predator traps at Fernbird Flat where the layer has 41.
+#
+# Facts are therefore mined from the unshaded rows only (Project overview and
+# Operational update). Which rows are shaded is read from the page's own fills
+# rather than hardcoded, so a future agenda that shades a different set is
+# followed automatically; BACKGROUND_LABELS is only the fallback for when no
+# fills can be read at all.
+ROW_LABELS = ("Project overview", "Governance", "Horizons' role", "Finance",
+              "Operational update")
+ROW_LABEL_TOKENS = {
+    "project":     "Project overview",
+    "governance":  "Governance",
+    "horizons":    "Horizons' role",
+    "finance":     "Finance",
+    "operational": "Operational update",
+}
+BACKGROUND_LABELS = {"Governance", "Horizons' role", "Finance"}
+# The Area column ends well before the Comments column starts (x≈130 in the
+# 2026 agendas), so this keeps body text out of the label match.
+AREA_COLUMN_RIGHT = 130
+# Header rows are dark navy and body cells are white; the background rows are a
+# neutral mid grey. Match on "all three channels close together, mid-range".
+GREY_MIN, GREY_MAX, GREY_SPREAD = 0.60, 0.97, 0.05
+
+ROW_SPLIT = re.compile(
+    r"(Project\s+overview|Governance|Horizons.{0,2}\s*role|Finance"
+    r"|Operational\s+update)",
+    re.I,
+)
+
 # The per-site table caption used by every ICC agenda since November 2025.
 ICC_SITE_CAPTION = re.compile(r"Table\s+(\d+):\s*Icon Site\s+([^\n]+)")
 # The pre-November-2025 layout, recognised only so we can say why we skipped it.
@@ -304,6 +338,67 @@ def download_pdf(url, dest):
     return dest
 
 
+def _is_grey(fill):
+    """True for the neutral mid-grey the ICC tables shade background rows with."""
+    if not fill or len(fill) < 3:
+        return False
+    channels = fill[:3]
+    return (GREY_MIN <= min(channels) and max(channels) <= GREY_MAX
+            and max(channels) - min(channels) <= GREY_SPREAD)
+
+
+def shaded_row_labels(page):
+    """Row labels sitting on a shaded cell, read from the page's own fills.
+
+    Returns an empty set when the page has no grey fills — the caller treats that
+    as "shading could not be read" and falls back to BACKGROUND_LABELS.
+    """
+    rects = [d["rect"] for d in page.get_drawings()
+             if _is_grey(d.get("fill")) and d["rect"].height >= 5]
+    if not rects:
+        return set()
+
+    shaded = set()
+    for word in page.get_text("words"):
+        x0, y0, token = word[0], word[1], word[4]
+        if x0 > AREA_COLUMN_RIGHT:
+            continue
+        label = ROW_LABEL_TOKENS.get(re.sub(r"[^\w]", "", token).lower())
+        if label and any(r.x0 <= x0 <= r.x1 and r.y0 <= y0 <= r.y1 for r in rects):
+            shaded.add(label)
+    return shaded
+
+
+def current_text(section):
+    """A site's ICC section with the shaded background rows removed.
+
+    Everything the checker reads about current activity goes through here, so a
+    claim can never be "supported" by a background row that lags the live data.
+    Falls back to the whole section if the row labels cannot be found at all.
+    """
+    if not section:
+        return ""
+    rows = section_rows(section["text"])
+    if not rows:
+        return section["text"]
+    shaded = section.get("shaded") or set()
+    return "".join(text for label, text in rows.items() if label not in shaded)
+
+
+def section_rows(text):
+    """Split a site's ICC section into ``{row label: body}``."""
+    parts = ROW_SPLIT.split(text)
+    rows, current = {}, None
+    for i, part in enumerate(parts):
+        if i % 2 == 1:
+            current = ROW_LABEL_TOKENS.get(
+                re.sub(r"[^\w]", "", part.split()[0]).lower()
+            )
+        elif current:
+            rows[current] = rows.get(current, "") + part
+    return rows
+
+
 def extract_icc_sections(pdf_path):
     """Split an ICC agenda into per-site sections.
 
@@ -360,10 +455,20 @@ def extract_icc_sections(pdf_path):
                 "known icon site."
             )
             continue
+        page_no = page_for(m.start())
+        shaded = shaded_row_labels(doc[page_no - 1])
+        if not shaded:
+            warnings.append(
+                f"{pdf_path.name} p.{page_no}: no shaded rows could be read, so "
+                f"the usual background rows ({', '.join(sorted(BACKGROUND_LABELS))}) "
+                "are assumed. Check the table styling has not changed."
+            )
+            shaded = set(BACKGROUND_LABELS)
         sections[key] = {
             "caption": caption,
-            "page": page_for(m.start()),
+            "page": page_no,
             "text": body,
+            "shaded": shaded,
         }
 
     missing = [k for k in SITES if k not in sections]
@@ -748,6 +853,101 @@ def compare_report_link(meeting, icc_sections):
     return findings
 
 
+# ── Static claims a dashboard makes from the ICC report ───────────────────────
+# Text on a dashboard that came from a written report, rather than from AGOL,
+# goes stale silently: the report moves on and the page keeps asserting last
+# year's story. Nobody notices, because nothing errors.
+#
+# Each entry names the panel, what the page says, and an anchor that must still
+# appear in that site's section of the latest agenda. A claim whose anchor has
+# gone is reported as UNSUPPORTED — the page is still making it, the report no
+# longer backs it.
+#
+# Anchors are matched against the unshaded rows only (see current_text), so a
+# claim cannot be held up by a background row. That also rules out comparing the
+# report's trap count against the layer's: it lives in the shaded "Horizons'
+# role" row, lags by design, and flagging it made the live figure look wrong.
+#
+# This reports; it never rewrites. Report wording is outside our control and
+# Icon_Sites_Data_Export.py pushes by itself, so a mis-parse feeding an
+# automatic edit would publish silently.
+REPORT_CLAIMS = {
+    "manawatu-estuary": [
+        {
+            "panel":  "Dune Restoration",
+            "says":   "chemical control on the dunes",
+            "anchor": re.compile(r"\bmarram\b", re.I),
+        },
+        {
+            "panel":  "Dune Restoration",
+            "says":   "ahead of community spinifex planting",
+            "anchor": re.compile(r"\bspinifex\b", re.I),
+        },
+        {
+            "panel":  "Pest Plant Control",
+            "says":   "annual pest plant control programme",
+            "anchor": re.compile(r"pest plant control programme", re.I),
+        },
+    ],
+}
+
+
+def compare_static_claims(icc_sections):
+    """Check dashboard text that came from the ICC report rather than from AGOL."""
+    findings = []
+    for key, claims in REPORT_CLAIMS.items():
+        section = icc_sections.get(key)
+        text = current_text(section)
+        for claim in claims:
+            if not section:
+                status = "NOT IN AGENDA"
+            elif claim["anchor"].search(text):
+                status = "match"
+            else:
+                status = "UNSUPPORTED"
+            findings.append({
+                "site":      SITES[key]["card"],
+                "panel":     claim["panel"],
+                "published": claim["says"],
+                "reported":  "present" if status == "match" else "absent",
+                "status":    status,
+                "page":      section["page"] if section else None,
+            })
+    return findings
+
+
+# The Area column's row labels sit after the last bullet of the row they label,
+# so they end up glued to the end of that bullet ("...Fernbird Flat area. Finance").
+ROW_LABEL_TAIL = re.compile(
+    r"\s*(Area|Comments|Project\s+overview|Governance|Horizons.{0,2}\s*role"
+    r"|Finance|Operational\s+update)\s*$",
+    re.I,
+)
+
+
+def report_facts(section):
+    """Statements carrying a number from a site's ICC section.
+
+    Raw material for a person to choose from when a panel needs a new figure —
+    the script never picks one. Bullets wrap mid-sentence in the PDF, so the
+    text is split on the bullet character and rejoined before matching.
+
+    Shaded (background) rows are skipped: they restate standing arrangements,
+    are refreshed rarely, and lag the live data. See the ROW_LABELS comment.
+    """
+    bullets = []
+    for raw in current_text(section).split("•")[1:]:
+        text = norm(raw)
+        while True:
+            trimmed = ROW_LABEL_TAIL.sub("", text)
+            if trimmed == text:
+                break
+            text = trimmed
+        if re.search(r"\d", text):
+            bullets.append(text)
+    return bullets
+
+
 def compare_budgets(icc_sections):
     """Diff each ICC site budget against the landing page card."""
     published = read_landing_budgets(LANDING_HTML)
@@ -780,7 +980,8 @@ def compare_budgets(icc_sections):
 
 
 # ── Review file ───────────────────────────────────────────────────────────────
-def write_review(meeting, bp_findings, budget_findings, link_findings, warnings):
+def write_review(meeting, bp_findings, budget_findings, link_findings,
+                 claim_findings, facts, warnings):
     REVIEW_DIR.mkdir(parents=True, exist_ok=True)
     stamp = datetime.datetime.now()
     out = REVIEW_DIR / f"review_{stamp:%Y%m%d_%H%M%S}.md"
@@ -831,6 +1032,38 @@ def write_review(meeting, bp_findings, budget_findings, link_findings, warnings)
                 f"| {f['status']} |"
             )
         lines.append("")
+
+    if claim_findings:
+        lines += [
+            "## Dashboard text sourced from the ICC report",
+            "",
+            "UNSUPPORTED means the page still says it and the latest agenda no",
+            "longer mentions it — a candidate for replacement, using the facts",
+            "listed below.",
+            "",
+            "| Site | Panel | On the page | In the agenda | Status | Page |",
+            "|---|---|---|---|---|---|",
+        ]
+        for f in claim_findings:
+            lines.append(
+                f"| {f['site']} | {f['panel']} | {fmt(f['published'])} "
+                f"| {fmt(f['reported'])} | {f['status']} | {fmt(f['page'])} |"
+            )
+        lines.append("")
+
+    if facts:
+        lines += [
+            "## Figures in the latest agenda, by site",
+            "",
+            "Every statement carrying a number, as raw material for a panel that",
+            "needs a new one. Nothing here is chosen or applied automatically.",
+            "",
+        ]
+        for site, bullets in facts.items():
+            lines.append(f"**{site}**")
+            lines.append("")
+            lines += [f"- {b}" for b in bullets]
+            lines.append("")
 
     lines += [
         "## HRC annual budgets — ICC agenda vs landing page",
@@ -921,10 +1154,19 @@ def main():
 
     budget_findings = compare_budgets(icc_sections) if icc_sections else []
     link_findings = compare_report_link(meeting, icc_sections) if icc_sections else []
+    claim_findings = compare_static_claims(icc_sections) if icc_sections else []
 
-    out = write_review(meeting, bp_findings, budget_findings, link_findings, warnings)
+    # Candidate replacement figures, for the sites that make report-sourced claims.
+    facts = {}
+    for key in REPORT_CLAIMS:
+        bullets = report_facts(icc_sections.get(key))
+        if bullets:
+            facts[SITES[key]["card"]] = bullets
 
-    changed = [f for f in bp_findings + budget_findings + link_findings
+    out = write_review(meeting, bp_findings, budget_findings, link_findings,
+                       claim_findings, facts, warnings)
+
+    changed = [f for f in bp_findings + budget_findings + link_findings + claim_findings
                if f["status"] not in ("match", "review")]
     log.info("-" * 60)
     log.info("%d figures need a look, %d warnings", len(changed), len(warnings))
