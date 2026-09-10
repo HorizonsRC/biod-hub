@@ -161,6 +161,16 @@
   }
   .stat-box.gold-box .s-val { color: #8a6820; }
   .stat-box .s-val.sm { font-size: 17px; }
+  /* Source split beneath a combined figure (HRC + Trap.NZ tiles). */
+  .stat-box .s-sub {
+    font-size: 9px;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    color: var(--muted);
+    opacity: 0.85;
+    line-height: 1.3;
+    margin-top: 3px;
+  }
   .stat-box .s-key {
     font-size: 10.5px;
     font-weight: 600;
@@ -332,10 +342,12 @@
         <div class="stat-box">
           <div class="s-val" id="val-trap-total">–</div>
           <div class="s-key">Traps Deployed</div>
+          <div class="s-sub" id="sub-trap-total"></div>
         </div>
         <div class="stat-box">
           <div class="s-val" id="val-trap-catches">–</div>
           <div class="s-key">Total Trap Catches</div>
+          <div class="s-sub" id="sub-trap-catches"></div>
         </div>
         <div class="stat-box">
           <div class="s-val" id="val-trap-species">–</div>
@@ -421,7 +433,7 @@
 
     <div class="panel">
       <div class="panel-title">Trap Network by Type</div>
-      <div class="panel-sub">Number of traps deployed · Fernbird Flat</div>
+      <div class="panel-sub">HRC · Number of traps deployed · Fernbird Flat</div>
       <div class="chart-wrap">
         <canvas id="trapTypeChart"></canvas>
       </div>
@@ -816,23 +828,43 @@ function fmt(v, suffix, decimals) {
 // Year', matching bushy-park.html and the hub landing page.
 document.getElementById('fy-sub').textContent = '20' + DATA.fy.replace('-', '–') + ' Financial Year';
 
-document.getElementById('val-trap-total').textContent   = fmt(DATA.stats.trapTotal);
 document.getElementById('val-weed-records').textContent = fmt(DATA.stats.records_2425);
 document.getElementById('val-weed-species').textContent = fmt(DATA.stats.species_2425);
 
-// Trap catches for primary FY (computed from catchesBySpecies)
+// Trap tiles — HRC (Fernbird Flat) and Trap.NZ combined, with the split named
+// beneath each figure so a combined total can't be read as one network's.
+// The two sources don't cover the same period: HRC catches are FY-scoped, while
+// Trap.NZ's are its own trailing 12 months (the public endpoint carries no
+// record dates, so it can't be split by financial year). The sub-line naming
+// both sources is what keeps the combined figure honest against the panel's
+// FY subtitle. Species Caught stays HRC-only — Trap.NZ's buckets ("Other",
+// "Mustelid") aren't species and don't add to a species count.
 (function () {
   const cs  = (DATA.traps && DATA.traps.catchesBySpecies) ? DATA.traps.catchesBySpecies : {};
   const idx = (cs.labels || []).indexOf(DATA.fy);
-  let total = 0, spCount = 0;
+  let hrcCatches = 0, spCount = 0;
   if (idx >= 0 && cs.data) {
     Object.values(cs.data).forEach(arr => {
       const v = arr[idx] || 0;
-      total   += v;
+      hrcCatches += v;
       if (v > 0) spCount++;
     });
   }
-  document.getElementById('val-trap-catches').textContent = fmt(total || null);
+
+  const tz        = DATA.trapnzCatches || {};
+  const tzTraps   = tz.trapsDeployed || 0;
+  const tzCatches = Object.values(tz.bySpecies || {}).reduce((s, v) => s + v, 0);
+  const hrcTraps  = DATA.stats.trapTotal || 0;
+
+  // One source per line — the tile is too narrow for both on one, and letting it
+  // wrap on its own breaks mid-figure.
+  const split = (hrc, tzv) =>
+    tzv ? `HRC ${fmt(hrc)}<br>Trap.NZ ${fmt(tzv)}` : `HRC ${fmt(hrc)}`;
+
+  document.getElementById('val-trap-total').textContent   = fmt((hrcTraps + tzTraps) || null);
+  document.getElementById('sub-trap-total').innerHTML     = split(hrcTraps, tzTraps);
+  document.getElementById('val-trap-catches').textContent = fmt((hrcCatches + tzCatches) || null);
+  document.getElementById('sub-trap-catches').innerHTML   = split(hrcCatches, tzCatches);
   document.getElementById('val-trap-species').textContent = fmt(spCount || null);
 })();
 
