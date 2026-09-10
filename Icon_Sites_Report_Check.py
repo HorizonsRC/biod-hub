@@ -53,6 +53,7 @@ query parameter from the ``pastmeetings`` request.
 
 import argparse
 import datetime
+import json
 import logging
 import re
 import sys
@@ -255,6 +256,38 @@ def fetch_meeting_index(category=ICC_CATEGORY):
             "changed — see the module docstring for how to re-read it."
         )
     return meetings
+
+
+def sidecar_for(pdf_path):
+    """Path of the small JSON note recording where a cached agenda came from."""
+    return pdf_path.with_suffix(".json")
+
+
+def write_sidecar(pdf_path, meeting):
+    """Record a cached agenda's date and source URL next to the PDF.
+
+    Without this a `--no-fetch` run knows the file but not the URL it came
+    from, so it cannot rebuild the deep link to compare against.
+    """
+    sidecar_for(pdf_path).write_text(
+        json.dumps({"date": meeting["date"].isoformat(),
+                    "pdf_url": meeting["pdf_url"]}, indent=2),
+        encoding="utf-8",
+    )
+
+
+def read_sidecar(pdf_path):
+    """Rebuild a meeting record from a cached agenda's sidecar, if present."""
+    path = sidecar_for(pdf_path)
+    if not path.exists():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return {"date": datetime.date.fromisoformat(data["date"]),
+                "pdf_url": data["pdf_url"]}
+    except (ValueError, KeyError) as exc:
+        log.warning("Could not read %s: %s", path.name, exc)
+        return None
 
 
 def download_pdf(url, dest):
@@ -668,6 +701,53 @@ def compare_bushy_park(figures):
     return findings
 
 
+def compare_report_link(meeting, icc_sections):
+    """Check each dashboard's ICC report button against the latest agenda.
+
+    The button deep-links into the agenda PDF at the site's own table
+    (`...pdf#page=N`), so it goes stale the moment a newer agenda is published.
+    Only Bushy Park carries one so far.
+    """
+    findings = []
+    for key in ("bushy-park",):
+        html_path = HTML_DIR / f"{key}.html"
+        if not html_path.exists():
+            continue
+        html = html_path.read_text(encoding="utf-8")
+        m = re.search(
+            r'class="report-btn"[^>]*?href="([^"]+)"\s*>(.*?)</a>', html, re.S
+        )
+        published = m.group(1) if m else None
+        label = norm(re.sub(r"&#\d+;", "", m.group(2))) if m else None
+        section = icc_sections.get(key)
+        expected = None
+        if meeting and section:
+            expected = f"{meeting['pdf_url']}#page={section['page']}"
+        if expected is None:
+            status = "NO AGENDA SECTION"
+        elif published is None:
+            status = "NO BUTTON ON PAGE"
+        elif published == expected:
+            status = "match"
+        else:
+            status = "CHANGED"
+        # The button carries the report date in its text. A refreshed href with
+        # a stale label reads as wrong to anyone looking at the dashboard, so
+        # check the two agree.
+        if meeting and label and status == "match":
+            month_year = f"{meeting['date']:%b %Y}"
+            if month_year.lower() not in label.lower():
+                status = f"LABEL STALE (says '{label}', agenda is {month_year})"
+
+        findings.append({
+            "site": SITES[key]["card"],
+            "published": published,
+            "reported": expected,
+            "status": status,
+        })
+    return findings
+
+
 def compare_budgets(icc_sections):
     """Diff each ICC site budget against the landing page card."""
     published = read_landing_budgets(LANDING_HTML)
@@ -700,7 +780,7 @@ def compare_budgets(icc_sections):
 
 
 # ── Review file ───────────────────────────────────────────────────────────────
-def write_review(meeting, bp_findings, budget_findings, warnings):
+def write_review(meeting, bp_findings, budget_findings, link_findings, warnings):
     REVIEW_DIR.mkdir(parents=True, exist_ok=True)
     stamp = datetime.datetime.now()
     out = REVIEW_DIR / f"review_{stamp:%Y%m%d_%H%M%S}.md"
@@ -737,6 +817,20 @@ def write_review(meeting, bp_findings, budget_findings, warnings):
             f"| {f['status']} | {f['source']} |"
         )
     lines.append("")
+
+    if link_findings:
+        lines += [
+            "## ICC report deep links — dashboard button vs latest agenda",
+            "",
+            "| Site | On the page | Should be | Status |",
+            "|---|---|---|---|",
+        ]
+        for f in link_findings:
+            lines.append(
+                f"| {f['site']} | {fmt(f['published'])} | {fmt(f['reported'])} "
+                f"| {f['status']} |"
+            )
+        lines.append("")
 
     lines += [
         "## HRC annual budgets — ICC agenda vs landing page",
@@ -779,6 +873,13 @@ def main():
         else:
             icc_sections, w = extract_icc_sections(cached[0])
             warnings += w
+            meeting = read_sidecar(cached[0])
+            if meeting is None:
+                warnings.append(
+                    f"{cached[0].name}: no sidecar recording its source URL, so "
+                    "the report deep link cannot be checked. Run without "
+                    "--no-fetch once to record it."
+                )
     else:
         try:
             meetings = fetch_meeting_index()
@@ -792,6 +893,7 @@ def main():
             except requests.RequestException as exc:
                 warnings.append(f"Could not download {m['pdf_url']}: {exc}")
                 continue
+            write_sidecar(dest, m)
             sections, w = extract_icc_sections(dest)
             warnings += w
             if sections and not icc_sections:
@@ -818,10 +920,11 @@ def main():
         bp_findings = compare_bushy_park(figures)
 
     budget_findings = compare_budgets(icc_sections) if icc_sections else []
+    link_findings = compare_report_link(meeting, icc_sections) if icc_sections else []
 
-    out = write_review(meeting, bp_findings, budget_findings, warnings)
+    out = write_review(meeting, bp_findings, budget_findings, link_findings, warnings)
 
-    changed = [f for f in bp_findings + budget_findings
+    changed = [f for f in bp_findings + budget_findings + link_findings
                if f["status"] not in ("match", "review")]
     log.info("-" * 60)
     log.info("%d figures need a look, %d warnings", len(changed), len(warnings))
