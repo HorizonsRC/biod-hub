@@ -19,6 +19,11 @@ OUTPUT_SUMMARY_CSV = r"C:\path\to\your\Outputs\PH_Pressure_Summary_by_District.c
 # Recommended: point this to your local Data\ folder (gitignored)
 ICON_SITES_OUTPUT_DIR = r"C:\path\to\your\Data"
 
+# Icon Sites web map item ID. The pest plant layers in this map group species
+# into categories ("Woody Pests" and so on) through their unique-value renderer,
+# and the weed charts read those groupings rather than keeping their own copy.
+ICON_SITES_WEBMAP_ID = "your-icon-sites-webmap-id"
+
 # BioD Contractor Data feature layer item ID (waypoints layer 0, polylines layer 1)
 CONTRACTOR_ITEM_ID = "your-contractor-item-id"
 WAYPOINTS_LAYER_ID = 0
