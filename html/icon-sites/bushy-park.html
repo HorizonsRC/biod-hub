@@ -103,6 +103,11 @@
     min-height: 0;
   }
 
+  /* The Activity Summary is prose, so it doesn't stretch to fill its panel the
+     way a chart does. Spreading the sections spends the leftover space evenly
+     instead of leaving it all at the bottom. */
+  .panel-activity { justify-content: space-between; }
+
   .panel-title {
     font-size: 12px;
     font-weight: 600;
@@ -297,7 +302,7 @@
     </div>
 
     <!-- Right: Activity summary -->
-    <div class="panel">
+    <div class="panel panel-activity">
       <div class="panel-title">Activity Summary</div>
 
       <div class="summary-section">
