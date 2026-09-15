@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Pressure Management Scores by District</title>
+  <title>Environmental Pressure Management Scores by District</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
@@ -43,7 +43,7 @@
 <body>
 <div class="wrap">
   <div class="hd">
-    <div class="title" id="chartTitle">Pressure Management Scores by District</div>
+    <div class="title" id="chartTitle">Environmental Pressure Management Scores by District</div>
     <div class="hd-actions">
       <button class="print-btn" onclick="exportChart()" title="Download as PNG">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -78,11 +78,11 @@
   <div class="counters">
     <div class="counter above">
       <div class="counter-count" id="aboveCount">—</div>
-      <div class="counter-label">Districts above pressure management threshold</div>
+      <div class="counter-label">Districts above environmental pressure management threshold</div>
     </div>
     <div class="counter below">
       <div class="counter-count" id="belowCount">—</div>
-      <div class="counter-label">Districts below pressure management threshold</div>
+      <div class="counter-label">Districts below environmental pressure management threshold</div>
     </div>
   </div>
 
@@ -145,7 +145,7 @@
                 threshold: {
                   type: 'line', yMin: 55, yMax: 55,
                   borderColor: 'red', borderWidth: 2, borderDash: [6, 4],
-                  label: { display: true, content: 'Pressure Management Threshold', position: 'end',
+                  label: { display: true, content: 'Environmental Pressure Management Threshold', position: 'end',
                            backgroundColor: 'red', color: '#fff', font: { size: 11 } }
                 }
               }
@@ -227,7 +227,7 @@
     const fy = fySelect.value;
     const note = document.getElementById('excludeIcon').checked ? ' — Priority Habitats' : '';
     document.getElementById('chartTitle').textContent =
-      'Pressure Management Scores by District for ' + fy + note;
+      'Environmental Pressure Management Scores by District for ' + fy + note;
   }
 
   function exportChart() {

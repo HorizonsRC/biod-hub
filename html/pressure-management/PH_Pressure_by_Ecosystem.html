@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Average Pressure by Ecosystem Type</title>
+  <title>Average Environmental Pressure by Ecosystem Type</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
@@ -37,7 +37,7 @@
 <body>
 <div class="wrap">
   <div class="hd">
-    <div class="title" id="chartTitle">Average Pressure Management Score by Ecosystem Type</div>
+    <div class="title" id="chartTitle">Average Environmental Pressure Management Score by Ecosystem Type</div>
     <div class="hd-actions">
       <button class="print-btn" onclick="exportChart()" title="Download as PNG">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -140,7 +140,7 @@
                 threshold: {
                   type: 'line', yMin: 55, yMax: 55,
                   borderColor: 'red', borderWidth: 2, borderDash: [6, 4],
-                  label: { display: true, content: 'Pressure Management Threshold', position: 'end',
+                  label: { display: true, content: 'Environmental Pressure Management Threshold', position: 'end',
                            backgroundColor: 'red', color: '#fff', font: { size: 11 } }
                 }
               }
@@ -150,7 +150,7 @@
             x: { grid: { display: false },
                  ticks: { color: '#000', font: { family: "'DM Sans', sans-serif", weight: '600' } } },
             y: { min: 0, max: 100,
-                 title: { display: true, text: 'Average Pressure Management Score', font: { family: "'DM Sans', sans-serif", size: 11 } },
+                 title: { display: true, text: 'Average Environmental Pressure Management Score', font: { family: "'DM Sans', sans-serif", size: 11 } },
                  grid: { color: '#e8e8e8', borderDash: [4, 4] },
                  ticks: { font: { family: "'DM Sans', sans-serif" } } }
           }
@@ -206,7 +206,7 @@
     const location = regionFull ? regionFull + ' Sites' : 'All Sites';
     const note = document.getElementById('excludeIcon').checked ? ' — Priority Habitats' : '';
     document.getElementById('chartTitle').textContent =
-      'Average Pressure by Ecosystem at ' + location + ' for ' + fy + note;
+      'Average Environmental Pressure by Ecosystem at ' + location + ' for ' + fy + note;
   }
 
   function exportChart() {

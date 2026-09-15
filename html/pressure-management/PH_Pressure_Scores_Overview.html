@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Pressure Management Scores Overview</title>
+  <title>Environmental Pressure Management Scores Overview</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
@@ -43,7 +43,7 @@
 <body>
 <div class="wrap">
   <div class="hd">
-    <div class="title" id="chartTitle">Pressure management all sites in Priority Habitats Programme</div>
+    <div class="title" id="chartTitle">Environmental Pressure Management Scores at All Sites</div>
     <div class="hd-actions">
       <button class="print-btn" onclick="exportChart()" title="Download as PNG">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -71,6 +71,14 @@
         <select id="regionSelect" onchange="updateChart()"></select>
       </div>
       <div class="fg">
+        <div class="fl">Sort sites by</div>
+        <select id="sortSelect" onchange="updateChart()">
+          <option value="site">Site ID (A&ndash;Z)</option>
+          <option value="asc">Score: low to high</option>
+          <option value="desc">Score: high to low</option>
+        </select>
+      </div>
+      <div class="fg">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.82rem;color:#1a1a2e;font-weight:500">
           <input type="checkbox" id="excludeIcon" onchange="updateChart()" style="width:15px;height:15px;cursor:pointer;accent-color:#273747">
           Exclude Icon Sites &amp; Regional Park
@@ -82,11 +90,11 @@
   <div class="counters">
     <div class="counter above">
       <div class="counter-count" id="aboveCount">—</div>
-      <div class="counter-label">Sites above pressure management threshold</div>
+      <div class="counter-label">Sites above environmental pressure management threshold</div>
     </div>
     <div class="counter below">
       <div class="counter-count" id="belowCount">—</div>
-      <div class="counter-label">Sites below pressure management threshold</div>
+      <div class="counter-label">Sites below environmental pressure management threshold</div>
     </div>
   </div>
 
@@ -109,6 +117,9 @@
   const scoreColumns = pressureDefs.map(p => p.col);
   const fySelect     = document.getElementById('fySelect');
   const regionSelect = document.getElementById('regionSelect');
+  const sortSelect   = document.getElementById('sortSelect');
+
+  const rowTotal = d => scoreColumns.reduce((sum, col) => sum + (d[col] || 0), 0);
 
   fetch('./dashboard_data.json')
     .then(r => r.json())
@@ -150,7 +161,7 @@
                 threshold: {
                   type: 'line', yMin: 55, yMax: 55,
                   borderColor: 'red', borderWidth: 2, borderDash: [6, 4],
-                  label: { display: true, content: 'Pressure Management Threshold', position: 'end',
+                  label: { display: true, content: 'Environmental Pressure Management Threshold', position: 'end',
                            backgroundColor: 'red', color: '#fff', font: { size: 11 } }
                 }
               }
@@ -179,7 +190,11 @@
     if (region !== 'All Regions') rows = rows.filter(d => d.Region === region);
     if (document.getElementById('excludeIcon').checked)
       rows = rows.filter(d => d.site_programme == null || d.site_programme === 'Priority Habitat');
-    rows = rows.slice().sort((a, b) => String(a.SiteID).localeCompare(String(b.SiteID)));
+    const bySiteID = (a, b) => String(a.SiteID).localeCompare(String(b.SiteID));
+    const sort = sortSelect.value;
+    rows = rows.slice().sort(sort === 'site' ? bySiteID
+      : (a, b) => (sort === 'asc' ? rowTotal(a) - rowTotal(b) : rowTotal(b) - rowTotal(a))
+                  || bySiteID(a, b));
     const labels   = rows.map(d => d.chart_label || d.SiteID);
     const datasets = pressureDefs.map(({ label, col, color }, i) => ({
       label,
@@ -197,8 +212,7 @@
     const THRESHOLD = 55;
     let above = 0, below = 0;
     rows.forEach(d => {
-      const total = scoreColumns.reduce((sum, col) => sum + (d[col] || 0), 0);
-      total >= THRESHOLD ? above++ : below++;
+      rowTotal(d) >= THRESHOLD ? above++ : below++;
     });
     document.getElementById('aboveCount').textContent = above;
     document.getElementById('belowCount').textContent = below;
@@ -225,8 +239,11 @@
     const regionFull = (region === 'All Regions') ? null : (REGION_NAMES[region] || region);
     const location = regionFull ? regionFull + ' Sites' : 'All Sites';
     const note = document.getElementById('excludeIcon').checked ? ' — Priority Habitats' : '';
+    const sortNote = sortSelect.value === 'asc'  ? ' — sorted by score, lowest first'
+                   : sortSelect.value === 'desc' ? ' — sorted by score, highest first'
+                   : '';
     document.getElementById('chartTitle').textContent =
-      'Pressure Management Scores at ' + location + ' for ' + fy + note;
+      'Environmental Pressure Management Scores at ' + location + ' for ' + fy + note + sortNote;
   }
 
   function exportChart() {
