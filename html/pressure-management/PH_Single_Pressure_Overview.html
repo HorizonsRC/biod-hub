@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Single Pressure Management at All Sites</title>
+  <title>Single Environmental Pressure at All Sites</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
@@ -46,7 +46,7 @@
 <body>
 <div class="wrap">
   <div class="hd">
-    <div class="title" id="chartTitle">Single Pressure Management at All Sites</div>
+    <div class="title" id="chartTitle">Single Environmental Pressure at All Sites</div>
     <div class="hd-actions">
       <button class="print-btn" onclick="exportChart()" title="Download as PNG">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -76,6 +76,14 @@
       <div class="fg">
         <div class="fl">District is</div>
         <select id="regionSelect" onchange="updateChart()"></select>
+      </div>
+      <div class="fg">
+        <div class="fl">Sort sites by</div>
+        <select id="sortSelect" onchange="updateChart()">
+          <option value="site">Site ID (A&ndash;Z)</option>
+          <option value="asc">Score: low to high</option>
+          <option value="desc">Score: high to low</option>
+        </select>
       </div>
       <div class="fg">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.82rem;color:#1a1a2e;font-weight:500">
@@ -109,6 +117,7 @@
   const pressureSelect = document.getElementById('pressureSelect');
   const fySelect       = document.getElementById('fySelect');
   const regionSelect   = document.getElementById('regionSelect');
+  const sortSelect     = document.getElementById('sortSelect');
 
   fetch('./dashboard_data.json')
     .then(r => r.json())
@@ -193,7 +202,11 @@
     if (region !== 'All Regions') rows = rows.filter(d => d.Region === region);
     if (document.getElementById('excludeIcon').checked)
       rows = rows.filter(d => d.site_programme == null || d.site_programme === 'Priority Habitat');
-    rows = rows.slice().sort((a, b) => String(a.SiteID).localeCompare(String(b.SiteID)));
+    const bySiteID = (a, b) => String(a.SiteID).localeCompare(String(b.SiteID));
+    const sort = sortSelect.value;
+    rows = rows.slice().sort(sort === 'site' ? bySiteID
+      : (a, b) => (sort === 'asc' ? (a[col] || 0) - (b[col] || 0) : (b[col] || 0) - (a[col] || 0))
+                  || bySiteID(a, b));
 
     return {
       labels: rows.map(d => d.chart_label || d.SiteID),
@@ -228,8 +241,11 @@
     const regionFull = (region === 'All Regions') ? null : (REGION_NAMES[region] || region);
     const location = regionFull ? regionFull + ' Sites' : 'All Sites';
     const note = document.getElementById('excludeIcon').checked ? ' — Priority Habitats' : '';
+    const sortNote = sortSelect.value === 'asc'  ? ' — sorted by score, lowest first'
+                   : sortSelect.value === 'desc' ? ' — sorted by score, highest first'
+                   : '';
     document.getElementById('chartTitle').textContent =
-      pressureLabel + ' Pressure at ' + location + ' for ' + fy + note;
+      pressureLabel + ' Pressure at ' + location + ' for ' + fy + note + sortNote;
   }
 
   function updateChart() {
