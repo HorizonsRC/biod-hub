@@ -241,11 +241,8 @@
     const regionFull = (region === 'All Regions') ? null : (REGION_NAMES[region] || region);
     const location = regionFull ? regionFull + ' Sites' : 'All Sites';
     const note = document.getElementById('excludeIcon').checked ? ' — Priority Habitats' : '';
-    const sortNote = sortSelect.value === 'asc'  ? ' — sorted by score, lowest first'
-                   : sortSelect.value === 'desc' ? ' — sorted by score, highest first'
-                   : '';
     document.getElementById('chartTitle').textContent =
-      pressureLabel + ' Pressure at ' + location + ' for ' + fy + note + sortNote;
+      pressureLabel + ' Pressure at ' + location + ' for ' + fy + note;
   }
 
   function updateChart() {
