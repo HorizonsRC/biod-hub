@@ -163,7 +163,7 @@ BAND_FILL = {
 }
 
 BAND_LABEL = {
-    "KEY": "KEY - do not edit",
+    "KEY": "KEY",
     "PROJECT": "PROJECT DETAILS  (KKT_Projects_Layer)",
     "STATISTICS": "END OF YEAR STATISTICS  (KKT_Related_Table_Statistics)",
     "ENTRY": "NEW PROJECTS / NOTES",
