@@ -153,8 +153,12 @@
       // Every grant year the fund has run, which is wider than the years that
       // have statistics — a pinned page must be able to name a year it holds
       // nothing for, rather than quietly falling back to a year it does.
+      // The projects layer dropped its _1 field name suffixes in September
+      // 2026. Read the new name, fall back to the old, so a cached copy of
+      // this page against a fresh dashboard_data.json still draws. Remove
+      // once the embeds have been reloaded.
       grantYears = [...new Set((data.projects || [])
-        .map(p => p.Grant_year_1).filter(Boolean))].sort();
+        .map(p => p.Grant_year ?? p.Grant_year_1).filter(Boolean))].sort();
       document.getElementById('updated').textContent = 'Generated: ' + data.generated_at;
 
       Object.entries(METRICS).forEach(([k, m]) => {
@@ -218,7 +222,7 @@
       if (year && r.Grant_year !== year) return;
       const v = r[m.field];
       if (v == null || v === '' || isNaN(v) || Number(v) === 0) return;
-      // group_name is the canonical Group_name_1 joined from the projects
+      // group_name is the canonical Group_name joined from the projects
       // layer; Applicant is the spreadsheet's free text and varies by year.
       const name = (r.group_name || r.Applicant || '(unnamed)').trim();
       if (!byName.has(name)) byName.set(name, {});

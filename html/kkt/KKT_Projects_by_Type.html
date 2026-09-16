@@ -122,9 +122,17 @@
     .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(data => {
       projects = data.projects || [];
+      // The projects layer dropped its _1 field name suffixes in September 2026.
+      // Read the new name and fall back to the old one: this page and
+      // dashboard_data.json change shape together while their URLs do not, so a
+      // viewer holding a cached copy of one against a fresh copy of the other
+      // would otherwise get an empty chart - which is exactly what happened on
+      // 19 August 2026. Drop the fallbacks once the embeds have been reloaded.
+      const gy = p => p.Grant_year ?? p.Grant_year_1;
+
       document.getElementById('updated').textContent = 'Generated: ' + data.generated_at;
 
-      const years = [...new Set(projects.map(p => p.Grant_year_1).filter(Boolean))].sort();
+      const years = [...new Set(projects.map(p => gy(p)).filter(Boolean))].sort();
       const all = document.createElement('option');
       all.value = ''; all.textContent = 'All years';
       yearSelect.appendChild(all);
@@ -147,7 +155,7 @@
     const measure = measureSelect.value;
     const isMoney = measure === 'funding';
 
-    const rows = projects.filter(p => !year || p.Grant_year_1 === year);
+    const rows = projects.filter(p => !year || gy(p) === year);
 
     // Each project carries up to four activities, in p.activities, with the
     // grant money the team recorded against each one. Counts add 1 per activity
@@ -166,7 +174,8 @@
         const share = isMoney ? (a.fund || 0) : 1;
         if (!byType.has(a.type)) byType.set(a.type, {});
         const slot = byType.get(a.type);
-        slot[p.Grant_year_1] = (slot[p.Grant_year_1] || 0) + share;
+        const y = gy(p);
+        slot[y] = (slot[y] || 0) + share;
       });
     });
 
@@ -181,7 +190,7 @@
       .sort((a, b) => b.total - a.total);
 
     const years = year ? [year]
-      : [...new Set(rows.map(p => p.Grant_year_1).filter(Boolean))].sort();
+      : [...new Set(rows.map(p => gy(p)).filter(Boolean))].sort();
     const usedYears = years.filter(y => entries.some(e => e.per[y]));
 
     document.getElementById('chartTitle').textContent =

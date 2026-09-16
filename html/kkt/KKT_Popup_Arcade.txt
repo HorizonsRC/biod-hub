@@ -31,12 +31,12 @@ var SERIF = "'Source Serif 4',Georgia,'Times New Roman',serif";
 
 // Same fixed grant-year colours the dashboard charts use, so a year reads the
 // same whichever page it appears on.
-var accent = Decode($feature.Grant_year_1,
+var accent = Decode($feature.Grant_year,
   '21_22', '#0083A0', '22_23', '#B4761A', '23_24', '#7A5BA8',
   '24_25', '#4C8A3F', '25_26', '#2C6BB0', '26_27', '#B44A3C', '#3d7a5a');
 
 // "25_26" -> "2025–26", the way the team writes a grant round.
-var gy = $feature.Grant_year_1;
+var gy = $feature.Grant_year;
 var roundLabel = '';
 if (filled(gy)) { roundLabel = '20' + Left(gy, 2) + '–' + Right(gy, 2); }
 
@@ -49,7 +49,7 @@ h += '<div style="background:#1c3438;padding:14px 16px 13px 16px">';
 h +=   '<div style="font-size:10px;font-weight:600;letter-spacing:0.11em;'
      + 'text-transform:uppercase;color:#8ecf99">' + roundLabel + ' grant round</div>';
 h +=   '<div style="font-family:' + SERIF + ';font-size:18px;line-height:1.25;'
-     + 'color:#f4f8f4;margin-top:5px">' + esc($feature.ProjectNam_1) + '</div>';
+     + 'color:#f4f8f4;margin-top:5px">' + esc($feature.Project_name) + '</div>';
 h += '</div>';
 
 // ---- award, and the report link -------------------------------------------
@@ -121,9 +121,9 @@ if (filled($feature.District) || filled($feature.No_of_GrantYears)) {
 }
 
 // ---- description ----------------------------------------------------------
-if (filled($feature.Prog_desc_1)) {
+if (filled($feature.Project_desc)) {
   h += '<div style="padding:12px 16px 2px 16px;font-size:13px;line-height:1.55;'
-     + 'color:#33453a">' + esc($feature.Prog_desc_1) + '</div>';
+     + 'color:#33453a">' + esc($feature.Project_desc) + '</div>';
 }
 
 // ---- activities and what the grant paid for -------------------------------

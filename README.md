@@ -173,8 +173,8 @@ The spreadsheet's `Applicant` column is free text and does not match the layer c
 | Mechanism | Purpose |
 |---|---|
 | Fuzzy match | Normalises both names (lowercase, macrons stripped, punctuation and filler words removed) and scores them. Assignment is one-to-one so two rows never land on the same project. |
-| `NAME_ALIASES` | Spreadsheet group name → `Group_name_1`, for groups the fuzzy match cannot reach. |
-| `ROW_OVERRIDES` | Spreadsheet row number → exact `ProjectNam_1`, for groups with several projects that the sheet gives no project name for. Keyed by grant year. |
+| `NAME_ALIASES` | Spreadsheet group name → `Group_name`, for groups the fuzzy match cannot reach. |
+| `ROW_OVERRIDES` | Spreadsheet row number → exact `Project_name`, for groups with several projects that the sheet gives no project name for. Keyed by grant year. |
 
 Rows reported as `UNMATCHED` or `AMBIGUOUS` are skipped and listed in the log as `MANUAL:` lines — resolve them by adding an alias or override, or enter them by hand in AGOL.
 
@@ -196,7 +196,7 @@ Add to `config.py`:
 
 ### Grant year on the stats table
 
-`KKT_Related_Table_Statistics` has a `Grant_year` field (text, 5 — e.g. `25_26`) mirroring `Grant_year_1` on the projects layer. The table has no other year marker, so without it nothing can split the stats by financial year. `KKT_Stats_Update.py` stamps it on every row it writes; to fix rows loaded before the field existed:
+`KKT_Related_Table_Statistics` has a `Grant_year` field (text, 5 — e.g. `25_26`) mirroring `Grant_year` on the projects layer. The table has no other year marker, so without it nothing can split the stats by financial year. `KKT_Stats_Update.py` stamps it on every row it writes; to fix rows loaded before the field existed:
 
 ```
 python KKT_Stats_Update.py --backfill-years          # dry run
@@ -214,7 +214,7 @@ python KKT_Dashboard_Export.py            # write the JSON
 python KKT_Dashboard_Export.py --push     # write, commit and push to GitHub Pages
 ```
 
-The export joins each stats row to its project and adds `group_name`, `project_name` and `district`. Charts group by `group_name` (the canonical `Group_name_1`) rather than the stats table's `Applicant`, which is free text copied from the spreadsheet and spells the same group differently year to year — grouping by `Applicant` splits one group into several bars. It also parses `Current_YearFund` (`'$3,763.00 '`) into a numeric `funding` field.
+The export joins each stats row to its project and adds `group_name`, `project_name` and `district`. Charts group by `group_name` (the canonical `Group_name`) rather than the stats table's `Applicant`, which is free text copied from the spreadsheet and spells the same group differently year to year — grouping by `Applicant` splits one group into several bars. It also parses `Current_YearFund` (`'$3,763.00 '`) into a numeric `funding` field.
 
 | Page | Replaces | URL parameters |
 |---|---|---|
@@ -231,6 +231,67 @@ A project carries up to four activities, each in its own field with its own fund
 Each grant row carries a `Project_ID` (`KKT-001` …), assigned once per project and repeated on every grant that project has received, however many years apart. "Different projects funded" on the overview is a distinct count of that field, which a count of project names cannot do reliably — projects get renamed between years.
 
 The codes are assigned by a helper script outside the repo. It is safe to re-run: existing codes are kept and only new grant rows are filled, but check its output each year — a project that gets a new code when it should have matched an existing one silently inflates the count.
+
+### Data entry workbook
+
+`KKT_Workbook_Export.py` and `KKT_Workbook_Load.py` are how the biodiversity team maintains the KKT data. The export builds one Excel workbook holding every grant row and its end-of-year statistics, pre-filled from AGOL; the team edits it; the load diffs it back against the service and reports every changed cell before anything is written.
+
+This replaces exporting a hand-picked subset and re-keying the changes, which is what puts a valid figure against the wrong project.
+
+```
+python KKT_Workbook_Export.py                 # build the workbook
+python KKT_Workbook_Load.py                   # dry run, reports every change
+python KKT_Workbook_Load.py --push            # apply
+```
+
+The export only reads AGOL. The load is a dry run by default and writes an outcome CSV either way, naming each changed cell with its before and after value.
+
+#### One row per grant
+
+The projects layer and the statistics table are a 1:1 relationship, so both sit on one flat sheet: key columns, project columns, statistics columns, then a few columns only needed when adding a project. 176 grant rows, 102 of which carry statistics — **the other 74 have blank statistics cells, and filling them in is how a new statistics record gets created.** Nothing has to be matched to anything.
+
+The sheet is protected: the two key columns are locked, columns cannot be inserted or reordered, and sorting is blocked because sorting one column alone would decouple values from their OBJECTID. Filtering stays available. Dropdowns are generated from the layer's own coded-value domains, so a value that AGOL would reject cannot be typed in.
+
+Three statistics fields are deliberately absent from the workbook because the loader derives them: `ProjectID` (the parent GlobalID), `Grant_year` (mirrors `Grant_year` on the same row), and `Applicant` (a free-text copy of the group name that drifts between years — `Group_name` is the canonical one).
+
+`Report_Link` is also absent. `KKT_Report_Link_Build.py` owns it.
+
+#### Two fields retired, September 2026
+
+Building the workbook surfaced two fields on the projects layer that were not worth asking anyone to maintain, and both were removed:
+
+- **`Project`** held `KKT` on all 176 rows. A column where every cell says the same thing tells a reader nothing.
+- **`Prev_Act_Grant_1`** ("Previous or Active Grantee") was hand-maintained and could not be kept right. 152 of 176 rows said `Active`, including every 21-22 row — grants that closed four years earlier. It matched neither meaning it could have had: 124 `Active` rows were not in the current grant year, and 56 of 176 disagreed with "this is the project's most recent grant".
+
+  The deeper problem was the grain. The layer holds one row per project **per grant year**, so a 21-22 row is a closed historical record and cannot be active — "active" describes a project, but the field lived on a grant. Nothing displayed it: not the Arcade popup, not any chart, not the Experience Builder app. It was, however, being written into the public `dashboard_data.json`, so a value wrong on about a third of rows was being published.
+
+  Which projects are currently running is still answerable — a project is running if it has a row in the current grant year, from `Project_ID` and `Grant_year`. Nothing stored, nothing to go stale.
+
+The values as they stood are preserved in `Data/KKT data/KKT_workbook_PREPUSH_backup_20260915.csv`, keyed by OBJECTID.
+
+#### Adding a project
+
+Use the blank rows at the bottom and leave the key columns empty. Geometry is resolved in three steps:
+
+| | |
+|---|---|
+| Latitude and Longitude filled in | the point is built from them, projected from WGS84 to the layer's NZTM2000 |
+| `Project_ID` picked from the dropdown | the point is copied from that project's most recent grant year — the common case, a project funded again |
+| neither | the row is held and written to `KKT_new_projects_need_geometry.csv` to be placed by hand |
+
+A row that cannot be resolved is skipped whole; nothing is ever half-written. New projects are created before their statistics, because a statistics record needs its parent's GlobalID and that does not exist until the project does.
+
+`Project_ID` is left blank on a genuinely new project — `KKT_Project_ID_Assign.py` fills it afterwards.
+
+#### Guards worth knowing about
+
+- **Loading the same workbook twice** is refused. A new row whose group, grant year and project name already exist on the layer is held, naming the OBJECTID it clashes with. `--allow-duplicates` overrides it for a genuine second grant.
+- **Latitude and longitude the wrong way round** is caught — a point outside New Zealand is held rather than created.
+- **A cell that is not a plain number** is read where there is one clear number in it (`650 plants` → 650) and the reading is logged. A cell with no single number, or more than one (`40-50`), is reported and left out rather than mangled into 4050.
+- **Deleting a row from the workbook does nothing.** Deletions stay a deliberate act in AGOL.
+- The script never creates a field. A workbook column with no field on the service stops the run.
+
+After a load that created anything, export a fresh workbook — the old one does not know the OBJECTIDs of the rows it created.
 
 ### Logging
 

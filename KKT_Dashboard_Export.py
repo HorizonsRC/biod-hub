@@ -31,10 +31,16 @@ KKT_STATS_ID = 5
 
 # Fields carried into the JSON. Kept deliberately narrow — this file is served
 # publicly from GitHub Pages, so only what the charts actually need goes in it.
+#
+# Prev_Act_Grant_1 came out on 16 September 2026, along with the field itself.
+# No chart ever read it, and it was wrong: 152 of 176 rows said "Active",
+# including every 21-22 row. It could not be right — the layer holds one row per
+# project per grant year, so a closed year's row cannot be active. Which
+# projects are currently running is a question Project_ID and Grant_year
+# answer between them, with nothing stored to go stale.
 PROJECT_FIELDS = [
-    "GlobalID", "Project_ID", "Grant_year_1", "Group_name_1", "ProjectNam_1",
-    "District", "ProjectType", "Current_YearFund", "Prev_Act_Grant_1",
-    "No_of_GrantYears",
+    "GlobalID", "Project_ID", "Grant_year", "Group_name", "Project_name",
+    "District", "ProjectType", "Current_YearFund", "No_of_GrantYears",
 ]
 
 # The four activity slots and their funding. Read here, but not carried into the
@@ -183,7 +189,7 @@ def main():
     log.info(f"  {len(stats_rows)} stats rows")
 
     # Join each stats row to its project so charts can group by the canonical
-    # Group_name_1. The stats table's own Applicant field is free text copied
+    # Group_name. The stats table's own Applicant field is free text copied
     # from the spreadsheet, so the same group is spelled differently year to
     # year ("Eco School" / "The Eco School") and would split into two bars.
     by_guid = {norm_guid(p["GlobalID"]): p for p in projects}
@@ -191,8 +197,8 @@ def main():
     for r in stats_rows:
         p = by_guid.get(norm_guid(r.get("ProjectID")))
         if p:
-            r["group_name"]   = p.get("Group_name_1")
-            r["project_name"] = p.get("ProjectNam_1")
+            r["group_name"]   = p.get("Group_name")
+            r["project_name"] = p.get("Project_name")
             r["district"]     = p.get("District")
         else:
             unlinked += 1
@@ -212,7 +218,7 @@ def main():
     years = sorted({r["Grant_year"] for r in stats_rows if r.get("Grant_year")})
     log.info(f"  Stats years present: {years}")
     log.info(f"  Project years present: "
-             f"{sorted({p['Grant_year_1'] for p in projects if p.get('Grant_year_1')})}")
+             f"{sorted({p['Grant_year'] for p in projects if p.get('Grant_year')})}")
 
     generated_at = dt.now().strftime('%d %B %Y %H:%M')
     payload = {
