@@ -43,7 +43,7 @@ KKT_LAYER_ID = 4   # KKT_Projects_Layer
 KKT_STATS_ID = 5   # KKT_Related_Table_Statistics
 
 # Grant year field on the stats table (text, 5 chars, e.g. "25_26"). Mirrors
-# Grant_year_1 on the projects layer. Without it nothing downstream can split
+# Grant_year on the projects layer. Without it nothing downstream can split
 # the stats by financial year, since the table has no other year marker.
 YEAR_FIELD = "Grant_year"
 
@@ -104,7 +104,7 @@ UNMAPPED_COLUMNS = {"Catchment"}
 # ============================================================
 # NAME MATCHING OVERRIDES
 # ============================================================
-# NAME_ALIASES — spreadsheet group name -> Group_name_1 in KKT_Projects_Layer.
+# NAME_ALIASES — spreadsheet group name -> Group_name in KKT_Projects_Layer.
 # Use for groups the fuzzy matcher gets wrong or cannot reach. Keys are
 # normalised (lowercase, macrons stripped, punctuation removed) before lookup,
 # so you can type them however they appear in the sheet.
@@ -122,7 +122,7 @@ NAME_ALIASES = {
 # ROW_OVERRIDES — for groups that run several projects in one year, where the
 # spreadsheet gives no project name to tell them apart. Keyed by grant year,
 # then by the spreadsheet row number shown in the review CSV (excel_row),
-# and the value is the exact ProjectNam_1 from KKT_Projects_Layer.
+# and the value is the exact Project_name from KKT_Projects_Layer.
 ROW_OVERRIDES = {
     "25_26": {
         # Ngāwakahiamoe Bush Trust — told apart by the figures: row 24 has the
@@ -295,10 +295,10 @@ def match_rows(df, applicant_col, projects, year):
     for p in projects:
         cand.append({
             "globalid": norm_guid(p["GlobalID"]),
-            "group": p.get("Group_name_1") or "",
-            "project": p.get("ProjectNam_1") or "",
-            "group_n": normalise(p.get("Group_name_1")),
-            "project_n": normalise(p.get("ProjectNam_1")),
+            "group": p.get("Group_name") or "",
+            "project": p.get("Project_name") or "",
+            "group_n": normalise(p.get("Group_name")),
+            "project_n": normalise(p.get("Project_name")),
         })
 
     # Score every (row, candidate) pair
@@ -429,9 +429,9 @@ def backfill_years(layer, stats, has_year_field, push):
         return 1
 
     years = {}
-    for f in layer.query(where="1=1", out_fields="GlobalID,Grant_year_1",
+    for f in layer.query(where="1=1", out_fields="GlobalID,Grant_year",
                          return_geometry=False).features:
-        years[norm_guid(f.attributes["GlobalID"])] = f.attributes["Grant_year_1"]
+        years[norm_guid(f.attributes["GlobalID"])] = f.attributes["Grant_year"]
     log.info(f"  {len(years)} project features read")
 
     rows = stats.query(where="1=1",
@@ -540,8 +540,8 @@ def main():
         return backfill_years(layer, stats, has_year_field, args.push)
 
     projects = [f.attributes for f in layer.query(
-        where=f"Grant_year_1 = '{year}'",
-        out_fields="GlobalID,Group_name_1,ProjectNam_1,Grant_year_1",
+        where=f"Grant_year = '{year}'",
+        out_fields="GlobalID,Group_name,Project_name,Grant_year",
         return_geometry=False,
     ).features]
     log.info(f"  {len(projects)} project features in grant year {year}")

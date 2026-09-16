@@ -226,9 +226,13 @@
   // field; it keeps the tile roughly right rather than collapsing every grant
   // into one project.
   function projectKeys(projects) {
+    // The projects layer dropped its _1 field name suffixes in September
+    // 2026. Read the new name, fall back to the old, so a cached copy of
+    // this page against a fresh dashboard_data.json still draws. Remove
+    // once the embeds have been reloaded.
     const per = new Map();
     projects.forEach(p => {
-      const key = p.Project_ID || (slug(p.Group_name_1) + '|' + slug(p.ProjectNam_1));
+      const key = p.Project_ID || (slug(p.Group_name ?? p.Group_name_1) + '|' + slug(p.Project_name ?? p.ProjectNam_1));
       if (!per.has(key)) per.set(key, []);
       per.get(key).push(p);
     });
@@ -279,7 +283,7 @@
     const projects = data.projects || [];
     const stats    = data.stats    || [];
 
-    const grantYears = [...new Set(projects.map(p => p.Grant_year_1).filter(Boolean))].sort();
+    const grantYears = [...new Set(projects.map(p => p.Grant_year ?? p.Grant_year_1).filter(Boolean))].sort();
     const statYears  = [...new Set(stats.map(r => r.Grant_year).filter(Boolean))].sort();
 
     // --- grants awarded -----------------------------------------------------

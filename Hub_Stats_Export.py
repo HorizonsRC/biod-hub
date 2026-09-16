@@ -113,13 +113,13 @@ def count_kkt_grants(gis):
     layer = next(l for l in flc.layers if l.properties.id == KKT_LAYER_ID)
     log.info(f"Reading {layer.properties.name}...")
 
-    feats = layer.query(where="1=1", out_fields="Project_ID,Grant_year_1",
+    feats = layer.query(where="1=1", out_fields="Project_ID,Grant_year",
                         return_geometry=False).features
     grants = len(feats)
     projects = len({f.attributes.get("Project_ID") for f in feats
                     if f.attributes.get("Project_ID")})
-    years = sorted({f.attributes.get("Grant_year_1") for f in feats
-                    if f.attributes.get("Grant_year_1")})
+    years = sorted({f.attributes.get("Grant_year") for f in feats
+                    if f.attributes.get("Grant_year")})
     log.info(f"  {grants} grants across {projects} distinct projects, "
              f"years {years}")
     return grants

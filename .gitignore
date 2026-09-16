@@ -13,3 +13,8 @@ html/icon-sites/backups/
 
 # Local-only AGOL maintenance scripts — not backed up to GitHub; keep a copy elsewhere
 agol-tools/
+
+# Working copy of the popup Arcade expression. Its TOKEN line holds a real AGOL
+# token while the in-card photo work is being tested, and this repo is public.
+# Ignored so that a careless "git add ." cannot publish one.
+html/kkt/KKT_Popup_Arcade_TEST.txt
