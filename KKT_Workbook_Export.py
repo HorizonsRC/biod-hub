@@ -159,7 +159,7 @@ BAND_FILL = {
     "KEY":        "D9D9D9",   # grey  - locked
     "PROJECT":    "DCE6F1",   # blue  - the projects layer
     "STATISTICS": "E4EFD9",   # green - the statistics table
-    "ENTRY":      "FDE9D9",   # amber - not layer fields
+    "ENTRY":      "FDE9D9",   # orange - not layer fields
 }
 
 BAND_LABEL = {
@@ -497,7 +497,8 @@ def write_workbook(path, cols, rows, project_ids):
         ("Grey    Locked. These field values are what links back to AGOL.", False),
         ("Blue    Project details.", False),
         ("Green   End-of-year statistics.", False),
-        ("Amber   New projects only - not needed otherwise.", False),
+        ("Orange  Notes, and location for a new project. Mostly used when", False),
+        ("adding a new project, but Notes can be used on any row.", False),
         ("", False),
         ("Use the - and + buttons above the column letters to fold the blue or", False),
         ("green band away while you work on the other.", False),
@@ -510,17 +511,18 @@ def write_workbook(path, cols, rows, project_ids):
         ("Adding a grant", True),
         ("Use the blank rows at the bottom. Leave the grey key columns empty.", False),
         ("", False),
-        ("Project ID tracks projects funded more than once, including", False),
-        ("multi-year awards. If this project has been funded before, pick its", False),
-        ("code from the Project ID dropdown - its map point is copied across", False),
-        ("automatically.", False),
+        ("Project ID is a unique identifier - it tracks every grant back to its", False),
+        ("project, whether that is a single-year grant, a multi-year award, or", False),
+        ("a project funded more than once. If this project has been funded", False),
+        ("before, pick its code from the Project ID dropdown - its map point is", False),
+        ("copied across automatically.", False),
         ("", False),
         ("If it has never been funded before, leave Project ID blank. Put a", False),
-        ("latitude and longitude in the amber columns if you have them; if you", False),
+        ("latitude and longitude in the orange columns if you have them; if you", False),
         ("do not, the project is still loaded and we place the point by hand.", False),
         ("", False),
         ("A few things to know", True),
-        ("Deleting a row does not delete anything - tell your Biodata", False),
+        ("Deleting a row does not delete anything - tell the Biodata", False),
         ("Information Advisor instead.", False),
         ("Inserting, deleting or reordering columns is blocked.", False),
         ("Typing a value into a dropdown field that is not on its list is", False),
@@ -528,7 +530,7 @@ def write_workbook(path, cols, rows, project_ids):
         ("added to a dropdown, write it in the Notes column instead.", False),
         ("", False),
         ("The Notes column, on the far right, is not loaded into the dataset -", False),
-        ("your Biodata Information Advisor reads it. Use it for anything you", False),
+        ("the Biodata Information Advisor reads it. Use it for anything you", False),
         ("want to explain or flag.", False),
     ]
     for i, (text, bold) in enumerate(guide, start=1):
