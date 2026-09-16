@@ -115,6 +115,16 @@
     }
   };
 
+  // The projects layer dropped its _1 field name suffixes in September 2026.
+  // Read the new name and fall back to the old one: this page and
+  // dashboard_data.json change shape together while their URLs do not, so a
+  // viewer holding a cached copy of one against a fresh copy of the other
+  // would otherwise get an empty chart - which is exactly what happened on
+  // 19 August 2026. Drop the fallback once the embeds have been reloaded.
+  //
+  // Declared out here, not inside the fetch callback: render() uses it too.
+  const gy = p => p.Grant_year ?? p.Grant_year_1;
+
   // no-store because the JSON is a snapshot that changes without the page
   // changing. A cached copy from a previous export can be missing fields this
   // page now relies on, which reads as an empty chart rather than an error.
@@ -122,14 +132,6 @@
     .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(data => {
       projects = data.projects || [];
-      // The projects layer dropped its _1 field name suffixes in September 2026.
-      // Read the new name and fall back to the old one: this page and
-      // dashboard_data.json change shape together while their URLs do not, so a
-      // viewer holding a cached copy of one against a fresh copy of the other
-      // would otherwise get an empty chart - which is exactly what happened on
-      // 19 August 2026. Drop the fallbacks once the embeds have been reloaded.
-      const gy = p => p.Grant_year ?? p.Grant_year_1;
-
       document.getElementById('updated').textContent = 'Generated: ' + data.generated_at;
 
       const years = [...new Set(projects.map(p => gy(p)).filter(Boolean))].sort();
