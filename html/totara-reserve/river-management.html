@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>River Management · Tōtara Reserve</title>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;500;600;700&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:       #1f2e35;
+      --bg:         #f4f0ef;
+      --surface:    #ffffff;
+      --border:     #ddddd8;
+      --muted:      #5a5a52;
+      --caption:    #888880;
+
+      --river:      #1a535c;
+      --river-lt:   #e8f2f3;
+
+      --safe:       #2d6a4f;
+      --safe-lt:    #eaf3ee;
+      --caution:    #8b6310;
+      --caution-lt: #fdf3d9;
+      --unsafe:     #9b2226;
+      --unsafe-lt:  #fdecea;
+    }
+
+    html, body { height: 100%; }
+
+    body {
+      font-family: 'Source Sans 3', sans-serif;
+      background: var(--bg);
+      color: var(--navy);
+      display: flex;
+      flex-direction: column;
+      padding: 16px 18px 14px;
+      gap: 12px;
+      overflow-y: auto;
+      max-width: 860px;
+    }
+
+    /* ── SECTION LABELS ── */
+    .section-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--caption);
+      padding-bottom: 7px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── RIVER GAUGES ── */
+    .gauge-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .gauge-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--river);
+      border-radius: 6px;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .gauge-badge {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--river);
+    }
+
+    .gauge-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--navy);
+    }
+
+    .gauge-metrics {
+      display: flex;
+      gap: 20px;
+      align-items: flex-end;
+      margin-top: 2px;
+    }
+
+    .gauge-metric { display: flex; flex-direction: column; gap: 2px; }
+
+    .gauge-val {
+      font-size: 1.55rem;
+      font-weight: 600;
+      color: var(--navy);
+      line-height: 1;
+    }
+
+    .gauge-val.null-val {
+      font-size: 1rem;
+      color: var(--caption);
+      font-weight: 400;
+    }
+
+    .gauge-unit {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .gauge-time {
+      font-size: 11px;
+      color: var(--caption);
+    }
+
+    /* ── SWIM SAFETY — single combined card ── */
+    .swim-section { display: flex; flex-direction: column; gap: 10px; padding-top: 10px; }
+
+    .swim-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .swim-card.green  { border-top-color: var(--safe); }
+    .swim-card.amber  { border-top-color: var(--caution); }
+    .swim-card.red    { border-top-color: var(--unsafe); }
+    .swim-card.unknown { border-top-color: var(--border); }
+
+    .swim-top {
+      padding: 12px 16px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .swim-card.green  .swim-top { background: var(--safe-lt); }
+    .swim-card.amber  .swim-top { background: var(--caution-lt); }
+    .swim-card.red    .swim-top { background: var(--unsafe-lt); }
+    .swim-card.unknown .swim-top { background: var(--surface); }
+
+    .swim-eyebrow {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 4px;
+    }
+    .swim-card.green   .swim-eyebrow { color: var(--safe); }
+    .swim-card.amber   .swim-eyebrow { color: var(--caution); }
+    .swim-card.red     .swim-eyebrow { color: var(--unsafe); }
+    .swim-card.unknown .swim-eyebrow { color: var(--caption); }
+
+    .swim-dot {
+      width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+    }
+    .swim-card.green   .swim-dot { background: var(--safe); }
+    .swim-card.amber   .swim-dot { background: var(--caution); }
+    .swim-card.red     .swim-dot { background: var(--unsafe); }
+    .swim-card.unknown .swim-dot { background: var(--caption); }
+
+    .swim-verdict {
+      font-family: 'Source Serif 4', serif;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--navy);
+    }
+
+    .swim-date {
+      font-size: 11.5px;
+      color: var(--muted);
+      white-space: nowrap;
+      padding-top: 2px;
+    }
+
+    .swim-bottom {
+      padding: 10px 16px;
+      display: flex;
+      gap: 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .swim-metric {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 0 12px;
+    }
+    .swim-metric:first-child { padding-left: 0; }
+    .swim-metric + .swim-metric { border-left: 1px solid var(--border); }
+
+    .swim-metric-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--caption);
+    }
+
+    .swim-metric-val {
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: var(--navy);
+      line-height: 1.1;
+    }
+    .swim-metric-val.null-val { font-size: 1rem; color: var(--caption); font-weight: 400; }
+
+    .swim-metric-unit { font-size: 11px; color: var(--muted); }
+    .swim-metric-sub  { font-size: 11px; color: var(--caption); margin-top: 1px; }
+    .swim-metric-note { font-size: 10.5px; color: var(--caption); font-style: italic; margin-top: 2px; line-height: 1.4; }
+
+    /* ── HISTORY CHART ── */
+    .history-section { display: flex; flex-direction: column; gap: 10px; flex: 1; padding-top: 10px; }
+
+    .history-chart-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px 16px 10px;
+    }
+
+    /* ── FOOTER ── */
+    .dash-footer {
+      font-size: 11px;
+      color: var(--caption);
+      border-top: 1px solid var(--border);
+      padding-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      flex-shrink: 0;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+  </style>
+
+  <script>
+    /* SWIM_DATA_START */
+const SWIM_DATA = {
+  "ecoli": {
+    "latest": {
+      "date": "2026-04-22",
+      "value": null,
+      "icon": "red",
+      "description": "Unsuitable for swimming"
+    },
+    "history": [
+      {
+        "date": "2025-04-29",
+        "value": 41,
+        "icon": "green"
+      },
+      {
+        "date": "2025-04-23",
+        "value": 1050,
+        "icon": "red"
+      },
+      {
+        "date": "2025-04-15",
+        "value": 41,
+        "icon": "green"
+      },
+      {
+        "date": "2025-04-09",
+        "value": 161,
+        "icon": "green"
+      },
+      {
+        "date": "2025-04-01",
+        "value": 521,
+        "icon": "amber"
+      },
+      {
+        "date": "2025-03-25",
+        "value": 30,
+        "icon": "green"
+      },
+      {
+        "date": "2025-03-18",
+        "value": 31,
+        "icon": "green"
+      },
+      {
+        "date": "2025-03-11",
+        "value": 96,
+        "icon": "green"
+      },
+      {
+        "date": "2025-03-05",
+        "value": 1529,
+        "icon": "red"
+      },
+      {
+        "date": "2025-02-25",
+        "value": 20,
+        "icon": "green"
+      },
+      {
+        "date": "2025-02-18",
+        "value": 118,
+        "icon": "green"
+      },
+      {
+        "date": "2025-02-11",
+        "value": 20,
+        "icon": "green"
+      }
+    ]
+  },
+  "cyanobacteria": {
+    "latest": {
+      "date": "2025-04-29",
+      "value": 1,
+      "icon": "green",
+      "description": "Suitable for swimming"
+    },
+    "history": [
+      {
+        "date": "2025-04-29",
+        "value": 1,
+        "icon": "green"
+      },
+      {
+        "date": "2025-04-15",
+        "value": 1,
+        "icon": "green"
+      },
+      {
+        "date": "2025-04-01",
+        "value": 1,
+        "icon": "green"
+      },
+      {
+        "date": "2025-03-25",
+        "value": 1,
+        "icon": "green"
+      },
+      {
+        "date": "2025-03-18",
+        "value": 1,
+        "icon": "green"
+      },
+      {
+        "date": "2025-03-11",
+        "value": 1,
+        "icon": "green"
+      },
+      {
+        "date": "2025-02-25",
+        "value": 1,
+        "icon": "green"
+      },
+      {
+        "date": "2025-02-18",
+        "value": 1,
+        "icon": "green"
+      },
+      {
+        "date": "2025-02-11",
+        "value": 3,
+        "icon": "red"
+      },
+      {
+        "date": "2025-02-11",
+        "value": 3,
+        "icon": "red"
+      },
+      {
+        "date": "2025-02-04",
+        "value": 3,
+        "icon": "red"
+      },
+      {
+        "date": "2025-01-28",
+        "value": 1,
+        "icon": "green"
+      }
+    ]
+  },
+  "lastUpdated": "2026-04-30T15:15:31"
+};
+    /* SWIM_DATA_END */
+
+    /* RIVER_DATA_START */
+const RIVER_DATA = {
+  "totaraReserve": {
+    "stage": 1.142,
+    "stageTime": "2026-04-30T14:45:00",
+    "flow": null,
+    "flowTime": null
+  },
+  "piripiri": {
+    "stage": 0.505,
+    "stageTime": "2026-04-30T14:55:00",
+    "flow": 12.221,
+    "flowTime": "2026-04-30T14:55:00"
+  },
+  "lastUpdated": "2026-04-30T03:15:33Z"
+};
+    /* RIVER_DATA_END */
+  </script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script>
+    function fmtDate(d) {
+      if (!d) return '—';
+      return new Date(d).toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    function fmtTime(ts) {
+      if (!ts) return null;
+      const t = ts.split('T')[1];
+      return t ? t.slice(0, 5) : null;
+    }
+
+    function gaugeCard(name, badge, data) {
+      const stage = data && data.stage != null
+        ? `<span class="gauge-val">${data.stage}</span>`
+        : `<span class="gauge-val null-val">No data</span>`;
+      const flowMetric = data && data.flow != null
+        ? `<div class="gauge-metric">
+             <span class="gauge-val">${data.flow}</span>
+             <span class="gauge-unit">Flow (m&sup3;/s)</span>
+           </div>`
+        : `<div class="gauge-metric" style="align-self:flex-end">
+             <span class="gauge-unit" style="font-style:italic;color:var(--caption)">Stage only &mdash; no flow rating curve</span>
+           </div>`;
+      const time = data && data.stageTime
+        ? `Updated ${fmtTime(data.stageTime)} UTC`
+        : 'Awaiting data';
+      return `
+        <div class="gauge-card">
+          <div class="gauge-badge">${badge}</div>
+          <div class="gauge-name">${name}</div>
+          <div class="gauge-metrics">
+            <div class="gauge-metric">
+              ${stage}
+              <span class="gauge-unit">Stage (m)</span>
+            </div>
+            ${flowMetric}
+          </div>
+          <div class="gauge-time">${time}</div>
+        </div>`;
+    }
+
+    function swimCard(ecoli, cyano) {
+      const l      = ecoli && ecoli.latest;
+      const icon   = l ? (l.icon || 'unknown') : 'unknown';
+      const desc   = l ? (l.description || (icon === 'green' ? 'Suitable for swimming' : icon === 'amber' ? 'Caution advised' : 'Unsuitable for swimming')) : 'No data';
+      const date   = l ? fmtDate(l.date) : '—';
+
+      const ecoliVal = l && l.value != null
+        ? `<div class="swim-metric-val">${l.value}</div><div class="swim-metric-unit">MPN / 100 mL</div>`
+        : `<div class="swim-metric-val null-val">—</div><div class="swim-metric-unit">Value not available</div><div class="swim-metric-note">Current-season data is not published via a public API — see LAWA for the latest reading</div>`;
+
+      const cyanoCol = { green: 'var(--safe)', amber: 'var(--caution)', red: 'var(--unsafe)' };
+      const cyanoLabel = { green: 'No significant bloom', amber: 'Caution advised', red: 'Bloom detected' };
+      const cyanoDesc  = { green: 'Toxic algae levels met national guidelines', amber: 'Toxic algae levels elevated', red: 'Toxic algae levels exceeded national guidelines' };
+      const cl = cyano && cyano.latest;
+      const cyanoVal = cl
+        ? `<div class="swim-metric-val" style="font-size:1.1rem;color:${cyanoCol[cl.icon] || 'inherit'}">${cyanoLabel[cl.icon] || cl.icon}</div>
+           <div class="swim-metric-unit">${cyanoDesc[cl.icon] || ''}</div>
+           <div class="swim-metric-sub">Sampled ${fmtDate(cl.date)}</div>`
+        : `<div class="swim-metric-val null-val">—</div>`;
+
+      return `
+        <div class="swim-card ${icon}">
+          <div class="swim-top">
+            <div>
+              <div class="swim-eyebrow"><span class="swim-dot"></span>Swim safety &middot; E. coli</div>
+              <div class="swim-verdict">${desc}</div>
+            </div>
+            <div class="swim-date">Sampled ${date}</div>
+          </div>
+          <div class="swim-bottom">
+            <div class="swim-metric">
+              <div class="swim-metric-label">E. coli</div>
+              ${ecoliVal}
+              ${l && l.value != null ? '<div class="swim-metric-sub">Last sample</div>' : ''}
+            </div>
+            <div class="swim-metric">
+              <div class="swim-metric-label">Toxic algae</div>
+              ${cyanoVal}
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function historyChart(history) {
+      const pts = (history || []).filter(h => h.value != null)
+                                 .sort((a, b) => new Date(a.date) - new Date(b.date));
+      if (!pts.length) return '<p style="font-size:12px;color:var(--caption)">No history available.</p>';
+
+      // Layout
+      const W = 800, H = 150;
+      const ml = 44, mr = 14, mt = 10, mb = 30;
+      const cw = W - ml - mr, ch = H - mt - mb;
+      const n  = pts.length;
+
+      // Log scale y-axis (E.coli spans 2+ orders of magnitude)
+      const logMin = 1, logMax = 3.5;  // 10 – ~3000
+      const logOf  = v => Math.log10(Math.max(v, 1));
+      const xOf    = i => ml + (n === 1 ? cw / 2 : (i / (n - 1)) * cw);
+      const yOf    = v => mt + ch - ((logOf(v) - logMin) / (logMax - logMin)) * ch;
+
+      // Y grid lines (decades)
+      const yGrids = [10, 100, 1000].map(v => {
+        const y = yOf(v);
+        return `<line x1="${ml}" y1="${y}" x2="${W - mr}" y2="${y}" stroke="var(--border)" stroke-width="1"/>
+                <text x="${ml - 6}" y="${y + 3.5}" text-anchor="end" font-size="10" fill="var(--caption)">${v}</text>`;
+      }).join('');
+
+      // Area fill
+      const linePts = pts.map((h, i) => `${xOf(i)},${yOf(h.value)}`).join(' ');
+      const areaD   = `M${xOf(0)},${yOf(0)} ${pts.map((h, i) => `L${xOf(i)},${yOf(h.value)}`).join(' ')} L${xOf(n - 1)},${yOf(0)} Z`;
+
+      // Coloured dots + value tooltips
+      const iconCol = { green: 'var(--safe)', amber: 'var(--caution)', red: 'var(--unsafe)' };
+      const dots = pts.map((h, i) => {
+        const col  = iconCol[h.icon] || 'var(--caption)';
+        const date = new Date(h.date).toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', year: 'numeric' });
+        return `<circle cx="${xOf(i)}" cy="${yOf(h.value)}" r="4.5" fill="${col}" stroke="var(--surface)" stroke-width="1.5">
+                  <title>${date}: ${h.value} MPN/100 mL</title>
+                </circle>`;
+      }).join('');
+
+      // X-axis date labels — include year on first label and whenever year changes
+      const xLabels = pts.map((h, i) => {
+        const d    = new Date(h.date);
+        const yr   = d.getFullYear();
+        const prev = i > 0 ? new Date(pts[i - 1].date).getFullYear() : null;
+        const showYear = i === 0 || yr !== prev;
+        const base = d.toLocaleDateString('en-NZ', { day: 'numeric', month: 'short' });
+        const label = showYear ? `${base} '${String(yr).slice(2)}` : base;
+        return `<text x="${xOf(i)}" y="${H - 4}" text-anchor="middle" font-size="10" fill="var(--muted)">${label}</text>`;
+      }).join('');
+
+      return `
+        <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;overflow:visible">
+          <defs>
+            <linearGradient id="ecoliAreaGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="var(--river)" stop-opacity="0.12"/>
+              <stop offset="100%" stop-color="var(--river)" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          ${yGrids}
+          <path d="${areaD}" fill="url(#ecoliAreaGrad)"/>
+          <polyline points="${linePts}" fill="none" stroke="var(--river)" stroke-width="2"
+                    stroke-linejoin="round" stroke-linecap="round"/>
+          ${dots}
+          ${xLabels}
+        </svg>`;
+    }
+
+    function render() {
+      const swim  = SWIM_DATA;
+      const river = RIVER_DATA;
+      const ecoli = swim.ecoli;
+      const cyano = swim.cyanobacteria;
+
+      const historyCount = ecoli && ecoli.history ? ecoli.history.length : 0;
+      const historyDates = ecoli && ecoli.history && ecoli.history.length
+        ? (() => {
+            const sorted = [...ecoli.history].sort((a, b) => new Date(a.date) - new Date(b.date));
+            const fmt = d => new Date(d).toLocaleDateString('en-NZ', { month: 'short', year: 'numeric' });
+            const first = fmt(sorted[0].date), last = fmt(sorted[sorted.length - 1].date);
+            return first === last ? first : `${first} – ${last}`;
+          })()
+        : null;
+      const swimDate     = swim.lastUpdated ? swim.lastUpdated.slice(0, 10) : '—';
+      const riverDate    = river.lastUpdated ? river.lastUpdated.replace('T', ' ').slice(0, 16) + ' UTC' : '—';
+
+      document.getElementById('root').innerHTML = `
+        <div class="section-label">River Level &middot; Pohangina River</div>
+
+        <div class="gauge-row">
+          ${gaugeCard('Pohangina at Tōtara Reserve', 'At-site monitoring', river.totaraReserve)}
+          ${gaugeCard('Pohangina at Piripiri', 'Upstream reference', river.piripiri)}
+        </div>
+
+        <div class="swim-section">
+          <div class="section-label">Swim Safety &middot; Pohangina River at Tōtara Reserve</div>
+          ${swimCard(ecoli, cyano)}
+        </div>
+
+        <div class="history-section">
+          <div class="section-label">E. coli History &middot; ${historyDates ? historyDates + ' &middot; ' : ''}${historyCount} samples (MPN / 100 mL &middot; log scale)</div>
+          <div class="history-chart-wrap">
+            ${historyChart(ecoli && ecoli.history)}
+          </div>
+        </div>
+
+        <div class="dash-footer">
+          <span>River data: Horizons Hilltop &middot; ${riverDate}</span>
+          <span>Swim data: LAWA recreational water quality &middot; downloaded ${swimDate}</span>
+        </div>
+      `;
+    }
+
+    document.addEventListener('DOMContentLoaded', render);
+  </script>
+</body>
+</html>

@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Predator Control · Tōtara Reserve</title>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;500;600;700&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:       #1f2e35;
+      --bg:         #f4f0ef;
+      --surface:    #ffffff;
+      --border:     #ddddd8;
+      --muted:      #5a5a52;
+      --caption:    #888880;
+
+      --forest:     #2d6a4f;
+      --forest-lt:  #eaf3ee;
+
+      --safe:       #2d6a4f;
+      --caution:    #8b6310;
+      --unsafe:     #9b2226;
+
+      /* Species colours — consistent across charts */
+      --c0: #c44569;
+      --c1: #e07b39;
+      --c2: #2d6a4f;
+      --c3: #1a535c;
+      --c4: #7b68ee;
+      --c5: #6c757d;
+      --c6: #d4a017;
+      --c7: #adb5bd;
+    }
+
+    html, body { height: 100%; }
+
+    body {
+      font-family: 'Source Sans 3', sans-serif;
+      background: var(--bg);
+      color: var(--navy);
+      display: flex;
+      flex-direction: column;
+      padding: 16px 18px 14px;
+      gap: 12px;
+      overflow-y: auto;
+      max-width: 860px;
+    }
+
+    /* ── SECTION LABELS ── */
+    .section-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--caption);
+      padding-bottom: 7px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── PROGRAMME CARDS ── */
+    .programme-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .programme-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--forest);
+      border-radius: 6px;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .prog-badge {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--forest);
+    }
+
+    .prog-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--navy);
+    }
+
+    .prog-total {
+      font-size: 1.55rem;
+      font-weight: 300;
+      color: var(--navy);
+      line-height: 1;
+    }
+
+    .prog-total-unit {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .prog-type-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 2px;
+    }
+
+    .prog-type-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.78rem;
+    }
+
+    .prog-type-label {
+      color: var(--muted);
+      min-width: 0;
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .prog-type-bar-wrap {
+      flex: 2;
+      height: 8px;
+      background: var(--bg);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .prog-type-bar {
+      height: 100%;
+      background: var(--forest);
+      border-radius: 4px;
+      opacity: 0.75;
+    }
+
+    .prog-type-count {
+      font-weight: 600;
+      color: var(--navy);
+      min-width: 24px;
+      text-align: right;
+    }
+
+    /* ── CATCHES CHART ── */
+    .catches-section { display: flex; flex-direction: column; gap: 10px; padding-top: 10px; }
+
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px 16px 10px;
+    }
+
+    .catches-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      margin-bottom: 10px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.76rem;
+      color: var(--muted);
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── BAIT STATION ROWS ── */
+    .bait-type-rows {
+      display: flex;
+      flex-direction: column;
+      margin-top: 4px;
+      flex: 1;
+    }
+
+    .bait-type-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .bait-type-row:last-child { border-bottom: none; }
+
+    .bait-type-label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.3;
+    }
+
+    .bait-type-count {
+      font-size: 1.55rem;
+      font-weight: 300;
+      color: var(--navy);
+    }
+
+    /* Possum bait nested breakdown */
+    .bait-type-row--group {
+      flex-direction: column;
+      align-items: stretch;
+      padding-bottom: 4px;
+    }
+
+    .bait-group-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 6px;
+    }
+
+    .bait-group-buffer {
+      font-size: 0.72rem;
+      color: var(--caption);
+      font-style: italic;
+    }
+
+    .bait-sub-rows { display: flex; flex-direction: column; gap: 2px; }
+
+    .bait-sub-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 3px 0 3px 8px;
+      border-left: 2px solid var(--border);
+    }
+
+    .bait-sub-label { font-size: 0.76rem; color: var(--caption); }
+
+    .bait-sub-count {
+      font-size: 1.15rem;
+      font-weight: 300;
+      color: var(--navy);
+    }
+
+    /* ── RTCI SECTION ── */
+    .rtci-section { display: flex; flex-direction: column; gap: 10px; padding-top: 10px; }
+
+    .rtci-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .rtci-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .rtci-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--caption);
+    }
+
+    .rtci-val {
+      font-size: 1.55rem;
+      font-weight: 300;
+      line-height: 1;
+    }
+
+    .rtci-val.low    { color: var(--safe); }
+    .rtci-val.medium { color: var(--caution); }
+    .rtci-val.high   { color: var(--unsafe); }
+
+    .rtci-unit  { font-size: 0.75rem; color: var(--muted); }
+    .rtci-grade { font-size: 0.78rem; font-weight: 600; margin-top: 2px; }
+    .rtci-grade.low    { color: var(--safe); }
+    .rtci-grade.medium { color: var(--caution); }
+    .rtci-grade.high   { color: var(--unsafe); }
+    .rtci-year  { font-size: 0.72rem; color: var(--caption); margin-top: 2px; }
+
+    .rtci-explainer {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* ── DEER / CULLING SECTION ── */
+    .deer-section { display: flex; flex-direction: column; gap: 10px; padding-top: 10px; }
+
+    .deer-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px 16px;
+    }
+
+    .deer-stats-row {
+      display: flex;
+      gap: 0;
+      margin-bottom: 12px;
+    }
+
+    .deer-stat {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 0 12px;
+      border-right: 1px solid var(--border);
+    }
+
+    .deer-stat:first-child { padding-left: 0; }
+    .deer-stat:last-child  { border-right: none; }
+
+    .deer-stat-val {
+      font-size: 1.55rem;
+      font-weight: 300;
+      color: var(--navy);
+      line-height: 1;
+    }
+
+    .deer-stat-label {
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .deer-note {
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.5;
+      border-top: 1px solid var(--border);
+      padding-top: 10px;
+    }
+
+    .deer-note strong { color: var(--navy); font-weight: 600; }
+
+    /* ── FOOTER ── */
+    .dash-footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: var(--caption);
+      padding-top: 6px;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+  </style>
+
+  <script>
+    /* PCO_DATA_START */
+const PCO_DATA = {
+  "generated": "2026-04-30T15:16:11.298285",
+  "bioTotara": {
+    "total": 157,
+    "byType": {
+      "labels": [
+        "DOC200",
+        "DOC250",
+        "Timms",
+        "Cage  "
+      ],
+      "data": [
+        84,
+        41,
+        25,
+        7
+      ]
+    }
+  },
+  "vespex": {
+    "total": 290,
+    "byType": {
+      "labels": [
+        "Vespex Bait Station"
+      ],
+      "data": [
+        290
+      ]
+    }
+  },
+  "catchesByFy": {
+    "labels": [
+      "21-22",
+      "22-23",
+      "23-24",
+      "24-25",
+      "25-26"
+    ],
+    "species": [
+      "Cat",
+      "Ferret",
+      "Hedgehog",
+      "Mouse",
+      "Rabbit",
+      "Rat",
+      "Stoat",
+      "Possum",
+      "Weasel"
+    ],
+    "data": {
+      "Cat": [
+        4,
+        14,
+        10,
+        2,
+        1
+      ],
+      "Ferret": [
+        0,
+        1,
+        4,
+        2,
+        0
+      ],
+      "Hedgehog": [
+        35,
+        112,
+        51,
+        34,
+        27
+      ],
+      "Mouse": [
+        0,
+        3,
+        1,
+        0,
+        5
+      ],
+      "Rabbit": [
+        0,
+        4,
+        0,
+        3,
+        1
+      ],
+      "Rat": [
+        13,
+        65,
+        115,
+        87,
+        62
+      ],
+      "Stoat": [
+        1,
+        16,
+        3,
+        8,
+        5
+      ],
+      "Possum": [
+        5,
+        24,
+        1,
+        14,
+        3
+      ],
+      "Weasel": [
+        0,
+        4,
+        8,
+        14,
+        16
+      ]
+    }
+  },
+  "tti": null,
+  "possumBait": {
+    "withinReserve": null,
+    "withinBuffer": null,
+    "bufferM": 300,
+    "fills": {
+      "labels": [],
+      "fillCounts": {}
+    }
+  }
+};
+    /* PCO_DATA_END */
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    const SP_COLOURS = [
+      "var(--c0)","var(--c1)","var(--c2)","var(--c3)",
+      "var(--c4)","var(--c5)","var(--c6)","var(--c7)"
+    ];
+
+    const MUSTELID_SPECIES = ["Stoat", "Weasel", "Ferret"];
+
+    function ttiClass(v) {
+      if (v === null || v === undefined) return "";
+      if (v < 5)  return "low";
+      if (v < 25) return "medium";
+      return "high";
+    }
+
+    function ttiGrade(v) {
+      if (v === null || v === undefined) return "—";
+      if (v < 5)  return "Low pressure";
+      if (v < 25) return "Moderate pressure";
+      return "High pressure";
+    }
+
+    // ── Trap type horizontal bars ─────────────────────────────────────────────
+    function typeBarList(byType) {
+      if (!byType || !byType.labels || !byType.labels.length) {
+        return '<div style="font-size:0.78rem;color:var(--caption);font-style:italic">No type data yet</div>';
+      }
+      const max = Math.max(...byType.data, 1);
+      return byType.labels.map((lbl, i) => {
+        const pct = Math.round((byType.data[i] / max) * 100);
+        return `
+          <div class="prog-type-row">
+            <span class="prog-type-label" title="${lbl}">${lbl}</span>
+            <div class="prog-type-bar-wrap">
+              <div class="prog-type-bar" style="width:${pct}%"></div>
+            </div>
+            <span class="prog-type-count">${byType.data[i]}</span>
+          </div>`;
+      }).join('');
+    }
+
+    // ── Merge Stoat/Weasel/Ferret → Mustelids for display ────────────────────
+    function buildDisplaySpecies(species) {
+      const nonMus = (species || []).filter(s => !MUSTELID_SPECIES.includes(s));
+      const hasMus = MUSTELID_SPECIES.some(s => (species || []).includes(s));
+      const display = [...nonMus];
+      if (hasMus) {
+        const catIdx = display.indexOf("Cat");
+        display.splice(catIdx >= 0 ? catIdx + 1 : 0, 0, "Mustelids");
+      }
+      return display;
+    }
+
+    // ── Catches stacked bar chart (SVG) ───────────────────────────────────────
+    function catchesChart(catchesByFy) {
+      const fys     = catchesByFy.labels  || [];
+      const species = catchesByFy.species || [];
+      const data    = catchesByFy.data    || {};
+
+      if (!fys.length || !species.length) {
+        return '<p style="font-size:12px;color:var(--caption);padding:12px 0">No catch records available.</p>';
+      }
+
+      const displaySp = buildDisplaySpecies(species);
+
+      // Build per-species data; sum mustelids + store breakdown for tooltips
+      const stackData = {};
+      const musBkdn   = {};  // fi → { Stoat:n, Weasel:n, Ferret:n }
+      for (const sp of displaySp) {
+        if (sp === "Mustelids") {
+          stackData[sp] = fys.map((_, fi) =>
+            MUSTELID_SPECIES.reduce((s, ms) => s + ((data[ms] || [])[fi] || 0), 0)
+          );
+          fys.forEach((_, fi) => {
+            musBkdn[fi] = {};
+            MUSTELID_SPECIES.forEach(ms => { musBkdn[fi][ms] = (data[ms] || [])[fi] || 0; });
+          });
+        } else {
+          stackData[sp] = fys.map((_, fi) => (data[sp] || [])[fi] || 0);
+        }
+      }
+
+      // Y scale: max stacked total across all FYs
+      let maxVal = 0;
+      for (let fi = 0; fi < fys.length; fi++) {
+        const total = displaySp.reduce((s, sp) => s + (stackData[sp][fi] || 0), 0);
+        maxVal = Math.max(maxVal, total);
+      }
+      maxVal = Math.max(maxVal, 1);
+
+      const W = 800, H = 200;
+      const ml = 40, mr = 14, mt = 12, mb = 36;
+      const cw = W - ml - mr, ch = H - mt - mb;
+      const yOf = v => mt + ch - (v / maxVal) * ch;
+
+      // Y-axis ticks
+      const tickStep = maxVal <= 20 ? 5 : maxVal <= 100 ? 20 : maxVal <= 300 ? 50 : 100;
+      const ticks = [];
+      for (let t = 0; t <= maxVal; t += tickStep) ticks.push(t);
+
+      const yGrids = ticks.map(t => {
+        const y = yOf(t);
+        return `<line x1="${ml}" y1="${y}" x2="${W - mr}" y2="${y}"
+                      stroke="var(--border)" stroke-width="1"/>
+                <text x="${ml - 5}" y="${y + 3.5}" text-anchor="end"
+                      font-size="9" fill="var(--caption)">${t}</text>`;
+      }).join('');
+
+      // Stacked bars — one per FY, segments built bottom-up
+      const nFy    = fys.length;
+      const groupW = cw / nFy;
+      const barW   = Math.min(Math.max(groupW * 0.55, 22), 70);
+      const barOff = (groupW - barW) / 2;
+
+      const bars = fys.map((fy, fi) => {
+        let cumY = 0;
+        return displaySp.map((sp, si) => {
+          const val = stackData[sp][fi] || 0;
+          if (val === 0) return '';
+          const yBot = yOf(cumY);
+          const yTop = yOf(cumY + val);
+          const segH = yBot - yTop;
+          cumY += val;
+          const x   = ml + fi * groupW + barOff;
+          const col = SP_COLOURS[si % SP_COLOURS.length];
+          let tip;
+          if (sp === "Mustelids") {
+            const bd    = musBkdn[fi] || {};
+            const parts = MUSTELID_SPECIES
+              .filter(ms => (bd[ms] || 0) > 0)
+              .map(ms => `${ms}: ${bd[ms]}`);
+            tip = `Mustelids · ${fy}: ${val}${parts.length ? ` (${parts.join(', ')})` : ''}`;
+          } else {
+            tip = `${sp} · ${fy}: ${val}`;
+          }
+          return `<rect x="${x.toFixed(1)}" y="${yTop.toFixed(1)}"
+                        width="${barW.toFixed(1)}" height="${Math.max(segH, 1).toFixed(1)}"
+                        fill="${col}" opacity="0.85" rx="1">
+                    <title>${tip}</title>
+                  </rect>`;
+        }).join('');
+      }).join('');
+
+      // X-axis FY labels
+      const xLabels = fys.map((fy, fi) => {
+        const x = ml + fi * groupW + groupW / 2;
+        return `<text x="${x.toFixed(1)}" y="${H - 6}" text-anchor="middle"
+                      font-size="10" fill="var(--muted)">${fy}</text>`;
+      }).join('');
+
+      return `
+        <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;overflow:visible">
+          ${yGrids}
+          ${bars}
+          ${xLabels}
+        </svg>`;
+    }
+
+    // ── TTI line chart ────────────────────────────────────────────────────────
+    function ttiChart(tti) {
+      if (!tti || !tti.history || !tti.history.dates || !tti.history.dates.length) {
+        return '<p style="font-size:12px;color:var(--caption);padding:12px 0">No history data available.</p>';
+      }
+      const dates   = tti.history.dates.map(s => new Date(s));
+      const ratVals = tti.history.rat;
+      const mouVals = tti.history.mouse;
+      const n = dates.length;
+
+      const W = 800, H = 180;
+      const ml = 40, mr = 14, mt = 12, mb = 40;
+      const cw = W - ml - mr, ch = H - mt - mb;
+
+      const allV   = [...ratVals, ...mouVals].filter(v => v !== null && v !== undefined);
+      const maxVal = Math.max(...allV, 5) * 1.1;
+      const xOf    = i => ml + (n > 1 ? (i / (n - 1)) * cw : cw / 2);
+      const yOf    = v => mt + ch - (v / maxVal) * ch;
+
+      const tickStep = maxVal <= 20 ? 5 : maxVal <= 60 ? 10 : 25;
+      const ticks = [];
+      for (let t = 0; t <= Math.ceil(maxVal / tickStep) * tickStep; t += tickStep) ticks.push(t);
+
+      const yGrids = ticks.map(t => {
+        const y = yOf(t);
+        return `<line x1="${ml}" y1="${y}" x2="${W - mr}" y2="${y}" stroke="var(--border)" stroke-width="1"/>
+                <text x="${ml - 5}" y="${y + 3.5}" text-anchor="end" font-size="9" fill="var(--caption)">${t}%</text>`;
+      }).join('');
+
+      function makeLine(vals, col) {
+        let d = '', seg = false;
+        for (let i = 0; i < n; i++) {
+          if (vals[i] !== null && vals[i] !== undefined) {
+            d += seg ? `L${xOf(i).toFixed(1)},${yOf(vals[i]).toFixed(1)} `
+                     : `M${xOf(i).toFixed(1)},${yOf(vals[i]).toFixed(1)} `;
+            seg = true;
+          } else { seg = false; }
+        }
+        return d ? `<path d="${d}" stroke="${col}" stroke-width="2" fill="none" opacity="0.85"/>` : '';
+      }
+
+      function makeDots(vals, col, label) {
+        return vals.map((v, i) => {
+          if (v === null || v === undefined) return '';
+          const dt = dates[i].toLocaleDateString('en-NZ', {year:'numeric', month:'short'});
+          return `<circle cx="${xOf(i).toFixed(1)}" cy="${yOf(v).toFixed(1)}" r="3"
+                          fill="${col}" opacity="0.85">
+                    <title>${label} · ${dt}: ${v}%</title>
+                  </circle>`;
+        }).join('');
+      }
+
+      let lastYr = null;
+      const xLabels = dates.map((dt, i) => {
+        const yr = dt.getFullYear();
+        if (yr !== lastYr) { lastYr = yr;
+          return `<text x="${xOf(i).toFixed(1)}" y="${H - 8}" text-anchor="middle"
+                        font-size="9" fill="var(--caption)">${yr}</text>`;
+        }
+        return '';
+      }).join('');
+
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;overflow:visible">
+        ${yGrids}
+        ${makeLine(ratVals, 'var(--c0)')}
+        ${makeLine(mouVals, 'var(--c3)')}
+        ${makeDots(ratVals, 'var(--c0)', 'Rat TTI')}
+        ${makeDots(mouVals, 'var(--c3)', 'Mouse TTI')}
+        ${xLabels}
+      </svg>`;
+    }
+
+    // ── Legend (with Mustelid grouping) ──────────────────────────────────────
+    function catchesLegend(species) {
+      const displaySp = buildDisplaySpecies(species);
+      return displaySp.map((sp, i) => `
+        <div class="legend-item">
+          <div class="legend-dot" style="background:${SP_COLOURS[i % SP_COLOURS.length]}"></div>
+          <span>${sp}</span>
+        </div>`).join('');
+    }
+
+    // ── Main render ───────────────────────────────────────────────────────────
+    function render() {
+      const d   = PCO_DATA;
+      const gen = d.generated ? d.generated.slice(0, 10) : '—';
+      const pb = d.possumBait || {};
+      const pRes = pb.withinReserve !== null && pb.withinReserve !== undefined ? pb.withinReserve : '—';
+      const pBuf = pb.withinBuffer  !== null && pb.withinBuffer  !== undefined ? pb.withinBuffer  : '—';
+      const pBufLabel = pb.bufferM ? `${pb.bufferM}m buffer` : 'buffer';
+
+      document.getElementById('root').innerHTML = `
+
+        <div class="section-label">Pest Animal Control and Monitoring</div>
+
+        <div class="programme-row">
+          <div class="programme-card">
+            <div class="prog-badge">Animal trapping</div>
+            <div class="prog-total">${d.bioTotara.total || '—'}</div>
+            <div class="prog-total-unit">Traps installed</div>
+            <div class="prog-type-list">${typeBarList(d.bioTotara.byType)}</div>
+          </div>
+          <div class="programme-card">
+            <div class="prog-badge">Bait Stations</div>
+            <div class="bait-type-rows">
+              <div class="bait-type-row">
+                <span class="bait-type-label">Vespex Bait Stations</span>
+                <span class="bait-type-count">${d.vespex.total || '—'}</span>
+              </div>
+              <div class="bait-type-row bait-type-row--group">
+                <div class="bait-group-header">
+                  <span class="bait-type-label">Possum Bait Stations</span>
+                  <span class="bait-group-buffer">${pBufLabel}</span>
+                </div>
+                <div class="bait-sub-rows">
+                  <div class="bait-sub-row">
+                    <span class="bait-sub-label">In reserve</span>
+                    <span class="bait-sub-count">${pRes}</span>
+                  </div>
+                  <div class="bait-sub-row">
+                    <span class="bait-sub-label">Buffer zone</span>
+                    <span class="bait-sub-count">${pBuf}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="catches-section">
+          <div class="section-label">Animal Pest Catches &middot; By Financial Year</div>
+          <div class="chart-card">
+            <div class="catches-legend">${catchesLegend(d.catchesByFy.species)}</div>
+            ${catchesChart(d.catchesByFy)}
+          </div>
+        </div>
+
+        <div class="rtci-section">
+          <div class="section-label">Rodent Tracking Tunnel Index &middot; T&#x14d;tara Reserve</div>
+          ${(() => {
+            const t = d.tti;
+            if (!t || !t.latest) return '<div class="rtci-explainer" style="font-style:italic">Tracking tunnel data not yet loaded — run script to update.</div>';
+            const rPct  = t.latest.rat   !== null && t.latest.rat   !== undefined ? t.latest.rat   : null;
+            const mPct  = t.latest.mouse !== null && t.latest.mouse !== undefined ? t.latest.mouse : null;
+            const rCls  = ttiClass(rPct);
+            const mCls  = ttiClass(mPct);
+            const lDate = t.latest.date || '';
+            return `
+              <div class="rtci-row">
+                <div class="rtci-card">
+                  <div class="rtci-label">Rat TTI</div>
+                  <div class="rtci-val ${rCls}">${rPct !== null ? rPct + '%' : '—'}</div>
+                  <div class="rtci-unit">% of tunnels with rat footprints</div>
+                  <div class="rtci-grade ${rCls}">${ttiGrade(rPct)}</div>
+                  <div class="rtci-year">${lDate}</div>
+                </div>
+                <div class="rtci-card">
+                  <div class="rtci-label">Mouse TTI</div>
+                  <div class="rtci-val ${mCls}">${mPct !== null ? mPct + '%' : '—'}</div>
+                  <div class="rtci-unit">% of tunnels with mouse footprints</div>
+                  <div class="rtci-grade ${mCls}">${ttiGrade(mPct)}</div>
+                  <div class="rtci-year">${lDate}</div>
+                </div>
+              </div>
+              <div class="chart-card">
+                <div class="catches-legend">
+                  <div class="legend-item"><div class="legend-dot" style="background:var(--c0)"></div><span>Rat</span></div>
+                  <div class="legend-item"><div class="legend-dot" style="background:var(--c3)"></div><span>Mouse</span></div>
+                </div>
+                ${ttiChart(t)}
+              </div>`;
+          })()}
+          <div class="rtci-explainer">
+            <strong style="color:var(--navy)">What is TTI?</strong>
+            The Tracking Tunnel Index measures rodent activity — the percentage of tracking tunnels
+            showing rat or mouse footprints after a 24-hour exposure.
+            <strong style="color:var(--safe)">&lt;5%</strong> = low pressure &nbsp;·&nbsp;
+            <strong style="color:var(--caution)">5–25%</strong> = moderate &nbsp;·&nbsp;
+            <strong style="color:var(--unsafe)">&gt;25%</strong> = high pressure.
+          </div>
+        </div>
+
+        <div class="deer-section">
+          <div class="section-label">Deer Management &middot; Fallow Deer &middot; 2024 Season</div>
+          <div class="deer-card">
+            <div class="deer-stats-row">
+              <div class="deer-stat">
+                <div class="deer-stat-val">3</div>
+                <div class="deer-stat-label">Morning hunts</div>
+              </div>
+              <div class="deer-stat">
+                <div class="deer-stat-val">9</div>
+                <div class="deer-stat-label">Hours hunting</div>
+              </div>
+              <div class="deer-stat">
+                <div class="deer-stat-val">4</div>
+                <div class="deer-stat-label">Deer culled</div>
+              </div>
+              <div class="deer-stat">
+                <div class="deer-stat-val">10</div>
+                <div class="deer-stat-label">Not accessible</div>
+              </div>
+            </div>
+            <div class="deer-note">
+              Culling commenced <strong>October 2024</strong> by Horizons biosecurity pest animal team.
+              10 fallow deer sighted on the river were not shot — located on a private landowner parcel.
+              Staff to target the remote western edge of the reserve over summer.
+            </div>
+          </div>
+        </div>
+
+        <div class="dash-footer">
+          <span>Trap data: Animal Pest Control Layer (AGOL) &middot; downloaded ${gen}</span>
+          <span>RTCI: PCO Management Dataset (AGOL) &middot; downloaded ${gen}</span>
+        </div>
+      `;
+    }
+
+    document.addEventListener('DOMContentLoaded', render);
+  </script>
+</head>
+<body>
+  <div id="root"></div>
+</body>
+</html>

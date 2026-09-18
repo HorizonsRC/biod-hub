@@ -37,12 +37,16 @@ biod-hub/
 │   │   ├── manawatu-estuary.html                # Auto-updated by Icon_Sites_Data_Export.py
 │   │   ├── pukaha.html                          # Auto-updated by Icon_Sites_Data_Export.py
 │   │   └── ruahine-kiwi.html                   # Auto-updated by Icon_Sites_Data_Export.py (Trap.NZ + local GDB)
-│   └── totara-reserve/                          # Placeholder for future content
+│   └── totara-reserve/
+│       ├── totara-reserve.html                  # Cover page — cards linking to each programme page
+│       ├── predator-control.html                # Auto-updated by Totara_Reserve_Data_Export.py
+│       └── river-management.html                # Auto-updated by Totara_Reserve_Data_Export.py
 ├── KKT_Stats_Update.py                          # Loads the KKT stats spreadsheet into AGOL
 ├── KKT_Dashboard_Export.py                      # Builds html/kkt/dashboard_data.json
 ├── Pressure_Management_Data_Join.py             # Pressure Management data pipeline
 ├── PM_Dashboard_Export.py                       # Builds dashboard_data.json and pushes to GitHub
 ├── Icon_Sites_Data_Export.py                    # Queries AGOL, updates icon site HTML dashboards
+├── Totara_Reserve_Data_Export.py                # Queries AGOL/LAWA/Hilltop, updates Tōtara Reserve HTML
 ├── Hub_Stats_Export.py                          # Builds html/hub_stats.json (landing page figures)
 ├── config.py                                    # Local paths — gitignored, not committed
 ├── config.example.py                            # Template for config.py
@@ -59,7 +63,7 @@ HTML files are served via GitHub Pages at `https://HorizonsRC.github.io/biod-hub
 | KKT Fund | `html/kkt/` |
 | Targeted Rates | `html/targeted-rates/` |
 | Icon Sites | `html/icon-sites/` |
-| Tōtara Reserve | `html/totara-reserve/` *(coming soon)* |
+| Tōtara Reserve | `html/totara-reserve/` *(in progress — not yet embedded in the app)* |
 
 ## Hub landing page stats
 

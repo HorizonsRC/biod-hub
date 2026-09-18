@@ -84,3 +84,13 @@ KKT_OUTPUT_DIR = r"C:\path\to\your\Data\KKT data"
 # Local File Geodatabase containing the PCO treatment area data.
 # Layer: PCO_Treatment_Area_ExportFeatures  Fields used: PCOName, RTC
 KIA_WHARITE_GDB = r"\\gisdata\GIS\Department\Environmental_Management\Biodiversity\BioData\Biodiversity\Icon Sites\Kia Wharite\Kia_Wharite_Project\Kia_Wharite_Project.gdb"
+
+# ── Tōtara Reserve ────────────────────────────────────────────────────────────
+
+# Rodent Tracking Tunnel Index spreadsheet, SharePoint-synced.
+# Columns 0-3 are Location / Date / Rat TTI / Mouse TTI, first sheet only.
+TOTARA_TTI_XLSX = r"C:\path\to\your\Rodent tracking indices ALL.xlsx"
+
+# Buffer distance in metres around the reserve polygon, used to split possum
+# bait stations into "in reserve" and "in the buffer zone".
+TOTARA_BUFFER_M = 300

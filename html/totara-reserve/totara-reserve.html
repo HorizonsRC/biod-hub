@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tōtara Reserve Regional Park</title>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;500;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:    #1f2e35;
+      --bg:      #f4f0ef;
+      --surface: #ffffff;
+      --border:  #ddddd8;
+      --muted:   #5a5a52;
+      --caption: #888880;
+      --totara:  #2d6a4f;
+    }
+
+    html, body { height: 100%; margin: 0; }
+
+    body {
+      font-family: 'Source Sans 3', sans-serif;
+      background: var(--bg);
+      color: var(--navy);
+      font-size: 16px;
+      line-height: 1.55;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HEADER ── */
+    .page-header {
+      padding: 16px 28px;
+      background: #273747;
+      flex-shrink: 0;
+    }
+
+    .page-title {
+      font-family: 'Source Serif 4', serif;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #ffffff;
+      line-height: 1.2;
+    }
+
+    /* ── CONTENT ── */
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 28px 24px;
+      gap: 0;
+    }
+
+    /* ── STAT STRIP ── */
+    .stat-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      flex-shrink: 0;
+      margin-bottom: 0;
+    }
+
+    /* ── CARDS SECTION (centred in remaining space) ── */
+    .cards-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .stat-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--totara);
+      border-radius: 4px;
+      padding: 10px 14px;
+    }
+
+    .stat-label {
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--caption);
+      margin-bottom: 3px;
+    }
+
+    .stat-value {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--navy);
+      line-height: 1.3;
+    }
+
+    /* ── SECTION LABEL ── */
+    .section-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--caption);
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    /* ── CARD GRID ── */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+      flex-shrink: 0;
+    }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--surface);
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: box-shadow 0.18s ease;
+    }
+
+    .card:hover { box-shadow: 0 4px 18px rgba(0,0,0,0.09); }
+
+    .card-accent { height: 5px; flex-shrink: 0; }
+
+    .card-body {
+      padding: 16px 18px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      flex: 1;
+    }
+
+    .card-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .card-icon svg { width: 18px; height: 18px; }
+
+    .card-subtitle {
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+    }
+
+    .card-title {
+      font-family: 'Source Serif 4', serif;
+      font-size: 1.05rem;
+      font-weight: 600;
+      line-height: 1.2;
+      color: var(--navy);
+    }
+
+    .card-desc {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.6;
+      flex: 1;
+    }
+
+    /* ── META BOXES ── */
+    .card-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .meta-box {
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 6px 9px;
+      overflow: hidden;
+    }
+
+    .meta-key {
+      font-size: 8.5px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    .meta-val {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--navy);
+      line-height: 1.25;
+    }
+
+    /* ── CARD FOOTER ── */
+    .card-footer {
+      padding: 10px 18px 14px;
+      border-top: 1px solid var(--border);
+      background: #fafaf8;
+    }
+
+    .card-btn {
+      padding: 7px 15px;
+      color: #fff;
+      font-family: 'Source Sans 3', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: opacity 0.15s ease, transform 0.1s ease;
+      letter-spacing: 0.02em;
+    }
+
+    .card-btn:hover { opacity: 0.84; transform: translateX(2px); }
+    .card-btn svg { width: 12px; height: 12px; flex-shrink: 0; }
+
+    /* ── PER-CARD THEMES ── */
+    .card--forest .card-accent   { background: #2d6a4f; }
+    .card--forest .card-icon     { background: #e4f0ea; color: #2d6a4f; }
+    .card--forest .card-subtitle { color: #2d6a4f; }
+    .card--forest .card-btn      { background: #2d6a4f; }
+    .card--forest .meta-box      { background: #f2f8f5; }
+    .card--forest .meta-key      { color: #2d6a4f; }
+
+    .card--animal .card-accent   { background: #2c6e8a; }
+    .card--animal .card-icon     { background: #e3eef5; color: #2c6e8a; }
+    .card--animal .card-subtitle { color: #2c6e8a; }
+    .card--animal .card-btn      { background: #2c6e8a; }
+    .card--animal .meta-box      { background: #f0f6f9; }
+    .card--animal .meta-key      { color: #2c6e8a; }
+
+    .card--plant .card-accent   { background: #4a6b2e; }
+    .card--plant .card-icon     { background: #eaf0e4; color: #4a6b2e; }
+    .card--plant .card-subtitle { color: #4a6b2e; }
+    .card--plant .card-btn      { background: #4a6b2e; }
+    .card--plant .meta-box      { background: #f3f7ee; }
+    .card--plant .meta-key      { color: #4a6b2e; }
+
+    .card--camp .card-accent   { background: #8b5e30; }
+    .card--camp .card-icon     { background: #f3ece3; color: #8b5e30; }
+    .card--camp .card-subtitle { color: #8b5e30; }
+    .card--camp .card-btn      { background: #8b5e30; }
+    .card--camp .meta-box      { background: #faf4ee; }
+    .card--camp .meta-key      { color: #8b5e30; }
+
+    .card--river .card-accent   { background: #1a535c; }
+    .card--river .card-icon     { background: #e3f0f2; color: #1a535c; }
+    .card--river .card-subtitle { color: #1a535c; }
+    .card--river .card-btn      { background: #1a535c; }
+    .card--river .meta-box      { background: #eef6f7; }
+    .card--river .meta-key      { color: #1a535c; }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <div class="page-title">Tōtara Reserve Regional Park</div>
+  </div>
+
+  <div class="content">
+
+    <!-- STAT STRIP -->
+    <div class="stat-strip">
+      <div class="stat-box">
+        <div class="stat-label">Reserve Area</div>
+        <div class="stat-value">340 ha</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Location</div>
+        <div class="stat-value">Pohangina Valley, north of Ashhurst</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Annual Budget</div>
+        <div class="stat-value">$716k (incl. ~$73k camping &amp; rental income)</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Managed by Horizons Since</div>
+        <div class="stat-value">2012</div>
+      </div>
+    </div>
+
+    <!-- CARDS SECTION: label + cards centred vertically -->
+    <div class="cards-section">
+
+    <div class="section-label">Programme Dashboards</div>
+
+    <!-- CARDS -->
+    <div class="cards-grid">
+
+      <!-- Forest Health -->
+      <div class="card card--forest">
+        <div class="card-accent"></div>
+        <div class="card-body">
+          <div class="card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22v-7"/><path d="M5 14l7-6 7 6"/><path d="M3 9l9-7 9 7"/>
+            </svg>
+          </div>
+          <div class="card-subtitle">Biodiversity Monitoring</div>
+          <div class="card-title">Forest Health</div>
+          <p class="card-desc">5MBC bird counts, bat monitoring, planting progress, and community species observation data. Tracks ecological trends across the 340 ha reserve.</p>
+          <div class="card-meta">
+            <div class="meta-box">
+              <div class="meta-key">Monitoring</div>
+              <div class="meta-val">5MBC &amp; bat surveys</div>
+            </div>
+            <div class="meta-box">
+              <div class="meta-key">Additional Data</div>
+              <div class="meta-val">Community observations</div>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <button class="card-btn" onclick="window.open('', '_blank')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            Open Dashboard
+          </button>
+        </div>
+      </div>
+
+      <!-- Pest Animal Control -->
+      <div class="card card--animal">
+        <div class="card-accent"></div>
+        <div class="card-body">
+          <div class="card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/>
+              <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/>
+              <line x1="12" y1="3" x2="12" y2="7"/><line x1="12" y1="17" x2="12" y2="21"/>
+              <line x1="3" y1="12" x2="7" y2="12"/><line x1="17" y1="12" x2="21" y2="12"/>
+            </svg>
+          </div>
+          <div class="card-subtitle">Pest Control</div>
+          <div class="card-title">Pest Animal Control</div>
+          <p class="card-desc">Trap catch and PCO data from Horizons' internal layers. Covers possum, mustelid, and rodent operations plus deer control across the reserve.</p>
+          <div class="card-meta">
+            <div class="meta-box">
+              <div class="meta-key">Data Source</div>
+              <div class="meta-val">Horizons trapping &amp; PCO layers</div>
+            </div>
+            <div class="meta-box">
+              <div class="meta-key">Species</div>
+              <div class="meta-val">Possum, mustelid, rodent, deer</div>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <button class="card-btn" onclick="window.open('', '_blank')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            Open Dashboard
+          </button>
+        </div>
+      </div>
+
+      <!-- Pest Plant Control -->
+      <div class="card card--plant">
+        <div class="card-accent"></div>
+        <div class="card-body">
+          <div class="card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22c0 0-6-4.5-6-10a6 6 0 0 1 12 0c0 5.5-6 10-6 10z"/>
+              <line x1="12" y1="22" x2="12" y2="12"/><line x1="4" y1="4" x2="20" y2="20"/>
+            </svg>
+          </div>
+          <div class="card-subtitle">Pest Control</div>
+          <div class="card-title">Pest Plant Control</div>
+          <p class="card-desc">Pest plant control data from Horizons' contractor layer — species targeted, treatment locations, area treated, and effort trends across the reserve.</p>
+          <div class="card-meta">
+            <div class="meta-box">
+              <div class="meta-key">Data Source</div>
+              <div class="meta-val">Horizons contractor layer</div>
+            </div>
+            <div class="meta-box">
+              <div class="meta-key">Coverage</div>
+              <div class="meta-val">Reserve boundary</div>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <button class="card-btn" onclick="window.open('', '_blank')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            Open Dashboard
+          </button>
+        </div>
+      </div>
+
+      <!-- Campground -->
+      <div class="card card--camp">
+        <div class="card-accent"></div>
+        <div class="card-body">
+          <div class="card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 17L12 4l9 13H3z"/><path d="M10.5 17v3h3v-3"/>
+            </svg>
+          </div>
+          <div class="card-subtitle">Campground Management</div>
+          <div class="card-title">Campground</div>
+          <p class="card-desc">Booking and occupancy reporting via the Newbook system — seasonal guest numbers, daily occupancy trends, and bookings-placed data across the camping season.</p>
+          <div class="card-meta">
+            <div class="meta-box">
+              <div class="meta-key">Booking System</div>
+              <div class="meta-val">Newbook API</div>
+            </div>
+            <div class="meta-box">
+              <div class="meta-key">Income</div>
+              <div class="meta-val">~$73k/yr camping &amp; rental</div>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <button class="card-btn" onclick="window.open('', '_blank')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            Open Dashboard
+          </button>
+        </div>
+      </div>
+
+      <!-- River Management -->
+      <div class="card card--river">
+        <div class="card-accent"></div>
+        <div class="card-body">
+          <div class="card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 15c2-2.5 4-2.5 6 0s4 2.5 6 0 4-2.5 6 0"/>
+              <path d="M2 10c2-2.5 4-2.5 6 0s4 2.5 6 0 4-2.5 6 0"/>
+              <path d="M2 5c2-2.5 4-2.5 6 0s4 2.5 6 0 4-2.5 6 0"/>
+            </svg>
+          </div>
+          <div class="card-subtitle">Flood Modelling &amp; Water Quality</div>
+          <div class="card-title">River Management</div>
+          <p class="card-desc">FloodWatch flood modelling for the Pohangina River through the reserve, alongside LAWA water quality monitoring at Tōtara Reserve.</p>
+          <div class="card-meta">
+            <div class="meta-box">
+              <div class="meta-key">Flood Data</div>
+              <div class="meta-val">FloodWatch modelling</div>
+            </div>
+            <div class="meta-box">
+              <div class="meta-key">Water Quality</div>
+              <div class="meta-val">LAWA — Pohangina at Tōtara</div>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <button class="card-btn" onclick="window.open('', '_blank')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            Open Dashboard
+          </button>
+        </div>
+      </div>
+
+    </div><!-- /cards-grid -->
+
+    </div><!-- /cards-section -->
+
+  </div><!-- /content -->
+
+</body>
+</html>
