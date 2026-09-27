@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pest Plant Header · Tōtara Reserve</title>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;500;600;700&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* Same tokens as predator-control.html */
+    :root {
+      --navy:       #1f2e35;
+      --bg:         #f4f0ef;
+      --surface:    #ffffff;
+      --border:     #ddddd8;
+      --muted:      #5a5a52;
+      --caption:    #888880;
+      --forest:     #2d6a4f;
+    }
+
+    html, body { height: 100%; }
+
+    body {
+      font-family: 'Source Sans 3', sans-serif;
+      background: var(--bg);
+      color: var(--navy);
+      display: flex;
+      align-items: stretch;
+      gap: 12px;
+      padding: 10px 16px;
+      overflow: hidden;
+    }
+
+    .title-block {
+      flex: 0 0 250px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .eyebrow {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--forest);
+    }
+
+    h1 {
+      font-family: 'Source Serif 4', serif;
+      font-size: 1.55rem;
+      font-weight: 600;
+      line-height: 1.1;
+    }
+
+    .period { font-size: 0.78rem; color: var(--muted); }
+    .period .lag { color: var(--caption); font-style: italic; }
+
+    .tiles {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .tile {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--forest);
+      border-radius: 6px;
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .tile-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--caption);
+      white-space: nowrap;
+    }
+
+    .tile-val {
+      font-size: 1.75rem;
+      font-weight: 300;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .tile-val small { font-size: 0.8rem; color: var(--muted); font-weight: 400; margin-left: 2px; }
+
+    .tile-prev { font-size: 0.72rem; color: var(--caption); white-space: nowrap; }
+  </style>
+
+  <script>
+    /* PEST_PLANT_DATA_START */
+const PEST_PLANT_DATA = {
+  "generated": "28 Sep 2026",
+  "fy": "25-26",
+  "fyLabel": "2025-26",
+  "fyWanted": "25-26",
+  "fys": [
+    "21-22",
+    "22-23",
+    "23-24",
+    "24-25",
+    "25-26"
+  ],
+  "contractor": "Kaitiaki o Ngahere",
+  "current": {
+    "records": 1752,
+    "species": 15,
+    "areaSqm": 17372,
+    "km": 470.4,
+    "tracks": 42,
+    "days": 39,
+    "rpmp": 1596,
+    "controlled": 1598,
+    "partial": 52,
+    "notControlled": 100,
+    "unrecorded": 2,
+    "controlledPct": 91,
+    "age": {
+      "A": 576,
+      "J": 684,
+      "S": 492
+    },
+    "fy": "25-26"
+  },
+  "byFy": [
+    {
+      "records": 324,
+      "species": 10,
+      "areaSqm": 8568,
+      "km": 361.2,
+      "tracks": 62,
+      "days": 25,
+      "rpmp": 310,
+      "controlled": 293,
+      "partial": 14,
+      "notControlled": 15,
+      "unrecorded": 2,
+      "controlledPct": 91,
+      "age": {
+        "A": 173,
+        "J": 117,
+        "S": 34
+      },
+      "fy": "21-22"
+    },
+    {
+      "records": 502,
+      "species": 9,
+      "areaSqm": 11373,
+      "km": 463.8,
+      "tracks": 94,
+      "days": 33,
+      "rpmp": 490,
+      "controlled": 240,
+      "partial": 17,
+      "notControlled": 39,
+      "unrecorded": 206,
+      "controlledPct": 81,
+      "age": {
+        "A": 356,
+        "J": 120,
+        "S": 26
+      },
+      "fy": "22-23"
+    },
+    {
+      "records": 602,
+      "species": 17,
+      "areaSqm": 8008,
+      "km": 395.0,
+      "tracks": 85,
+      "days": 33,
+      "rpmp": 530,
+      "controlled": 508,
+      "partial": 19,
+      "notControlled": 66,
+      "unrecorded": 9,
+      "controlledPct": 86,
+      "age": {
+        "A": 293,
+        "J": 215,
+        "S": 94
+      },
+      "fy": "23-24"
+    },
+    {
+      "records": 1149,
+      "species": 16,
+      "areaSqm": 21101,
+      "km": 554.9,
+      "tracks": 154,
+      "days": 35,
+      "rpmp": 1053,
+      "controlled": 1090,
+      "partial": 18,
+      "notControlled": 36,
+      "unrecorded": 5,
+      "controlledPct": 95,
+      "age": {
+        "A": 485,
+        "J": 466,
+        "S": 198
+      },
+      "fy": "24-25"
+    },
+    {
+      "records": 1752,
+      "species": 15,
+      "areaSqm": 17372,
+      "km": 470.4,
+      "tracks": 42,
+      "days": 39,
+      "rpmp": 1596,
+      "controlled": 1598,
+      "partial": 52,
+      "notControlled": 100,
+      "unrecorded": 2,
+      "controlledPct": 91,
+      "age": {
+        "A": 576,
+        "J": 684,
+        "S": 492
+      },
+      "fy": "25-26"
+    }
+  ],
+  "allYears": {
+    "records": 4329,
+    "species": 27,
+    "areaSqm": 66422,
+    "km": 2245.3,
+    "tracks": 437,
+    "days": 156,
+    "rpmp": 3979,
+    "controlled": 3729,
+    "partial": 120,
+    "notControlled": 256,
+    "unrecorded": 224,
+    "controlledPct": 91,
+    "age": {
+      "A": 1883,
+      "J": 1602,
+      "S": 844
+    }
+  },
+  "species": [
+    {
+      "name": "Banana passionfruit",
+      "colour": "#ffeb0a",
+      "rpmp": true,
+      "total": 2554,
+      "areaSqm": 41638,
+      "byFy": {
+        "21-22": 202,
+        "22-23": 373,
+        "23-24": 353,
+        "24-25": 784,
+        "25-26": 842
+      },
+      "areaByFy": {
+        "21-22": 5475,
+        "22-23": 8975,
+        "23-24": 4280,
+        "24-25": 13090,
+        "25-26": 9818
+      }
+    },
+    {
+      "name": "Cathedral Bells",
+      "colour": "#e647ae",
+      "rpmp": true,
+      "total": 1177,
+      "areaSqm": 9951,
+      "byFy": {
+        "21-22": 74,
+        "22-23": 109,
+        "23-24": 155,
+        "24-25": 181,
+        "25-26": 658
+      },
+      "areaByFy": {
+        "21-22": 2793,
+        "22-23": 2055,
+        "23-24": 1380,
+        "24-25": 1293,
+        "25-26": 2430
+      }
+    },
+    {
+      "name": "Old man's beard",
+      "colour": "#eaebe0",
+      "rpmp": true,
+      "total": 235,
+      "areaSqm": 3338,
+      "byFy": {
+        "21-22": 24,
+        "22-23": 8,
+        "23-24": 22,
+        "24-25": 87,
+        "25-26": 94
+      },
+      "areaByFy": {
+        "21-22": 220,
+        "22-23": 99,
+        "23-24": 291,
+        "24-25": 2086,
+        "25-26": 642
+      }
+    },
+    {
+      "name": "Blue Morning Glory",
+      "colour": "#667aff",
+      "rpmp": false,
+      "total": 101,
+      "areaSqm": 2449,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 27,
+        "25-26": 74
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 1521,
+        "25-26": 928
+      }
+    },
+    {
+      "name": "English Ivy",
+      "colour": "#57e04a",
+      "rpmp": false,
+      "total": 75,
+      "areaSqm": 1327,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 4,
+        "23-24": 10,
+        "24-25": 27,
+        "25-26": 34
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 170,
+        "23-24": 638,
+        "24-25": 77,
+        "25-26": 442
+      }
+    },
+    {
+      "name": "Tradescantia",
+      "colour": "#fdb8ff",
+      "rpmp": false,
+      "total": 47,
+      "areaSqm": 1324,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 33,
+        "24-25": 2,
+        "25-26": 12
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 949,
+        "24-25": 45,
+        "25-26": 330
+      }
+    },
+    {
+      "name": "Japanese honeysuckle",
+      "colour": "#73dcfc",
+      "rpmp": false,
+      "total": 27,
+      "areaSqm": 354,
+      "byFy": {
+        "21-22": 1,
+        "22-23": 2,
+        "23-24": 2,
+        "24-25": 10,
+        "25-26": 12
+      },
+      "areaByFy": {
+        "21-22": 6,
+        "22-23": 2,
+        "23-24": 30,
+        "24-25": 270,
+        "25-26": 46
+      }
+    },
+    {
+      "name": "Blackberry",
+      "colour": "#f7508a",
+      "rpmp": false,
+      "total": 22,
+      "areaSqm": 3829,
+      "byFy": {
+        "21-22": 2,
+        "22-23": 0,
+        "23-24": 4,
+        "24-25": 10,
+        "25-26": 6
+      },
+      "areaByFy": {
+        "21-22": 6,
+        "22-23": 0,
+        "23-24": 28,
+        "24-25": 2355,
+        "25-26": 1440
+      }
+    },
+    {
+      "name": "Cotoneaster",
+      "colour": "#2f8f37",
+      "rpmp": false,
+      "total": 17,
+      "areaSqm": 301,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 1,
+        "23-24": 8,
+        "24-25": 8,
+        "25-26": 0
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 50,
+        "23-24": 111,
+        "24-25": 140,
+        "25-26": 0
+      }
+    },
+    {
+      "name": "Jasmine",
+      "colour": "#da63f7",
+      "rpmp": false,
+      "total": 16,
+      "areaSqm": 780,
+      "byFy": {
+        "21-22": 5,
+        "22-23": 1,
+        "23-24": 3,
+        "24-25": 3,
+        "25-26": 4
+      },
+      "areaByFy": {
+        "21-22": 34,
+        "22-23": 5,
+        "23-24": 120,
+        "24-25": 119,
+        "25-26": 502
+      }
+    },
+    {
+      "name": "Gunnera",
+      "colour": "#adffe2",
+      "rpmp": true,
+      "total": 10,
+      "areaSqm": 16,
+      "byFy": {
+        "21-22": 10,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 0,
+        "25-26": 0
+      },
+      "areaByFy": {
+        "21-22": 16,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 0,
+        "25-26": 0
+      }
+    },
+    {
+      "name": "Smilax spp.",
+      "colour": "#d9d9d9",
+      "rpmp": false,
+      "total": 10,
+      "areaSqm": 28,
+      "byFy": {
+        "21-22": 4,
+        "22-23": 3,
+        "23-24": 1,
+        "24-25": 0,
+        "25-26": 2
+      },
+      "areaByFy": {
+        "21-22": 5,
+        "22-23": 12,
+        "23-24": 1,
+        "24-25": 0,
+        "25-26": 10
+      }
+    },
+    {
+      "name": "Himalayan Honeysuckle",
+      "colour": "#f1fab4",
+      "rpmp": false,
+      "total": 6,
+      "areaSqm": 57,
+      "byFy": {
+        "21-22": 1,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 5,
+        "25-26": 0
+      },
+      "areaByFy": {
+        "21-22": 10,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 47,
+        "25-26": 0
+      }
+    },
+    {
+      "name": "Tutsan",
+      "colour": "#e18a85",
+      "rpmp": false,
+      "total": 6,
+      "areaSqm": 33,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 4,
+        "24-25": 0,
+        "25-26": 2
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 31,
+        "24-25": 0,
+        "25-26": 2
+      }
+    },
+    {
+      "name": "Bindweed",
+      "colour": "#e1f66a",
+      "rpmp": false,
+      "total": 4,
+      "areaSqm": 320,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 0,
+        "25-26": 4
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 0,
+        "25-26": 320
+      }
+    },
+    {
+      "name": "Field horsetail",
+      "colour": "#a5c794",
+      "rpmp": false,
+      "total": 4,
+      "areaSqm": 448,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 0,
+        "25-26": 4
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 0,
+        "25-26": 448
+      }
+    },
+    {
+      "name": "Boneseed",
+      "colour": "#bffc69",
+      "rpmp": true,
+      "total": 3,
+      "areaSqm": 15,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 1,
+        "25-26": 2
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 5,
+        "25-26": 10
+      }
+    },
+    {
+      "name": "African Club Moss",
+      "colour": "#00ff0d",
+      "rpmp": false,
+      "total": 2,
+      "areaSqm": 55,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 1,
+        "24-25": 1,
+        "25-26": 0
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 5,
+        "24-25": 50,
+        "25-26": 0
+      }
+    },
+    {
+      "name": "Holly",
+      "colour": "#ebde89",
+      "rpmp": false,
+      "total": 2,
+      "areaSqm": 6,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 1,
+        "23-24": 0,
+        "24-25": 1,
+        "25-26": 0
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 5,
+        "23-24": 0,
+        "24-25": 1,
+        "25-26": 0
+      }
+    },
+    {
+      "name": "Inkweed",
+      "colour": "#e1b8e5",
+      "rpmp": false,
+      "total": 2,
+      "areaSqm": 4,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 0,
+        "25-26": 2
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 0,
+        "25-26": 4
+      }
+    },
+    {
+      "name": "Pampas",
+      "colour": "#dbd0a7",
+      "rpmp": false,
+      "total": 2,
+      "areaSqm": 16,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 2,
+        "24-25": 0,
+        "25-26": 0
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 16,
+        "24-25": 0,
+        "25-26": 0
+      }
+    },
+    {
+      "name": "Willow",
+      "colour": "#c49192",
+      "rpmp": false,
+      "total": 2,
+      "areaSqm": 6,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 1,
+        "24-25": 1,
+        "25-26": 0
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 5,
+        "24-25": 1,
+        "25-26": 0
+      }
+    },
+    {
+      "name": "Barberry",
+      "colour": "#ffba5b",
+      "rpmp": false,
+      "total": 1,
+      "areaSqm": 3,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 1,
+        "24-25": 0,
+        "25-26": 0
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 3,
+        "24-25": 0,
+        "25-26": 0
+      }
+    },
+    {
+      "name": "Equisetum spp.",
+      "colour": "#8ca367",
+      "rpmp": false,
+      "total": 1,
+      "areaSqm": 100,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 1,
+        "24-25": 0,
+        "25-26": 0
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 100,
+        "24-25": 0,
+        "25-26": 0
+      }
+    },
+    {
+      "name": "Licorice Plant",
+      "colour": "#c5cfe2",
+      "rpmp": false,
+      "total": 1,
+      "areaSqm": 3,
+      "byFy": {
+        "21-22": 1,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 0,
+        "25-26": 0
+      },
+      "areaByFy": {
+        "21-22": 3,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 0,
+        "25-26": 0
+      }
+    },
+    {
+      "name": "Other",
+      "colour": null,
+      "rpmp": false,
+      "total": 1,
+      "areaSqm": 20,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 1,
+        "24-25": 0,
+        "25-26": 0
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 20,
+        "24-25": 0,
+        "25-26": 0
+      }
+    },
+    {
+      "name": "Sycamore",
+      "colour": "#6a909c",
+      "rpmp": false,
+      "total": 1,
+      "areaSqm": 1,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 1,
+        "25-26": 0
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 1,
+        "25-26": 0
+      }
+    }
+  ],
+  "sizeKey": {
+    "field": "Size_sqm",
+    "minValue": 1,
+    "maxValue": 500,
+    "minSize": 3.75,
+    "maxSize": 18.75
+  },
+  "track": {
+    "colour": "#d8d7db",
+    "casing": "#000000"
+  },
+  "titles": {
+    "group": "Tōtara Reserve Pest Plant Control",
+    "points": "Pest Plant Species",
+    "tracks": "Pest Plant Control Tracks"
+  }
+};
+    /* PEST_PLANT_DATA_END */
+  </script>
+</head>
+<body>
+
+  <div class="title-block">
+    <span class="eyebrow">Tōtara Reserve</span>
+    <h1>Pest Plant Control</h1>
+    <span class="period" id="period"></span>
+  </div>
+
+  <div class="tiles" id="tiles"></div>
+
+<script>
+(function () {
+  const D = PEST_PLANT_DATA;
+  if (!D) return;
+
+  const fmt = n => n == null ? '–' : Number(n).toLocaleString('en-NZ');
+  const cur  = D.current;
+  const idx  = D.byFy.findIndex(r => r.fy === D.fy);
+  const prev = idx > 0 ? D.byFy[idx - 1] : null;
+
+  // When the finished year's contractor data is not in yet, say so rather than
+  // letting the older year pass as current.
+  document.getElementById('period').innerHTML =
+    `Financial year ${D.fyLabel}` +
+    (D.fyWanted && D.fyWanted !== D.fy ? `<br><span class="lag">${D.fyWanted} data not yet received</span>` : '');
+
+  const TILES = [
+    { label: 'Weed records',  key: 'records',       unit: '' },
+    { label: 'Species',       key: 'species',       unit: '' },
+    { label: 'Area of weed',  key: 'areaSqm',       unit: 'm²' },
+    { label: 'Tracks walked', key: 'km',            unit: 'km', round: true },
+    { label: 'Controlled',    key: 'controlledPct', unit: '%' },
+  ];
+
+  document.getElementById('tiles').innerHTML = TILES.map(t => {
+    const v = t.round ? Math.round(cur[t.key]) : cur[t.key];
+    const p = prev ? (t.round ? Math.round(prev[t.key]) : prev[t.key]) : null;
+    return `<div class="tile">
+      <span class="tile-label">${t.label}</span>
+      <span class="tile-val">${fmt(v)}<small>${t.unit}</small></span>
+      <span class="tile-prev">${p == null ? '&nbsp;' : `${fmt(p)}${t.unit === '%' ? '%' : t.unit ? ' ' + t.unit : ''} in ${prev.fy}`}</span>
+    </div>`;
+  }).join('');
+})();
+</script>
+</body>
+</html>
