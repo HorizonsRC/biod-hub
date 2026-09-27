@@ -172,11 +172,6 @@
       box-shadow: inset 0 0 0 1px rgba(31, 46, 53, 0.28);
     }
 
-    /* A species the map has no symbol for — it does not draw on the map */
-    .sp-bar.unmapped {
-      background: repeating-linear-gradient(45deg, #b8b6ae 0 3px, #ecebe6 3px 6px);
-    }
-
     .sp-val { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
 
     .note { font-size: 0.72rem; color: var(--caption); line-height: 1.4; }
@@ -1133,7 +1128,9 @@ const PEST_PLANT_DATA = {
     const count = s => spFy === 'all' ? s.total   : s.byFy[spFy]     || 0;
     const area  = s => spFy === 'all' ? s.areaSqm : s.areaByFy[spFy] || 0;
 
-    const rows = D.species.map(s => ({ s, v: value(s) })).filter(r => r.v > 0).sort((a, b) => b.v - a.v);
+    // Only species with a map symbol, matching the legend — unsymbolised ones
+    // (e.g. 'Other') are deliberately left off the map.
+    const rows = D.species.filter(s => s.colour).map(s => ({ s, v: value(s) })).filter(r => r.v > 0).sort((a, b) => b.v - a.v);
     const max  = Math.max(1, ...rows.map(r => r.v));
     const unit = spMetric === 'records' ? '' : ' m²';
 
@@ -1143,25 +1140,20 @@ const PEST_PLANT_DATA = {
       `${rows.length} species · ${spFy === 'all' ? D.fys[0] + ' to ' + D.fys[D.fys.length - 1] : 'FY ' + fyLong(spFy)}`;
 
     const list = document.getElementById('species-list');
-    list.innerHTML = rows.map(({ s, v }) => {
-      const bar = s.colour
-        ? `<div class="sp-bar" style="width:${(v / max * 100).toFixed(1)}%;background:${s.colour}"></div>`
-        : `<div class="sp-bar unmapped" style="width:${(v / max * 100).toFixed(1)}%"></div>`;
-      return `<div class="sp-row"><span class="sp-name">${esc(s.name)}</span><div class="sp-track">${bar}</div><span class="sp-val">${fmt(v)}${unit}</span></div>`;
-    }).join('');
+    list.innerHTML = rows.map(({ s, v }) =>
+      `<div class="sp-row"><span class="sp-name">${esc(s.name)}</span><div class="sp-track">` +
+      `<div class="sp-bar" style="width:${(v / max * 100).toFixed(1)}%;background:${s.colour}"></div>` +
+      `</div><span class="sp-val">${fmt(v)}${unit}</span></div>`
+    ).join('');
 
     [...list.children].forEach((row, i) => {
       const s = rows[i].s;
       bindTip(row,
         `<b>${esc(s.name)}</b><br>${fmt(count(s))} record${count(s) === 1 ? '' : 's'} · ${fmt(area(s))} m²` +
-        (s.rpmp ? '<br>RPMP species' : '') +
-        (s.colour ? '' : '<br><i>No symbol in the web map — not drawn on the map</i>'));
+        (s.rpmp ? '<br>RPMP species' : ''));
     });
 
-    const unmapped = rows.filter(r => !r.s.colour).map(r => r.s.name);
-    document.getElementById('species-note').textContent =
-      'Bar colours match the map.' +
-      (unmapped.length ? ` Hatched: ${unmapped.join(', ')} — recorded, but has no map symbol so does not appear on the map.` : '');
+    document.getElementById('species-note').textContent = 'Bar colours match the map.';
   }
 
   // ── Over time: small multiples, one measure each ─────────────────────────
