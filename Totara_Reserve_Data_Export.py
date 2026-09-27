@@ -8,10 +8,11 @@ Pulls data for two Tōtara Reserve dashboards:
        Horizons EnviroData Hilltop proxy — Stage/Flow for Totara Reserve & Piripiri.
 
   2. predator-control.html — Predator control programme
+       Features are selected by a live intersect against the Tōtara Reserve
+       polygon (HRC Icon Sites layer, SiteName = 'Totara Reserve').
        Animal Pest Control layer (AGOL) — trap inventory + catches by FY.
-         PCOName IN ('Bio Totara', 'Bio Totara Wasp')
-       PCO Monitoring Dataset (AGOL) — RTCI results.
-         Label IN ('Oroua', 'Totara')
+       PC_Possum_Control_Layer_2025 (AGOL) — possum bait stations + fills by FY.
+       Rodent tracking indices spreadsheet (config.TOTARA_TTI_XLSX) — TTI.
        PCO data requires the ArcGIS Pro Python environment (arcgis SDK, SSO auth).
 
 Marker comments in river-management.html:
@@ -30,7 +31,6 @@ LAWA data is cached in data/lawa/ and refreshed when older than CACHE_MAX_AGE_DA
 import io
 import json
 import logging
-import math
 import re
 import sys
 import datetime
@@ -50,6 +50,12 @@ except ImportError:
 HERE          = Path(__file__).parent
 HTML_PATH     = HERE / "html" / "totara-reserve" / "river-management.html"
 PCO_HTML_PATH = HERE / "html" / "totara-reserve" / "predator-control.html"
+# The pest plant page is three embeds sharing one data block: the header strip,
+# the charts panel beside the map, and the legend floated over the map.
+PEST_PLANT_HTML_PATHS = [
+    HERE / "html" / "totara-reserve" / name
+    for name in ("pest-plant-header.html", "pest-plant-control.html", "pest-plant-legend.html")
+]
 CACHE_DIR     = HERE / "data" / "lawa"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -95,8 +101,6 @@ TRAP_SERVICE_URL = getattr(config, "TRAP_SERVICE_URL", None) if config else None
 TRAP_LAYER_ID    = getattr(config, "TRAP_LAYER_ID",    0)    if config else 0
 INSP_TABLE_ID    = getattr(config, "INSP_TABLE_ID",    1)    if config else 1
 
-TOTARA_PCO_WHERE = "PCOName IN ('Bio Totara', 'Bio Totara Wasp')"
-
 CATCH_SPECIES = ["Cat", "Ferret", "Hedgehog", "Mouse", "Rabbit",
                  "Rat", "Stoat", "Possum", "Weasel"]
 
@@ -106,18 +110,31 @@ _tti_path = getattr(config, "TOTARA_TTI_XLSX", None) if config else None
 TTI_EXCEL_PATH = Path(_tti_path) if _tti_path else None
 
 # Possum Bait Station layer (PC_Possum_Control_Layer_2025)
-# Layer 1 = Bait Station features, Layer 2 = Inspection/fill records
+# Layer 0 = Bait Station features, layer 1 = Points of Interest, table 2 = Inspection
 POSSUM_SERVICE_URL   = "https://services1.arcgis.com/VuN78wcRdq1Oj69W/arcgis/rest/services/PC_Possum_Control_Layer_2025/FeatureServer"
-POSSUM_BAIT_LAYER_ID = 1
+POSSUM_BAIT_LAYER_ID = 0
 POSSUM_INSP_LAYER_ID = 2
 
-# Tōtara Reserve boundary — queried from HRC Icon Sites layer at runtime
+# Tōtara Reserve boundary — queried from HRC Icon Sites layer at runtime. Traps and
+# possum bait stations are selected by a live intersect against this polygon.
 ICON_SITES_URL      = "https://services1.arcgis.com/VuN78wcRdq1Oj69W/arcgis/rest/services/HRC_Icon_Sites_Projects/FeatureServer"
 ICON_SITES_LAYER_ID = 0
 TOTARA_SITE_NAME    = "Totara Reserve"
 
-# Buffer distance around reserve polygon for possum bait station spatial filter
-TOTARA_BUFFER_M = getattr(config, "TOTARA_BUFFER_M", 300) if config else 300
+# Traps within this distance of the reserve boundary count as reserve traps — the
+# trap lines run along and just outside the edge. Possum bait stations use none.
+TRAP_BUFFER_M = 200
+
+# Pest plant contractor data — Tōtara_Reserve_Contractor_Data, a separate service
+# from the icon sites' BioD contractor item. Layer 1 = waypoints (one row per weed
+# location), layer 2 = polylines (GPS tracks walked). Both already hold only this
+# site (SiteID 'Man240'), so no spatial or site filter is needed.
+PEST_PLANT_ITEM_ID      = "f865a454aaa645a6a2f88a07add7f12c"
+PEST_PLANT_POINTS_LAYER = 1
+PEST_PLANT_TRACKS_LAYER = 2
+# Tōtara Reserve web map. Species colours, the size key and the layer titles are
+# read from its symbology so the dashboard always matches what the map draws.
+TOTARA_WEBMAP_ID        = "e3d60ce2a731408f9e25126fc4e2ef7d"
 
 SESSION = requests.Session()
 SESSION.headers.update({"User-Agent": "BioD-Hub/1.0 (HorizonsRC; internal dashboard)"})
@@ -466,22 +483,113 @@ def _fetch_agol_df(gis, service_url: str, layer_id: int, where: str = "1=1") -> 
     return df
 
 
+def _fetch_reserve_boundary(gis):
+    """
+    Fetch the Tōtara Reserve polygon from the HRC Icon Sites layer.
+
+    Kept in the layer's own spatial reference, so the intersect against the pest
+    layers does not depend on a reprojection. Returns None if the site is missing.
+    """
+    from arcgis.features import FeatureLayer
+    log.info("  Fetching Tōtara Reserve boundary from HRC Icon Sites layer...")
+    layer = FeatureLayer(f"{ICON_SITES_URL}/{ICON_SITES_LAYER_ID}", gis=gis)
+    fset  = layer.query(
+        where=f"SiteName = '{TOTARA_SITE_NAME}'",
+        out_fields="SiteName",
+        return_geometry=True,
+    )
+    if not fset.features:
+        log.warning(f"  '{TOTARA_SITE_NAME}' not found in Icon Sites layer")
+        return None
+    geom = fset.features[0].geometry
+    log.info(f"  Reserve boundary fetched (wkid "
+             f"{geom.get('spatialReference', {}).get('wkid', '?')})")
+    return geom
+
+
+def _fetch_in_reserve(gis, service_url: str, layer_id: int, reserve_geom,
+                      buffer_m: float = 0) -> pd.DataFrame:
+    """
+    Query a FeatureServer layer for every feature intersecting the reserve polygon,
+    or within buffer_m metres of it.
+
+    Sent as a POST: the polygon is ~1,400 vertices (~42 KB of JSON), too long for
+    the GET URL FeatureLayer.query() builds, which AGOL rejects with 502s.
+    Pages through results in case the layer's maxRecordCount is exceeded.
+    """
+    from arcgis.features import FeatureLayer
+    url   = f"{service_url.rstrip('/')}/{layer_id}"
+    layer = FeatureLayer(url, gis=gis)
+    name  = getattr(layer.properties, "name", url.split("/")[-1])
+    sr    = reserve_geom.get("spatialReference", {}).get("wkid")
+    log.info(f"  Querying {name} (layer {layer_id}) intersecting the reserve"
+             f"{f' + {buffer_m:g} m' if buffer_m else ''}...")
+
+    params = {
+        "f":              "json",
+        "where":          "1=1",
+        "geometry":       json.dumps(reserve_geom),
+        "geometryType":   "esriGeometryPolygon",
+        "inSR":           sr,
+        "spatialRel":     "esriSpatialRelIntersects",
+        "outFields":      "*",
+        "returnGeometry": "false",
+    }
+    if buffer_m:
+        params.update({"distance": buffer_m, "units": "esriSRUnit_Meter"})
+
+    rows, offset = [], 0
+    while True:
+        resp = gis._con.post(f"{url}/query", {**params, "resultOffset": offset})
+        if "error" in resp:
+            raise RuntimeError(f"{name} query error: {resp['error']}")
+        feats = resp.get("features", [])
+        rows.extend(f["attributes"] for f in feats)
+        if not resp.get("exceededTransferLimit") or not feats:
+            break
+        offset += len(feats)
+
+    df = pd.DataFrame(rows)
+    log.info(f"    → {len(df):,} features in reserve")
+    if "GlobalID" in df.columns:
+        log.debug(f"    {name} GlobalIDs in reserve: "
+                  f"{sorted(df['GlobalID'].dropna().astype(str).tolist())}")
+    return df
+
+
+def _find_parent_col(df: pd.DataFrame) -> str | None:
+    """Find the column in a related table that holds the parent feature's GlobalID."""
+    for cand in ("TrapParentID", "ParentGlobalID", "ParentID"):
+        if cand in df.columns:
+            return cand
+    pid_cols = [c for c in df.columns if "parent" in c.lower()]
+    return pid_cols[0] if pid_cols else None
+
+
+def _norm_ids(series: pd.Series) -> pd.Series:
+    """Normalise GlobalIDs for joining: no braces, lower case."""
+    return series.dropna().astype(str).str.strip("{}").str.lower()
+
+
 # ── PCO data extraction ────────────────────────────────────────────────────────
 
 def extract_pco_data() -> dict | None:
     """
     Fetch predator control data for Tōtara Reserve from AGOL.
 
-    Trap inventory + catch records: Animal Pest Control layer
-      PCOName IN ('Bio Totara', 'Bio Totara Wasp')
-      Bio Totara        → mustelid/rodent kill traps
-      Bio Totara Wasp   → Vespex wasp bait stations
+    Selection is a live spatial intersect against the Tōtara Reserve polygon
+    (HRC Icon Sites, SiteName = 'Totara Reserve'), repeated every run so traps
+    and stations added or removed later are picked up.
 
-    RTCI monitoring results: PCO Monitoring Dataset
-      Label IN ('Oroua', 'Totara')
+    Traps + catches: Animal Pest Control layer (layer 0) + inspection table (1).
+      Every trap in the reserve or within TRAP_BUFFER_M of it, whoever the PCO. TrapType containing "Vespex"
+      → wasp bait stations; everything else → animal traps.
+
+    Possum bait stations: PC_Possum_Control_Layer_2025 (layer 1) + fills (2).
 
     Requires ArcGIS Pro Python environment (arcgis SDK) for authenticated
-    AGOL access.  Returns None on failure so the rest of the script continues.
+    AGOL access. Returns None on failure, or when either intersect comes back
+    empty, so the page keeps its last good data rather than showing zeros.
     """
     log.info("Processing PCO / Predator Control data...")
 
@@ -493,8 +601,16 @@ def extract_pco_data() -> dict | None:
         from arcgis.gis import GIS
         gis = GIS("pro")
         log.info(f"  Connected to AGOL as: {gis.properties.user.username}")
-    except Exception as exc:
-        log.error(f"  Cannot connect to AGOL — PCO data skipped: {exc}")
+    except Exception:
+        log.exception("  Cannot connect to AGOL — PCO data skipped")
+        return None
+
+    try:
+        reserve_geom = _fetch_reserve_boundary(gis)
+    except Exception:
+        log.exception("  Reserve boundary query failed — PCO data skipped")
+        return None
+    if reserve_geom is None:
         return None
 
     bio_totara = {"total": 0, "byType": {"labels": [], "data": []}}
@@ -503,279 +619,206 @@ def extract_pco_data() -> dict | None:
 
     # ── Trap inventory + catch records ────────────────────────────────────────
     try:
-        traps = _fetch_agol_df(gis, TRAP_SERVICE_URL, TRAP_LAYER_ID,
-                               where=TOTARA_PCO_WHERE)
+        traps = _fetch_in_reserve(gis, TRAP_SERVICE_URL, TRAP_LAYER_ID, reserve_geom,
+                                  buffer_m=TRAP_BUFFER_M)
+    except Exception:
+        log.exception("  Trap intersect query failed — PCO data skipped")
+        return None
+    if traps.empty:
+        log.warning("  No traps found in the reserve — treating as a failed query, "
+                    "not zero. predator-control.html left as it was.")
+        return None
+
+    try:
         log.info(f"  Trap columns: {sorted(traps.columns.tolist())}")
+        if "PCOName" in traps.columns:
+            log.info(f"  PCOName counts: {dict(traps['PCOName'].value_counts(dropna=False))}")
 
-        if not traps.empty and "PCOName" in traps.columns:
-            bio_df  = traps[traps["PCOName"] == "Bio Totara"]
-            wasp_df = traps[traps["PCOName"] == "Bio Totara Wasp"]
+        if "TrapType" in traps.columns:
+            traps["TrapType"] = traps["TrapType"].str.strip()
+            log.info(f"  TrapType counts: {dict(traps['TrapType'].value_counts(dropna=False))}")
+            is_wasp = traps["TrapType"].astype(str).str.contains("vespex", case=False)
+        else:
+            log.warning("  No TrapType column — cannot split Vespex from traps")
+            is_wasp = pd.Series(False, index=traps.index)
+        bio_df  = traps[~is_wasp]
+        wasp_df = traps[is_wasp]
 
-            bio_totara["total"] = int(len(bio_df))
-            if "TrapType" in traps.columns and not bio_df.empty:
-                tc = bio_df["TrapType"].value_counts()
-                bio_totara["byType"] = {
+        for out, df in ((bio_totara, bio_df), (vespex, wasp_df)):
+            out["total"] = int(len(df))
+            if "TrapType" in df.columns and not df.empty:
+                tc = df["TrapType"].value_counts()
+                out["byType"] = {
                     "labels": list(tc.index),
                     "data":   [int(v) for v in tc.values],
                 }
 
-            vespex["total"] = int(len(wasp_df))
-            if "TrapType" in traps.columns and not wasp_df.empty:
-                tc = wasp_df["TrapType"].value_counts()
-                vespex["byType"] = {
-                    "labels": list(tc.index),
-                    "data":   [int(v) for v in tc.values],
-                }
+        log.info(f"  Animal traps: {bio_totara['total']}, "
+                 f"Vespex stations: {vespex['total']}")
+        log.info(f"  Animal trap types: {bio_totara['byType']}")
+        log.info(f"  Vespex types: {vespex['byType']}")
 
-            log.info(f"  Bio Totara traps: {bio_totara['total']}, "
-                     f"Vespex stations: {vespex['total']}")
-            log.info(f"  Bio Totara types: {bio_totara['byType']}")
-            log.info(f"  Vespex types: {vespex['byType']}")
+        # Catch records — pull full inspection table and filter by trap GlobalID
+        trap_ids = (set(_norm_ids(traps["GlobalID"]))
+                    if "GlobalID" in traps.columns else set())
 
-            # Catch records — pull full inspection table and filter by trap GlobalID
-            trap_ids = (
-                set(traps["GlobalID"].dropna().astype(str)
-                    .str.strip("{}").str.lower().tolist())
-                if "GlobalID" in traps.columns else set()
-            )
+        try:
+            insp_all = _fetch_agol_df(gis, TRAP_SERVICE_URL, INSP_TABLE_ID,
+                                      where="1=1")
+        except Exception:
+            log.exception("  Inspection table query failed")
+            insp_all = pd.DataFrame()
 
-            try:
-                insp_all = _fetch_agol_df(gis, TRAP_SERVICE_URL, INSP_TABLE_ID,
-                                          where="1=1")
-            except Exception as exc:
-                log.warning(f"  Inspection table query failed: {exc}")
-                insp_all = pd.DataFrame()
+        if not insp_all.empty:
+            log.info(f"  Inspection columns: {sorted(insp_all.columns.tolist())}")
 
-            if not insp_all.empty:
-                log.info(f"  Inspection columns: {sorted(insp_all.columns.tolist())}")
+            join_col = _find_parent_col(insp_all)
+            log.info(f"  Inspection join column: {join_col}")
 
-                join_col = None
-                for cand in ("TrapParentID", "ParentGlobalID", "ParentID"):
-                    if cand in insp_all.columns:
-                        join_col = cand
-                        break
-                if join_col is None:
-                    pid_cols = [c for c in insp_all.columns if "parent" in c.lower()]
-                    if pid_cols:
-                        join_col = pid_cols[0]
-                log.info(f"  Inspection join column: {join_col}")
+            if join_col and trap_ids:
+                norm = insp_all[join_col].astype(str).str.strip("{}").str.lower()
+                insp = insp_all[norm.isin(trap_ids)].copy()
+            else:
+                insp = pd.DataFrame()
+            log.info(f"  Inspection records for reserve traps: {len(insp):,}")
 
-                if join_col and trap_ids:
-                    norm = insp_all[join_col].astype(str).str.strip("{}").str.lower()
-                    insp = insp_all[norm.isin(trap_ids)].copy()
-                else:
-                    insp = pd.DataFrame()
-                log.info(f"  Inspection records for Totara traps: {len(insp):,}")
+            if not insp.empty and "created_date" in insp.columns \
+                    and "SpeciesCaught" in insp.columns:
+                insp["_dt"] = pd.to_datetime(insp["created_date"],
+                                             unit="ms", errors="coerce")
+                insp["_fy"] = insp["_dt"].apply(date_to_fy)
 
-                if not insp.empty and "created_date" in insp.columns \
-                        and "SpeciesCaught" in insp.columns:
-                    insp["_dt"] = pd.to_datetime(insp["created_date"],
-                                                 unit="ms", errors="coerce")
-                    insp["_fy"] = insp["_dt"].apply(date_to_fy)
+                # Log every species present so the user can verify what's captured
+                all_sp = insp["SpeciesCaught"].dropna().value_counts()
+                log.info(f"  All species in inspection records: {dict(all_sp)}")
 
-                    # Log every species present so the user can verify what's captured
-                    all_sp = insp["SpeciesCaught"].dropna().value_counts()
-                    log.info(f"  All species in inspection records: {dict(all_sp)}")
+                # Filter to actual catches
+                exclude = {"", "nothing caught", "nil", "none", "no catch"}
+                caught = insp[
+                    insp["SpeciesCaught"].notna() &
+                    ~insp["SpeciesCaught"].str.strip().str.lower().isin(exclude)
+                ].copy()
+                log.info(f"  Records with a catch: {len(caught):,}")
 
-                    # Filter to actual catches
-                    exclude = {"", "nothing caught", "nil", "none", "no catch"}
-                    caught = insp[
-                        insp["SpeciesCaught"].notna() &
-                        ~insp["SpeciesCaught"].str.strip().str.lower().isin(exclude)
-                    ].copy()
-                    log.info(f"  Records with a catch: {len(caught):,}")
+                if not caught.empty:
+                    # Use CATCH_SPECIES list where species are present; fall back
+                    # to top-8 by count for anything not in the list.
+                    present = [s for s in CATCH_SPECIES
+                               if s in caught["SpeciesCaught"].values]
+                    extra   = [s for s in caught["SpeciesCaught"].unique()
+                               if s not in CATCH_SPECIES]
+                    if extra:
+                        log.info(f"  Species outside CATCH_SPECIES list: {extra}")
+                    display_sp = present if present else list(
+                        caught["SpeciesCaught"].value_counts().head(8).index
+                    )
 
-                    if not caught.empty:
-                        # Use CATCH_SPECIES list where species are present; fall back
-                        # to top-8 by count for anything not in the list.
-                        present = [s for s in CATCH_SPECIES
-                                   if s in caught["SpeciesCaught"].values]
-                        extra   = [s for s in caught["SpeciesCaught"].unique()
-                                   if s not in CATCH_SPECIES]
-                        if extra:
-                            log.info(f"  Species outside CATCH_SPECIES list: {extra}")
-                        display_sp = present if present else list(
-                            caught["SpeciesCaught"].value_counts().head(8).index
-                        )
+                    pivot = (
+                        caught[caught["SpeciesCaught"].isin(display_sp)]
+                        .groupby(["_fy", "SpeciesCaught"])
+                        .size()
+                        .unstack(fill_value=0)
+                    )
+                    fy_order = sorted(
+                        [fy for fy in pivot.index if fy],
+                        key=lambda s: s.split("-")[0]
+                    )
+                    pivot = pivot.reindex(fy_order)
 
-                        pivot = (
-                            caught[caught["SpeciesCaught"].isin(display_sp)]
-                            .groupby(["_fy", "SpeciesCaught"])
-                            .size()
-                            .unstack(fill_value=0)
-                        )
-                        fy_order = sorted(
-                            [fy for fy in pivot.index if fy],
-                            key=lambda s: s.split("-")[0]
-                        )
-                        pivot = pivot.reindex(fy_order)
+                    catches_by_fy = {
+                        "labels":  fy_order,
+                        "species": display_sp,
+                        "data": {
+                            sp: [
+                                int(pivot.at[fy, sp])
+                                if sp in pivot.columns else 0
+                                for fy in fy_order
+                            ]
+                            for sp in display_sp
+                        },
+                    }
+                    log.info(f"  Catches by FY: "
+                             f"{list(zip(fy_order, [sum(catches_by_fy['data'][s][i] for s in display_sp) for i in range(len(fy_order))]))}")
 
-                        catches_by_fy = {
-                            "labels":  fy_order,
-                            "species": display_sp,
-                            "data": {
-                                sp: [
-                                    int(pivot.at[fy, sp])
-                                    if sp in pivot.columns else 0
-                                    for fy in fy_order
-                                ]
-                                for sp in display_sp
-                            },
-                        }
-                        log.info(f"  Catches by FY: "
-                                 f"{list(zip(fy_order, [sum(catches_by_fy['data'][s][i] for s in display_sp) for i in range(len(fy_order))]))}")
-
-    except Exception as exc:
-        log.warning(f"  Trap/inspection query failed: {exc}")
+    except Exception:
+        log.exception("  Trap/inspection processing failed")
 
     # ── Possum bait stations ──────────────────────────────────────────────────
     possum_bait: dict = {
         "withinReserve": None,
-        "withinBuffer":  None,
-        "bufferM":       TOTARA_BUFFER_M,
         "fills":         {"labels": [], "fillCounts": {}},
     }
     try:
-        from arcgis.features import FeatureLayer as _FL
-        from arcgis.geometry.filters import intersects as _geo_intersects
+        stations = _fetch_in_reserve(gis, POSSUM_SERVICE_URL, POSSUM_BAIT_LAYER_ID,
+                                     reserve_geom)
+    except Exception:
+        log.exception("  Possum bait station intersect query failed — PCO data skipped")
+        return None
+    if stations.empty:
+        log.warning("  No possum bait stations found in the reserve — treating as a "
+                    "failed query, not zero. predator-control.html left as it was.")
+        return None
 
-        # Fetch the actual reserve boundary polygon from the Icon Sites layer
-        log.info("  Fetching Totara Reserve boundary from HRC Icon Sites layer...")
-        sites_layer = _FL(f"{ICON_SITES_URL}/{ICON_SITES_LAYER_ID}", gis=gis)
-        boundary_fset = sites_layer.query(
-            where=f"SiteName = '{TOTARA_SITE_NAME}'",
-            out_fields="SiteName",
-            return_geometry=True,
-            out_sr=4326,
+    possum_bait["withinReserve"] = int(len(stations))
+    log.info(f"  Possum bait stations in reserve: {possum_bait['withinReserve']}")
+    log.info(f"  Possum station columns: {sorted(stations.columns.tolist())}")
+
+    try:
+        station_ids = (set(_norm_ids(stations["GlobalID"]))
+                       if "GlobalID" in stations.columns else set())
+
+        possum_insp = _fetch_agol_df(
+            gis, POSSUM_SERVICE_URL, POSSUM_INSP_LAYER_ID, where="1=1"
         )
-        if not boundary_fset.features:
-            log.warning(f"  '{TOTARA_SITE_NAME}' not found in Icon Sites layer — spatial filter skipped")
-            reserve_geom = None
-        else:
-            reserve_geom = boundary_fset.features[0].geometry
-            log.info(f"  Reserve boundary fetched: {boundary_fset.features[0].attributes.get('SiteName', '?')}")
+        log.info(f"  Possum inspection columns: {sorted(possum_insp.columns.tolist())}")
 
-        log.info("  Querying Possum Bait Station layer (PC_Possum_Control_Layer_2025)...")
-        bait_layer = _FL(f"{POSSUM_SERVICE_URL}/{POSSUM_BAIT_LAYER_ID}", gis=gis)
+        if not possum_insp.empty and station_ids:
+            join_col = _find_parent_col(possum_insp)
+            log.info(f"  Possum inspection join column: {join_col}")
 
-        if reserve_geom:
-            # Build a buffered bounding box from the polygon extent.
-            # The reserve polygon is used directly for the "within reserve" query (accurate).
-            # The buffer zone uses the extent expanded by TOTARA_BUFFER_M in degrees (avoids
-            # dependency on the AGOL geometry service, which may not be configured for Pro SSO).
-            ext     = reserve_geom.extent
-            lat_mid = (ext["ymin"] + ext["ymax"]) / 2
-            buf_lat = TOTARA_BUFFER_M / 111_111
-            buf_lon = TOTARA_BUFFER_M / (111_111 * math.cos(math.radians(lat_mid)))
-            buf_env = {
-                "xmin": ext["xmin"] - buf_lon,
-                "ymin": ext["ymin"] - buf_lat,
-                "xmax": ext["xmax"] + buf_lon,
-                "ymax": ext["ymax"] + buf_lat,
-                "spatialReference": {"wkid": 4326},
-            }
+            if join_col:
+                norm   = possum_insp[join_col].astype(str).str.strip("{}").str.lower()
+                insp_f = possum_insp[norm.isin(station_ids)].copy()
+                log.info(f"  Possum inspection records matched: {len(insp_f):,}")
 
-            fset_res = bait_layer.query(
-                geometry_filter=_geo_intersects(reserve_geom, sr=4326),
-                out_fields="GlobalID",
-                return_geometry=False,
-            )
-            fset_buf = bait_layer.query(
-                geometry_filter=_geo_intersects(buf_env, sr=4326),
-                out_fields="*",
-                return_geometry=False,
-            )
-            n_res = len(fset_res.features)
-            n_buf = len(fset_buf.features)
-            possum_bait["withinReserve"] = n_res
-            possum_bait["withinBuffer"]  = n_buf - n_res
-            log.info(f"  Possum bait: {n_res} in reserve, "
-                     f"{n_buf - n_res} in {TOTARA_BUFFER_M}m buffer zone")
-            possum_stations = fset_buf.sdf
-        else:
-            log.warning("  No reserve geometry — querying all possum bait stations (no spatial filter)")
-            fset_all = bait_layer.query(where="1=1", out_fields="*", return_geometry=False)
-            possum_stations = fset_all.sdf
-            log.info(f"  Possum bait stations (no spatial filter): {len(possum_stations)}")
+                # Each inspection record is one fill visit; split by toxin
+                date_col = "created_date"
+                fill_col = "Toxin"
+                if fill_col in insp_f.columns:
+                    log.info(f"  Toxin counts: {dict(insp_f[fill_col].value_counts(dropna=False))}")
+                    insp_f[fill_col] = insp_f[fill_col].fillna("Not recorded")
 
-        log.info(f"  Possum station columns: {sorted(possum_stations.columns.tolist())}")
+                if date_col in insp_f.columns and fill_col in insp_f.columns                         and not insp_f.empty:
+                    insp_f["_dt"] = pd.to_datetime(
+                        insp_f[date_col], unit="ms", errors="coerce"
+                    )
+                    insp_f["_fy"] = insp_f["_dt"].apply(date_to_fy)
+                    fill_grp = (
+                        insp_f.groupby(["_fy", fill_col])
+                        .size()
+                        .unstack(fill_value=0)
+                    )
+                    fy_order = sorted(
+                        [fy for fy in fill_grp.index if fy],
+                        key=lambda s: s.split("-")[0],
+                    )
+                    fill_grp  = fill_grp.reindex(fy_order)
+                    fill_keys = sorted(fill_grp.columns.tolist(), key=str)
+                    possum_bait["fills"] = {
+                        "labels": fy_order,
+                        "fillCounts": {
+                            str(k): [
+                                int(fill_grp.at[fy, k])
+                                if k in fill_grp.columns else 0
+                                for fy in fy_order
+                            ]
+                            for k in fill_keys
+                        },
+                    }
+                    log.info(f"  Possum fills: {fy_order}, keys: {fill_keys}")
 
-        if not possum_stations.empty:
-            station_ids = (
-                set(possum_stations["GlobalID"].dropna().astype(str)
-                    .str.strip("{}").str.lower().tolist())
-                if "GlobalID" in possum_stations.columns else set()
-            )
-
-            # Query inspection/fill records (layer 2)
-            try:
-                possum_insp = _fetch_agol_df(
-                    gis, POSSUM_SERVICE_URL, POSSUM_INSP_LAYER_ID, where="1=1"
-                )
-                log.info(f"  Possum inspection columns: {sorted(possum_insp.columns.tolist())}")
-
-                if not possum_insp.empty and station_ids:
-                    join_col = None
-                    for cand in ("TrapParentID", "ParentGlobalID", "ParentID"):
-                        if cand in possum_insp.columns:
-                            join_col = cand
-                            break
-                    if join_col is None:
-                        pid_cols = [c for c in possum_insp.columns if "parent" in c.lower()]
-                        if pid_cols:
-                            join_col = pid_cols[0]
-                    log.info(f"  Possum inspection join column: {join_col}")
-
-                    if join_col:
-                        norm  = possum_insp[join_col].astype(str).str.strip("{}").str.lower()
-                        insp_f = possum_insp[norm.isin(station_ids)].copy()
-                        log.info(f"  Possum inspection records matched: {len(insp_f):,}")
-
-                        date_col = next(
-                            (c for c in insp_f.columns
-                             if "date" in c.lower() or "created" in c.lower()), None
-                        )
-                        fill_col = next(
-                            (c for c in insp_f.columns
-                             if any(kw in c.lower() for kw in ("fill", "visit", "round"))),
-                            None,
-                        )
-                        log.info(f"  Date col: {date_col}  Fill col: {fill_col}")
-
-                        if date_col and fill_col and not insp_f.empty:
-                            insp_f["_dt"] = pd.to_datetime(
-                                insp_f[date_col], unit="ms", errors="coerce"
-                            )
-                            insp_f["_fy"] = insp_f["_dt"].apply(date_to_fy)
-                            fill_grp = (
-                                insp_f.groupby(["_fy", fill_col])
-                                .size()
-                                .unstack(fill_value=0)
-                            )
-                            fy_order = sorted(
-                                [fy for fy in fill_grp.index if fy],
-                                key=lambda s: s.split("-")[0],
-                            )
-                            fill_grp  = fill_grp.reindex(fy_order)
-                            fill_keys = sorted(fill_grp.columns.tolist(), key=str)
-                            possum_bait["fills"] = {
-                                "labels": fy_order,
-                                "fillCounts": {
-                                    str(k): [
-                                        int(fill_grp.at[fy, k])
-                                        if k in fill_grp.columns else 0
-                                        for fy in fy_order
-                                    ]
-                                    for k in fill_keys
-                                },
-                            }
-                            log.info(f"  Possum fills: {fy_order}, keys: {fill_keys}")
-
-            except Exception as exc:
-                log.warning(f"  Possum inspection query failed: {exc}")
-
-    except Exception as exc:
-        log.warning(f"  Possum bait station query failed: {exc}")
+    except Exception:
+        log.exception("  Possum inspection query failed")
 
     return {
         "generated":   datetime.datetime.now().isoformat(),
@@ -859,6 +902,257 @@ def extract_tti_data() -> dict | None:
         return None
 
 
+# ── Pest plants ────────────────────────────────────────────────────────────────
+
+def previous_financial_year(today=None) -> tuple[str, str]:
+    """The FY most recently finished, as ('25-26', '2025-26').
+
+    Copied from Icon_Sites_Data_Export.py rather than imported — importing that
+    module sets up its own log file and exits when its config keys are missing.
+    The page reports on a completed year: the current FY's records are not all
+    in until it closes.
+    """
+    today = today or datetime.datetime.now()
+    start = today.year - 1 if today.month >= 7 else today.year - 2
+    return f"{str(start)[2:]}-{str(start + 1)[2:]}", f"{start}-{str(start + 1)[2:]}"
+
+
+def latest_fy_with_records(df, fy_col: str, wanted: str, what: str = "records") -> str:
+    """`wanted` if it has rows in `df`, else the newest FY that does.
+
+    Copied from Icon_Sites_Data_Export.py. Contractor data arrives well after a
+    year closes; publishing the empty year would zero every figure, so the page
+    label follows the data and rolls forward on its own once the records land.
+    """
+    if fy_col not in df.columns or not df[df[fy_col] == wanted].empty:
+        return wanted
+    available = sorted(df[fy_col].dropna().unique())
+    if not available:
+        return wanted
+    fallback = available[-1]
+    log.warning(
+        f"  No {what} for FY {wanted} yet -- showing FY {fallback} instead. "
+        f"The page label rolls to {wanted} once its records land."
+    )
+    return fallback
+
+
+def _rgba_to_hex(rgba) -> str | None:
+    if not rgba or len(rgba) < 3:
+        return None
+    return "#{:02x}{:02x}{:02x}".format(*[int(c) for c in rgba[:3]])
+
+
+def _fetch_pest_plant_symbology(gis) -> dict:
+    """Species colours, size key and layer titles from the Tōtara web map.
+
+    Layers are matched on their service URL, not their title, so renaming them in
+    the map does not break this. Returns {} if the map cannot be read; the page
+    then falls back to a neutral colour per species.
+    """
+    try:
+        wm = gis.content.get(TOTARA_WEBMAP_ID).get_data() or {}
+    except Exception:
+        log.exception("  Could not read the Tōtara web map — species colours unavailable")
+        return {}
+
+    def walk(layers, parent=None):
+        for lyr in layers or []:
+            yield lyr, parent
+            yield from walk(lyr.get("layers"), lyr)
+
+    points = tracks = group = None
+    for lyr, parent in walk(wm.get("operationalLayers")):
+        url = str(lyr.get("url") or "")
+        if "Contractor_Data/FeatureServer" not in url:
+            continue
+        if url.endswith(f"/{PEST_PLANT_POINTS_LAYER}"):
+            points, group = lyr, parent
+        elif url.endswith(f"/{PEST_PLANT_TRACKS_LAYER}"):
+            tracks = lyr
+    if points is None:
+        log.warning("  Pest plant layer not found in the Tōtara web map — species colours unavailable")
+        return {}
+
+    renderer = ((points.get("layerDefinition") or {}).get("drawingInfo") or {}).get("renderer") or {}
+    colours = {}
+    for info in renderer.get("uniqueValueInfos") or []:
+        hexcol = _rgba_to_hex((info.get("symbol") or {}).get("color"))
+        if info.get("value") and hexcol:
+            colours[str(info["value"])] = hexcol
+
+    size = next((v for v in renderer.get("visualVariables") or []
+                 if v.get("type") == "sizeInfo" and v.get("field")), {})
+
+    # Tracks are a CIM line: the last solid stroke is the fill colour on top of
+    # the casing beneath it.
+    track_colour = None
+    track_casing = None
+    t_sym = (((tracks or {}).get("layerDefinition") or {}).get("drawingInfo") or {}) \
+        .get("renderer", {}).get("symbol", {}).get("symbol", {})
+    strokes = [s for s in t_sym.get("symbolLayers") or [] if s.get("type") == "CIMSolidStroke"]
+    if strokes:
+        track_colour = _rgba_to_hex(strokes[0].get("color"))
+        if len(strokes) > 1:
+            track_casing = _rgba_to_hex(strokes[-1].get("color"))
+
+    log.info(f"  Web map symbology: {len(colours)} species colours, size by {size.get('field')}")
+    return {
+        "colours": colours,
+        "sizeKey": {
+            "field":    size.get("field"),
+            "minValue": size.get("minDataValue"),
+            "maxValue": size.get("maxDataValue"),
+            "minSize":  size.get("minSize"),
+            "maxSize":  size.get("maxSize"),
+        } if size else None,
+        "track": {"colour": track_colour, "casing": track_casing},
+        "titles": {
+            "group":  (group or {}).get("title"),
+            "points": points.get("title"),
+            "tracks": (tracks or {}).get("title"),
+        },
+    }
+
+
+def _control_outcome(note) -> str:
+    """Bucket the free-text Control_notes by its leading phrase."""
+    text = note.strip().casefold()
+    if text.startswith("controlled"):
+        return "controlled"
+    if text.startswith("partially"):
+        return "partial"
+    if text.startswith("not controlled"):
+        return "notControlled"
+    return "unrecorded"   # blank, 'Spotted', anything else
+
+
+def extract_pest_plant_data() -> dict | None:
+    """
+    Pest plant control figures for the three pest-plant-*.html embeds.
+
+    Waypoints: one row per weed location — SpeciesID, FinYr ('24-25'), Date
+    (dd/mm/yyyy string), Size_sqm, Age_class (A/J/S), Control_notes (free text,
+    bucketed by its leading phrase), RPMPspecies ('Y' or blank).
+    Tracks: Distance_Km per GPS track walked.
+
+    Reports the last completed FY, falling back to the newest FY with records.
+    Returns None on failure or an empty layer, so the pages keep last good data.
+    """
+    log.info("Processing pest plant data...")
+
+    try:
+        from arcgis.gis import GIS
+        gis = GIS("pro")
+        log.info(f"  Connected to AGOL as: {gis.properties.user.username}")
+    except Exception:
+        log.exception("  Cannot connect to AGOL — pest plant data skipped")
+        return None
+
+    try:
+        item = gis.content.get(PEST_PLANT_ITEM_ID)
+        svc  = item.url
+        wp = _fetch_agol_df(gis, svc, PEST_PLANT_POINTS_LAYER)
+        pl = _fetch_agol_df(gis, svc, PEST_PLANT_TRACKS_LAYER)
+    except Exception:
+        log.exception("  Pest plant layer query failed — pest plant data skipped")
+        return None
+
+    if wp.empty:
+        log.warning("  Pest plant waypoints came back empty — keeping the last good page data")
+        return None
+
+    symbology = _fetch_pest_plant_symbology(gis)
+    colours   = {k.casefold(): v for k, v in (symbology.get("colours") or {}).items()}
+
+    wp["SpeciesID"] = wp["SpeciesID"].fillna("Unrecorded").astype(str).str.strip()
+    wp["_outcome"]  = wp["Control_notes"].fillna("").astype(str).map(_control_outcome)
+    wp["_age"]      = wp["Age_class"].fillna("").astype(str).str.upper().str.strip()
+    wp["_date"]     = pd.to_datetime(wp["Date"], dayfirst=True, errors="coerce")
+    wp["_rpmp"]     = wp["RPMPspecies"].fillna("").astype(str).str.upper().isin(["Y", "YES"])
+    wp["Size_sqm"]  = pd.to_numeric(wp["Size_sqm"], errors="coerce").fillna(0)
+    km_col = "Distance_Km" if "Distance_Km" in pl.columns else None
+    if km_col:
+        pl[km_col] = pd.to_numeric(pl[km_col], errors="coerce").fillna(0)
+
+    fys = sorted(wp["FinYr"].dropna().unique())
+
+    def summarise(w: pd.DataFrame, p: pd.DataFrame) -> dict:
+        outcome = w["_outcome"].value_counts()
+        age     = w["_age"].value_counts()
+        n       = int(len(w))
+        controlled = int(outcome.get("controlled", 0))
+        # % controlled is of records with an outcome noted — 22-23 left 206 notes
+        # blank, which would otherwise read as a collapse in control.
+        noted = n - int(outcome.get("unrecorded", 0))
+        return {
+            "records":       n,
+            "species":       int(w["SpeciesID"].nunique()),
+            "areaSqm":       int(round(float(w["Size_sqm"].sum()))),
+            "km":            round(float(p[km_col].sum()), 1) if km_col and not p.empty else None,
+            "tracks":        int(len(p)),
+            "days":          int(w["_date"].dt.date.nunique()),
+            "rpmp":          int(w["_rpmp"].sum()),
+            "controlled":    controlled,
+            "partial":       int(outcome.get("partial", 0)),
+            "notControlled": int(outcome.get("notControlled", 0)),
+            "unrecorded":    int(outcome.get("unrecorded", 0)),
+            "controlledPct": round(controlled / noted * 100) if noted else None,
+            "age":           {k: int(age.get(k, 0)) for k in ("A", "J", "S")},
+        }
+
+    by_fy = []
+    for fy in fys:
+        s = summarise(wp[wp["FinYr"] == fy], pl[pl["FinYr"] == fy] if "FinYr" in pl.columns else pl)
+        s["fy"] = fy
+        by_fy.append(s)
+
+    wanted, _ = previous_financial_year()
+    fy = latest_fy_with_records(wp, "FinYr", wanted, "pest plant records")
+    current = next(s for s in by_fy if s["fy"] == fy)
+
+    # One row per species, most records first. Counts and area per FY let the
+    # page switch years without another run.
+    species = []
+    for name, grp in wp.groupby("SpeciesID"):
+        colour = colours.get(name.casefold())
+        if colour is None:
+            log.warning(f"  '{name}' has no symbol in the web map — it does not draw on the map")
+        species.append({
+            "name":      name,
+            "colour":    colour,
+            "rpmp":      bool(grp["_rpmp"].any()),
+            "total":     int(len(grp)),
+            "areaSqm":   int(round(float(grp["Size_sqm"].sum()))),
+            "byFy":      {f: int((grp["FinYr"] == f).sum()) for f in fys},
+            "areaByFy":  {f: int(round(float(grp.loc[grp["FinYr"] == f, "Size_sqm"].sum()))) for f in fys},
+        })
+    species.sort(key=lambda s: -s["total"])
+
+    log.info(
+        f"  FY {fy}: {current['records']} records, {current['species']} species, "
+        f"{current['areaSqm']:,} m², {current['km']} km, {current['controlledPct']}% controlled"
+    )
+
+    fy_start = 2000 + int(fy[:2])
+    now = datetime.datetime.now()
+    return {
+        "generated": f"{now.day} {now:%b %Y}",
+        "fy":        fy,
+        "fyLabel":   f"{fy_start}-{fy[3:]}",
+        "fyWanted":  wanted,
+        "fys":       fys,
+        "contractor": wp["Cont_name"].mode().iloc[0] if "Cont_name" in wp.columns and wp["Cont_name"].notna().any() else None,
+        "current":   current,
+        "byFy":      by_fy,
+        "allYears":  summarise(wp, pl),
+        "species":   species,
+        "sizeKey":   symbology.get("sizeKey"),
+        "track":     symbology.get("track") or {"colour": None, "casing": None},
+        "titles":    symbology.get("titles") or {},
+    }
+
+
 # ── HTML injection ─────────────────────────────────────────────────────────────
 
 def _replace_block(html: str, start_marker: str, end_marker: str, new_content: str) -> str:
@@ -870,7 +1164,7 @@ def _replace_block(html: str, start_marker: str, end_marker: str, new_content: s
     replacement = rf"\g<1>{new_content}\g<2>"
     result, n = re.subn(pattern, replacement, html, flags=re.DOTALL)
     if n == 0:
-        log.warning(f"Marker /* {start_marker} */ not found in {HTML_PATH.name} — skipping")
+        log.warning(f"Marker /* {start_marker} */ not found — skipping")
     return result
 
 
@@ -904,32 +1198,62 @@ def inject_into_pco_html(pco: dict) -> None:
     log.info(f"Updated {PCO_HTML_PATH}")
 
 
+def inject_into_pest_plant_html(data: dict) -> None:
+    block = f"const PEST_PLANT_DATA = {json.dumps(data, indent=2, ensure_ascii=False)};"
+    for path in PEST_PLANT_HTML_PATHS:
+        if not path.exists():
+            log.warning(f"{path} does not exist — skipping.")
+            continue
+        html = path.read_text(encoding="utf-8")
+        html = _replace_block(html, "PEST_PLANT_DATA_START", "PEST_PLANT_DATA_END", block)
+        path.write_text(html, encoding="utf-8")
+        log.info(f"Updated {path}")
+
+
 # ── Main ───────────────────────────────────────────────────────────────────────
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Tōtara Reserve dashboard data export")
+    parser.add_argument(
+        "--only", choices=["river", "pco", "plants"],
+        help="Run one section only. Default runs all three.",
+    )
+    only = parser.parse_args().only
+
     log.info("=== Totara Reserve Data Export ===")
 
-    log.info("--- LAWA Recreational Water Quality ---")
-    df   = _get_lawa_dataframe()
-    swim = extract_swim_data(df)
+    if only in (None, "river"):
+        log.info("--- LAWA Recreational Water Quality ---")
+        df   = _get_lawa_dataframe()
+        swim = extract_swim_data(df)
 
-    log.info("--- Hilltop River Level / Flow ---")
-    river = extract_river_data()
+        log.info("--- Hilltop River Level / Flow ---")
+        river = extract_river_data()
 
-    log.info("--- Injecting into river-management.html ---")
-    inject_into_html(swim, river)
+        log.info("--- Injecting into river-management.html ---")
+        inject_into_html(swim, river)
 
-    log.info("--- PCO / Predator Control (requires ArcGIS Pro env) ---")
-    pco = extract_pco_data()
-    if pco:
-        log.info("--- Rodent Tracking Tunnel Index (TTI) ---")
-        tti = extract_tti_data()
-        if tti:
-            pco["tti"] = tti
-        log.info("--- Injecting into predator-control.html ---")
-        inject_into_pco_html(pco)
-    else:
-        log.warning("PCO data unavailable — predator-control.html not updated.")
+    if only in (None, "pco"):
+        log.info("--- PCO / Predator Control (requires ArcGIS Pro env) ---")
+        pco = extract_pco_data()
+        if pco:
+            log.info("--- Rodent Tracking Tunnel Index (TTI) ---")
+            tti = extract_tti_data()
+            if tti:
+                pco["tti"] = tti
+            log.info("--- Injecting into predator-control.html ---")
+            inject_into_pco_html(pco)
+        else:
+            log.warning("PCO data unavailable — predator-control.html not updated.")
+
+    if only in (None, "plants"):
+        log.info("--- Pest Plant Control (requires ArcGIS Pro env) ---")
+        plants = extract_pest_plant_data()
+        if plants:
+            inject_into_pest_plant_html(plants)
+        else:
+            log.warning("Pest plant data unavailable — pest-plant-*.html not updated.")
 
     log.info("=== Done ===")
 

@@ -90,7 +90,3 @@ KIA_WHARITE_GDB = r"\\gisdata\GIS\Department\Environmental_Management\Biodiversi
 # Rodent Tracking Tunnel Index spreadsheet, SharePoint-synced.
 # Columns 0-3 are Location / Date / Rat TTI / Mouse TTI, first sheet only.
 TOTARA_TTI_XLSX = r"C:\path\to\your\Rodent tracking indices ALL.xlsx"
-
-# Buffer distance in metres around the reserve polygon, used to split possum
-# bait stations into "in reserve" and "in the buffer zone".
-TOTARA_BUFFER_M = 300
