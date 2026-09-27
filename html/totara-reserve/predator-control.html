@@ -40,12 +40,48 @@
       font-family: 'Source Sans 3', sans-serif;
       background: var(--bg);
       color: var(--navy);
+      padding: 12px 16px 8px;
+      overflow-y: auto;
+    }
+
+    /* ── LAYOUT: full-page embed, 1111 × 686 (no map on this ExB page) ── */
+    #root {
+      height: 100%;
+      min-height: 600px;
       display: flex;
       flex-direction: column;
-      padding: 16px 18px 14px;
-      gap: 12px;
-      overflow-y: auto;
-      max-width: 860px;
+      gap: 10px;
+    }
+
+    .top-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1.15fr;
+      gap: 10px;
+    }
+
+    .bottom-row {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      min-height: 0;
+    }
+
+    .bottom-row .chart-card { display: flex; flex-direction: column; gap: 8px; }
+
+    .bait-pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .chart-note {
+      font-size: 0.72rem;
+      color: var(--muted);
+      line-height: 1.45;
+      margin-top: auto;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
     }
 
     /* ── SECTION LABELS ── */
@@ -259,14 +295,17 @@
     }
 
     .rtci-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
+      background: var(--bg);
       border-radius: 6px;
-      padding: 12px 16px;
+      padding: 6px 12px 7px;
       display: flex;
-      flex-direction: column;
-      gap: 4px;
+      flex-wrap: wrap;
+      align-items: baseline;
+      column-gap: 10px;
+      row-gap: 2px;
     }
+
+    .rtci-card .rtci-label { width: 100%; }
 
     .rtci-label {
       font-size: 10px;
@@ -316,7 +355,6 @@
     .deer-stats-row {
       display: flex;
       gap: 0;
-      margin-bottom: 12px;
     }
 
     .deer-stat {
@@ -341,16 +379,15 @@
     .deer-stat-label {
       font-size: 0.72rem;
       color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
+      line-height: 1.2;
     }
 
     .deer-note {
-      font-size: 0.8rem;
+      font-size: 0.76rem;
       color: var(--muted);
-      line-height: 1.5;
+      line-height: 1.45;
       border-top: 1px solid var(--border);
-      padding-top: 10px;
+      padding-top: 8px;
     }
 
     .deer-note strong { color: var(--navy); font-weight: 600; }
@@ -370,21 +407,23 @@
   <script>
     /* PCO_DATA_START */
 const PCO_DATA = {
-  "generated": "2026-04-30T15:16:11.298285",
+  "generated": "2026-09-24T09:56:50.160506",
   "bioTotara": {
-    "total": 157,
+    "total": 167,
     "byType": {
       "labels": [
         "DOC200",
         "DOC250",
         "Timms",
-        "Cage  "
+        "Cage",
+        "A24"
       ],
       "data": [
-        84,
-        41,
-        25,
-        7
+        83,
+        46,
+        24,
+        13,
+        1
       ]
     }
   },
@@ -405,7 +444,8 @@ const PCO_DATA = {
       "22-23",
       "23-24",
       "24-25",
-      "25-26"
+      "25-26",
+      "26-27"
     ],
     "species": [
       "Cat",
@@ -420,10 +460,11 @@ const PCO_DATA = {
     ],
     "data": {
       "Cat": [
-        4,
-        14,
+        3,
+        12,
         10,
         2,
+        3,
         1
       ],
       "Ferret": [
@@ -431,67 +472,231 @@ const PCO_DATA = {
         1,
         4,
         2,
+        1,
         0
       ],
       "Hedgehog": [
-        35,
-        112,
-        51,
         34,
-        27
+        107,
+        48,
+        34,
+        41,
+        0
       ],
       "Mouse": [
         0,
         3,
         1,
         0,
-        5
+        5,
+        0
       ],
       "Rabbit": [
         0,
         4,
         0,
         3,
-        1
+        1,
+        0
       ],
       "Rat": [
         13,
-        65,
-        115,
+        59,
+        112,
         87,
-        62
+        93,
+        6
       ],
       "Stoat": [
         1,
         16,
         3,
         8,
-        5
+        6,
+        2
       ],
       "Possum": [
         5,
-        24,
+        23,
         1,
-        14,
-        3
+        13,
+        3,
+        0
       ],
       "Weasel": [
         0,
         4,
-        8,
-        14,
-        16
+        7,
+        13,
+        20,
+        1
       ]
     }
   },
-  "tti": null,
   "possumBait": {
-    "withinReserve": null,
-    "withinBuffer": null,
-    "bufferM": 300,
+    "withinReserve": 672,
     "fills": {
-      "labels": [],
-      "fillCounts": {}
+      "labels": [
+        "23-24",
+        "24-25",
+        "25-26",
+        "26-27"
+      ],
+      "fillCounts": {
+        "DS Brodifacoum": [
+          938,
+          1092,
+          636,
+          4
+        ],
+        "Diphacinone": [
+          194,
+          105,
+          132,
+          34
+        ],
+        "Feratox DS Brodifacoum": [
+          67,
+          262,
+          398,
+          4
+        ],
+        "Feratox Prefeed Pellets": [
+          0,
+          4,
+          0,
+          0
+        ],
+        "Feratox SS Brodifacoum": [
+          0,
+          1,
+          1,
+          0
+        ],
+        "SS Brodifacoum": [
+          1,
+          0,
+          62,
+          0
+        ]
+      }
+    }
+  },
+  "tti": {
+    "latest": {
+      "date": "2025-08-01",
+      "rat": 14.0,
+      "mouse": 74.0
+    },
+    "history": {
+      "dates": [
+        "2010-11-01",
+        "2011-01-01",
+        "2011-03-01",
+        "2011-11-01",
+        "2012-01-01",
+        "2012-03-01",
+        "2012-12-01",
+        "2013-02-01",
+        "2013-03-01",
+        "2013-12-01",
+        "2014-01-01",
+        "2014-03-01",
+        "2014-11-01",
+        "2015-01-01",
+        "2015-03-01",
+        "2015-11-01",
+        "2016-01-01",
+        "2016-03-01",
+        "2020-11-01",
+        "2021-11-01",
+        "2022-02-01",
+        "2022-04-01",
+        "2022-08-01",
+        "2022-11-01",
+        "2023-04-01",
+        "2023-08-01",
+        "2023-11-01",
+        "2024-02-01",
+        "2024-05-01",
+        "2024-08-01",
+        "2024-11-01",
+        "2025-02-01",
+        "2025-05-01",
+        "2025-08-01"
+      ],
+      "rat": [
+        8.0,
+        17.5,
+        35.0,
+        15.0,
+        27.5,
+        25.0,
+        17.5,
+        22.5,
+        55.0,
+        12.5,
+        15.0,
+        22.5,
+        33.0,
+        45.0,
+        52.5,
+        33.0,
+        8.0,
+        15.0,
+        30.0,
+        6.0,
+        18.0,
+        36.0,
+        46.0,
+        28.0,
+        4.0,
+        12.0,
+        16.0,
+        4.0,
+        6.0,
+        22.0,
+        0.2,
+        0.2,
+        6.0,
+        14.0
+      ],
+      "mouse": [
+        23.0,
+        7.5,
+        7.5,
+        12.5,
+        5.0,
+        10.0,
+        15.0,
+        15.0,
+        32.5,
+        0.0,
+        5.0,
+        0.0,
+        22.8,
+        17.5,
+        22.5,
+        2.6,
+        5.3,
+        7.5,
+        4.0,
+        20.0,
+        34.0,
+        58.0,
+        46.0,
+        46.0,
+        44.0,
+        58.0,
+        58.0,
+        66.0,
+        84.0,
+        70.0,
+        57.0,
+        29.0,
+        71.0,
+        74.0
+      ]
     }
   }
 };
@@ -587,7 +792,7 @@ const PCO_DATA = {
       }
       maxVal = Math.max(maxVal, 1);
 
-      const W = 800, H = 200;
+      const W = 510, H = 235;
       const ml = 40, mr = 14, mt = 12, mb = 36;
       const cw = W - ml - mr, ch = H - mt - mb;
       const yOf = v => mt + ch - (v / maxVal) * ch;
@@ -648,7 +853,7 @@ const PCO_DATA = {
       }).join('');
 
       return `
-        <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;overflow:visible">
+        <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;overflow:visible">
           ${yGrids}
           ${bars}
           ${xLabels}
@@ -665,7 +870,7 @@ const PCO_DATA = {
       const mouVals = tti.history.mouse;
       const n = dates.length;
 
-      const W = 800, H = 180;
+      const W = 510, H = 165;
       const ml = 40, mr = 14, mt = 12, mb = 40;
       const cw = W - ml - mr, ch = H - mt - mb;
 
@@ -707,17 +912,19 @@ const PCO_DATA = {
         }).join('');
       }
 
-      let lastYr = null;
+      // One label per year, skipping any that would crowd the previous one —
+      // surveys are spaced by index, not date, so some years sit close together.
+      let lastYr = null, lastX = -Infinity;
       const xLabels = dates.map((dt, i) => {
         const yr = dt.getFullYear();
-        if (yr !== lastYr) { lastYr = yr;
+        if (yr !== lastYr && xOf(i) - lastX >= 26) { lastYr = yr; lastX = xOf(i);
           return `<text x="${xOf(i).toFixed(1)}" y="${H - 8}" text-anchor="middle"
                         font-size="9" fill="var(--caption)">${yr}</text>`;
         }
         return '';
       }).join('');
 
-      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;overflow:visible">
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;overflow:visible">
         ${yGrids}
         ${makeLine(ratVals, 'var(--c0)')}
         ${makeLine(mouVals, 'var(--c3)')}
@@ -743,14 +950,19 @@ const PCO_DATA = {
       const gen = d.generated ? d.generated.slice(0, 10) : '—';
       const pb = d.possumBait || {};
       const pRes = pb.withinReserve !== null && pb.withinReserve !== undefined ? pb.withinReserve : '—';
-      const pBuf = pb.withinBuffer  !== null && pb.withinBuffer  !== undefined ? pb.withinBuffer  : '—';
-      const pBufLabel = pb.bufferM ? `${pb.bufferM}m buffer` : 'buffer';
+      // Fill records per FY, summed across whatever the fill field's values are
+      const pf = pb.fills || {};
+      const pFills = {
+        labels: pf.labels || [],
+        data: (pf.labels || []).map((_, i) =>
+          Object.values(pf.fillCounts || {}).reduce((s, arr) => s + (arr[i] || 0), 0)),
+      };
 
       document.getElementById('root').innerHTML = `
 
-        <div class="section-label">Pest Animal Control and Monitoring</div>
+        <div class="section-label">Pest Animal Control and Monitoring &middot; T&#x14d;tara Reserve</div>
 
-        <div class="programme-row">
+        <div class="top-row">
           <div class="programme-card">
             <div class="prog-badge">Animal trapping</div>
             <div class="prog-total">${d.bioTotara.total || '—'}</div>
@@ -759,87 +971,21 @@ const PCO_DATA = {
           </div>
           <div class="programme-card">
             <div class="prog-badge">Bait Stations</div>
-            <div class="bait-type-rows">
-              <div class="bait-type-row">
-                <span class="bait-type-label">Vespex Bait Stations</span>
-                <span class="bait-type-count">${d.vespex.total || '—'}</span>
+            <div class="bait-pair">
+              <div>
+                <div class="prog-total">${d.vespex.total || '—'}</div>
+                <div class="prog-total-unit">Vespex Bait Stations</div>
               </div>
-              <div class="bait-type-row bait-type-row--group">
-                <div class="bait-group-header">
-                  <span class="bait-type-label">Possum Bait Stations</span>
-                  <span class="bait-group-buffer">${pBufLabel}</span>
-                </div>
-                <div class="bait-sub-rows">
-                  <div class="bait-sub-row">
-                    <span class="bait-sub-label">In reserve</span>
-                    <span class="bait-sub-count">${pRes}</span>
-                  </div>
-                  <div class="bait-sub-row">
-                    <span class="bait-sub-label">Buffer zone</span>
-                    <span class="bait-sub-count">${pBuf}</span>
-                  </div>
-                </div>
+              <div>
+                <div class="prog-total">${pRes}</div>
+                <div class="prog-total-unit">Possum Bait Stations</div>
               </div>
             </div>
+            <div class="bait-sub-label" style="margin-top:2px">Possum bait fills by financial year</div>
+            <div class="prog-type-list">${typeBarList(pFills)}</div>
           </div>
-        </div>
-
-        <div class="catches-section">
-          <div class="section-label">Animal Pest Catches &middot; By Financial Year</div>
-          <div class="chart-card">
-            <div class="catches-legend">${catchesLegend(d.catchesByFy.species)}</div>
-            ${catchesChart(d.catchesByFy)}
-          </div>
-        </div>
-
-        <div class="rtci-section">
-          <div class="section-label">Rodent Tracking Tunnel Index &middot; T&#x14d;tara Reserve</div>
-          ${(() => {
-            const t = d.tti;
-            if (!t || !t.latest) return '<div class="rtci-explainer" style="font-style:italic">Tracking tunnel data not yet loaded — run script to update.</div>';
-            const rPct  = t.latest.rat   !== null && t.latest.rat   !== undefined ? t.latest.rat   : null;
-            const mPct  = t.latest.mouse !== null && t.latest.mouse !== undefined ? t.latest.mouse : null;
-            const rCls  = ttiClass(rPct);
-            const mCls  = ttiClass(mPct);
-            const lDate = t.latest.date || '';
-            return `
-              <div class="rtci-row">
-                <div class="rtci-card">
-                  <div class="rtci-label">Rat TTI</div>
-                  <div class="rtci-val ${rCls}">${rPct !== null ? rPct + '%' : '—'}</div>
-                  <div class="rtci-unit">% of tunnels with rat footprints</div>
-                  <div class="rtci-grade ${rCls}">${ttiGrade(rPct)}</div>
-                  <div class="rtci-year">${lDate}</div>
-                </div>
-                <div class="rtci-card">
-                  <div class="rtci-label">Mouse TTI</div>
-                  <div class="rtci-val ${mCls}">${mPct !== null ? mPct + '%' : '—'}</div>
-                  <div class="rtci-unit">% of tunnels with mouse footprints</div>
-                  <div class="rtci-grade ${mCls}">${ttiGrade(mPct)}</div>
-                  <div class="rtci-year">${lDate}</div>
-                </div>
-              </div>
-              <div class="chart-card">
-                <div class="catches-legend">
-                  <div class="legend-item"><div class="legend-dot" style="background:var(--c0)"></div><span>Rat</span></div>
-                  <div class="legend-item"><div class="legend-dot" style="background:var(--c3)"></div><span>Mouse</span></div>
-                </div>
-                ${ttiChart(t)}
-              </div>`;
-          })()}
-          <div class="rtci-explainer">
-            <strong style="color:var(--navy)">What is TTI?</strong>
-            The Tracking Tunnel Index measures rodent activity — the percentage of tracking tunnels
-            showing rat or mouse footprints after a 24-hour exposure.
-            <strong style="color:var(--safe)">&lt;5%</strong> = low pressure &nbsp;·&nbsp;
-            <strong style="color:var(--caution)">5–25%</strong> = moderate &nbsp;·&nbsp;
-            <strong style="color:var(--unsafe)">&gt;25%</strong> = high pressure.
-          </div>
-        </div>
-
-        <div class="deer-section">
-          <div class="section-label">Deer Management &middot; Fallow Deer &middot; 2024 Season</div>
-          <div class="deer-card">
+          <div class="programme-card">
+            <div class="prog-badge">Deer Management &middot; Fallow Deer &middot; 2024 Season</div>
             <div class="deer-stats-row">
               <div class="deer-stat">
                 <div class="deer-stat-val">3</div>
@@ -866,9 +1012,56 @@ const PCO_DATA = {
           </div>
         </div>
 
+        <div class="bottom-row">
+          <div class="chart-card">
+            <div class="prog-badge">Animal Pest Catches &middot; By Financial Year</div>
+            <div class="catches-legend">${catchesLegend(d.catchesByFy.species)}</div>
+            ${catchesChart(d.catchesByFy)}
+          </div>
+
+          <div class="chart-card">
+            <div class="prog-badge">Rodent Tracking Tunnel Index</div>
+            ${(() => {
+              const t = d.tti;
+              if (!t || !t.latest) return '<div class="chart-note" style="font-style:italic">Tracking tunnel data not yet loaded — run script to update.</div>';
+              const rPct  = t.latest.rat   !== null && t.latest.rat   !== undefined ? t.latest.rat   : null;
+              const mPct  = t.latest.mouse !== null && t.latest.mouse !== undefined ? t.latest.mouse : null;
+              const rCls  = ttiClass(rPct);
+              const mCls  = ttiClass(mPct);
+              const lDate = t.latest.date || '';
+              return `
+                <div class="rtci-row">
+                  <div class="rtci-card">
+                    <div class="rtci-label">Rat TTI &middot; ${lDate}</div>
+                    <div class="rtci-val ${rCls}">${rPct !== null ? rPct + '%' : '—'}</div>
+                    <div class="rtci-grade ${rCls}">${ttiGrade(rPct)}</div>
+                  </div>
+                  <div class="rtci-card">
+                    <div class="rtci-label">Mouse TTI &middot; ${lDate}</div>
+                    <div class="rtci-val ${mCls}">${mPct !== null ? mPct + '%' : '—'}</div>
+                    <div class="rtci-grade ${mCls}">${ttiGrade(mPct)}</div>
+                  </div>
+                </div>
+                <div class="catches-legend" style="margin-bottom:0">
+                  <div class="legend-item"><div class="legend-dot" style="background:var(--c0)"></div><span>Rat</span></div>
+                  <div class="legend-item"><div class="legend-dot" style="background:var(--c3)"></div><span>Mouse</span></div>
+                </div>
+                ${ttiChart(t)}`;
+            })()}
+            <div class="chart-note">
+              <strong style="color:var(--navy)">What is TTI?</strong>
+              The Tracking Tunnel Index measures rodent activity — the percentage of tracking tunnels
+              showing rat or mouse footprints after a 24-hour exposure.
+              <strong style="color:var(--safe)">&lt;5%</strong> = low pressure &nbsp;·&nbsp;
+              <strong style="color:var(--caution)">5–25%</strong> = moderate &nbsp;·&nbsp;
+              <strong style="color:var(--unsafe)">&gt;25%</strong> = high pressure.
+            </div>
+          </div>
+        </div>
+
         <div class="dash-footer">
           <span>Trap data: Animal Pest Control Layer (AGOL) &middot; downloaded ${gen}</span>
-          <span>RTCI: PCO Management Dataset (AGOL) &middot; downloaded ${gen}</span>
+          <span>TTI: Rodent tracking indices spreadsheet &middot; updated ${gen}</span>
         </div>
       `;
     }
