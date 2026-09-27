@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pest Plant Control · Tōtara Reserve</title>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* Same tokens as predator-control.html */
+    :root {
+      --navy:       #1f2e35;
+      --bg:         #f4f0ef;
+      --surface:    #ffffff;
+      --border:     #ddddd8;
+      --muted:      #5a5a52;
+      --caption:    #888880;
+      --forest:     #2d6a4f;
+      --forest-lt:  #eaf3ee;
+
+      /* Control outcome — status colours, always shown with a text label */
+      --ok:         #2d6a4f;
+      --part:       #c08a1e;
+      --not:        #9b2226;
+      --none:       #c9c7c0;
+
+      /* Age class — one hue, dark to light */
+      --age-a:      #1b4332;
+      --age-j:      #52b788;
+      --age-s:      #b7e4c7;
+    }
+
+    html, body { height: 100%; }
+
+    body {
+      font-family: 'Source Sans 3', sans-serif;
+      background: var(--bg);
+      color: var(--navy);
+      display: flex;
+      flex-direction: column;
+      padding: 12px 16px 10px;
+      gap: 10px;
+      overflow: hidden;
+    }
+
+    /* ── TABS ── */
+    .tabs {
+      display: flex;
+      gap: 2px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .tab {
+      font: inherit;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--caption);
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      padding: 4px 12px 7px;
+      margin-bottom: -1px;
+      cursor: pointer;
+    }
+
+    .tab:hover { color: var(--navy); }
+    .tab[aria-selected="true"] { color: var(--forest); border-bottom-color: var(--forest); }
+
+    .panel { display: none; flex: 1; min-height: 0; flex-direction: column; gap: 10px; }
+    .panel.active { display: flex; }
+
+    /* ── CONTROLS ── */
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .seg {
+      display: inline-flex;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 2px;
+    }
+
+    .seg button {
+      font: inherit;
+      font-size: 0.74rem;
+      font-weight: 500;
+      color: var(--muted);
+      background: none;
+      border: none;
+      border-radius: 3px;
+      padding: 3px 8px;
+      cursor: pointer;
+    }
+
+    .seg button:hover { color: var(--navy); }
+    .seg button[aria-pressed="true"] { background: var(--forest); color: #fff; }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 0;
+    }
+
+    .card-title {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--caption);
+    }
+
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .card-sub { font-size: 0.72rem; color: var(--caption); }
+
+    /* ── SPECIES BARS ── */
+    .species-card { flex: 1; }
+
+    .species-list {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      overflow-y: auto;
+      min-height: 0;
+      padding-right: 2px;
+    }
+
+    .sp-row {
+      display: grid;
+      grid-template-columns: 158px 1fr 64px;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.78rem;
+      min-height: 18px;
+      border-radius: 3px;
+    }
+
+    .sp-row:hover { background: var(--forest-lt); }
+
+    .sp-name {
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .sp-track { height: 10px; }
+
+    .sp-bar {
+      height: 100%;
+      min-width: 3px;
+      border-radius: 0 4px 4px 0;
+      box-shadow: inset 0 0 0 1px rgba(31, 46, 53, 0.28);
+    }
+
+    /* A species the map has no symbol for — it does not draw on the map */
+    .sp-bar.unmapped {
+      background: repeating-linear-gradient(45deg, #b8b6ae 0 3px, #ecebe6 3px 6px);
+    }
+
+    .sp-val { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+
+    .note { font-size: 0.72rem; color: var(--caption); line-height: 1.4; }
+
+    /* ── SMALL MULTIPLES ── */
+    .multiples {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 10px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .mini-val { font-size: 1.35rem; font-weight: 300; line-height: 1; }
+    .mini-val small { font-size: 0.72rem; color: var(--muted); font-weight: 400; margin-left: 2px; }
+
+    .mini-chart { flex: 1; min-height: 0; }
+    .mini-chart svg { display: block; width: 100%; height: 100%; overflow: visible; }
+
+    /* ── STACKED ROWS ── */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 14px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.74rem;
+      color: var(--muted);
+    }
+
+    .legend-sw { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+    .stack-rows { display: flex; flex-direction: column; gap: 6px; }
+
+    .stack-row {
+      display: grid;
+      grid-template-columns: 38px 1fr 44px;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.76rem;
+    }
+
+    .stack-fy { color: var(--muted); font-variant-numeric: tabular-nums; }
+    .stack-fy.current { color: var(--navy); font-weight: 700; }
+
+    .stack-bar { display: flex; gap: 2px; height: 14px; }
+    .stack-seg { height: 100%; }
+    .stack-seg:first-child { border-radius: 4px 0 0 4px; }
+    .stack-seg:last-child  { border-radius: 0 4px 4px 0; }
+    .stack-seg:only-child  { border-radius: 4px; }
+
+    .stack-end { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+    /* ── TOOLTIP ── */
+    .tip {
+      position: fixed;
+      pointer-events: none;
+      background: var(--navy);
+      color: #fff;
+      font-size: 0.74rem;
+      line-height: 1.4;
+      padding: 6px 9px;
+      border-radius: 4px;
+      max-width: 240px;
+      z-index: 10;
+      opacity: 0;
+      transition: opacity 0.08s;
+    }
+
+    .tip.show { opacity: 1; }
+    .tip b { font-weight: 600; }
+
+    /* ── FOOTER ── */
+    .dash-footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.68rem;
+      color: var(--caption);
+      flex-shrink: 0;
+      gap: 8px;
+    }
+  </style>
+
+  <script>
+    /* PEST_PLANT_DATA_START */
+const PEST_PLANT_DATA = {
+  "generated": "28 Sep 2026",
+  "fy": "25-26",
+  "fyLabel": "2025-26",
+  "fyWanted": "25-26",
+  "fys": [
+    "21-22",
+    "22-23",
+    "23-24",
+    "24-25",
+    "25-26"
+  ],
+  "contractor": "Kaitiaki o Ngahere",
+  "current": {
+    "records": 1752,
+    "species": 15,
+    "areaSqm": 17372,
+    "km": 470.4,
+    "tracks": 42,
+    "days": 39,
+    "rpmp": 1596,
+    "controlled": 1598,
+    "partial": 52,
+    "notControlled": 100,
+    "unrecorded": 2,
+    "controlledPct": 91,
+    "age": {
+      "A": 576,
+      "J": 684,
+      "S": 492
+    },
+    "fy": "25-26"
+  },
+  "byFy": [
+    {
+      "records": 324,
+      "species": 10,
+      "areaSqm": 8568,
+      "km": 361.2,
+      "tracks": 62,
+      "days": 25,
+      "rpmp": 310,
+      "controlled": 293,
+      "partial": 14,
+      "notControlled": 15,
+      "unrecorded": 2,
+      "controlledPct": 91,
+      "age": {
+        "A": 173,
+        "J": 117,
+        "S": 34
+      },
+      "fy": "21-22"
+    },
+    {
+      "records": 502,
+      "species": 9,
+      "areaSqm": 11373,
+      "km": 463.8,
+      "tracks": 94,
+      "days": 33,
+      "rpmp": 490,
+      "controlled": 240,
+      "partial": 17,
+      "notControlled": 39,
+      "unrecorded": 206,
+      "controlledPct": 81,
+      "age": {
+        "A": 356,
+        "J": 120,
+        "S": 26
+      },
+      "fy": "22-23"
+    },
+    {
+      "records": 602,
+      "species": 17,
+      "areaSqm": 8008,
+      "km": 395.0,
+      "tracks": 85,
+      "days": 33,
+      "rpmp": 530,
+      "controlled": 508,
+      "partial": 19,
+      "notControlled": 66,
+      "unrecorded": 9,
+      "controlledPct": 86,
+      "age": {
+        "A": 293,
+        "J": 215,
+        "S": 94
+      },
+      "fy": "23-24"
+    },
+    {
+      "records": 1149,
+      "species": 16,
+      "areaSqm": 21101,
+      "km": 554.9,
+      "tracks": 154,
+      "days": 35,
+      "rpmp": 1053,
+      "controlled": 1090,
+      "partial": 18,
+      "notControlled": 36,
+      "unrecorded": 5,
+      "controlledPct": 95,
+      "age": {
+        "A": 485,
+        "J": 466,
+        "S": 198
+      },
+      "fy": "24-25"
+    },
+    {
+      "records": 1752,
+      "species": 15,
+      "areaSqm": 17372,
+      "km": 470.4,
+      "tracks": 42,
+      "days": 39,
+      "rpmp": 1596,
+      "controlled": 1598,
+      "partial": 52,
+      "notControlled": 100,
+      "unrecorded": 2,
+      "controlledPct": 91,
+      "age": {
+        "A": 576,
+        "J": 684,
+        "S": 492
+      },
+      "fy": "25-26"
+    }
+  ],
+  "allYears": {
+    "records": 4329,
+    "species": 27,
+    "areaSqm": 66422,
+    "km": 2245.3,
+    "tracks": 437,
+    "days": 156,
+    "rpmp": 3979,
+    "controlled": 3729,
+    "partial": 120,
+    "notControlled": 256,
+    "unrecorded": 224,
+    "controlledPct": 91,
+    "age": {
+      "A": 1883,
+      "J": 1602,
+      "S": 844
+    }
+  },
+  "species": [
+    {
+      "name": "Banana passionfruit",
+      "colour": "#ffeb0a",
+      "rpmp": true,
+      "total": 2554,
+      "areaSqm": 41638,
+      "byFy": {
+        "21-22": 202,
+        "22-23": 373,
+        "23-24": 353,
+        "24-25": 784,
+        "25-26": 842
+      },
+      "areaByFy": {
+        "21-22": 5475,
+        "22-23": 8975,
+        "23-24": 4280,
+        "24-25": 13090,
+        "25-26": 9818
+      }
+    },
+    {
+      "name": "Cathedral Bells",
+      "colour": "#e647ae",
+      "rpmp": true,
+      "total": 1177,
+      "areaSqm": 9951,
+      "byFy": {
+        "21-22": 74,
+        "22-23": 109,
+        "23-24": 155,
+        "24-25": 181,
+        "25-26": 658
+      },
+      "areaByFy": {
+        "21-22": 2793,
+        "22-23": 2055,
+        "23-24": 1380,
+        "24-25": 1293,
+        "25-26": 2430
+      }
+    },
+    {
+      "name": "Old man's beard",
+      "colour": "#eaebe0",
+      "rpmp": true,
+      "total": 235,
+      "areaSqm": 3338,
+      "byFy": {
+        "21-22": 24,
+        "22-23": 8,
+        "23-24": 22,
+        "24-25": 87,
+        "25-26": 94
+      },
+      "areaByFy": {
+        "21-22": 220,
+        "22-23": 99,
+        "23-24": 291,
+        "24-25": 2086,
+        "25-26": 642
+      }
+    },
+    {
+      "name": "Blue Morning Glory",
+      "colour": "#667aff",
+      "rpmp": false,
+      "total": 101,
+      "areaSqm": 2449,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 27,
+        "25-26": 74
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 1521,
+        "25-26": 928
+      }
+    },
+    {
+      "name": "English Ivy",
+      "colour": "#57e04a",
+      "rpmp": false,
+      "total": 75,
+      "areaSqm": 1327,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 4,
+        "23-24": 10,
+        "24-25": 27,
+        "25-26": 34
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 170,
+        "23-24": 638,
+        "24-25": 77,
+        "25-26": 442
+      }
+    },
+    {
+      "name": "Tradescantia",
+      "colour": "#fdb8ff",
+      "rpmp": false,
+      "total": 47,
+      "areaSqm": 1324,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 33,
+        "24-25": 2,
+        "25-26": 12
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 949,
+        "24-25": 45,
+        "25-26": 330
+      }
+    },
+    {
+      "name": "Japanese honeysuckle",
+      "colour": "#73dcfc",
+      "rpmp": false,
+      "total": 27,
+      "areaSqm": 354,
+      "byFy": {
+        "21-22": 1,
+        "22-23": 2,
+        "23-24": 2,
+        "24-25": 10,
+        "25-26": 12
+      },
+      "areaByFy": {
+        "21-22": 6,
+        "22-23": 2,
+        "23-24": 30,
+        "24-25": 270,
+        "25-26": 46
+      }
+    },
+    {
+      "name": "Blackberry",
+      "colour": "#f7508a",
+      "rpmp": false,
+      "total": 22,
+      "areaSqm": 3829,
+      "byFy": {
+        "21-22": 2,
+        "22-23": 0,
+        "23-24": 4,
+        "24-25": 10,
+        "25-26": 6
+      },
+      "areaByFy": {
+        "21-22": 6,
+        "22-23": 0,
+        "23-24": 28,
+        "24-25": 2355,
+        "25-26": 1440
+      }
+    },
+    {
+      "name": "Cotoneaster",
+      "colour": "#2f8f37",
+      "rpmp": false,
+      "total": 17,
+      "areaSqm": 301,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 1,
+        "23-24": 8,
+        "24-25": 8,
+        "25-26": 0
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 50,
+        "23-24": 111,
+        "24-25": 140,
+        "25-26": 0
+      }
+    },
+    {
+      "name": "Jasmine",
+      "colour": "#da63f7",
+      "rpmp": false,
+      "total": 16,
+      "areaSqm": 780,
+      "byFy": {
+        "21-22": 5,
+        "22-23": 1,
+        "23-24": 3,
+        "24-25": 3,
+        "25-26": 4
+      },
+      "areaByFy": {
+        "21-22": 34,
+        "22-23": 5,
+        "23-24": 120,
+        "24-25": 119,
+        "25-26": 502
+      }
+    },
+    {
+      "name": "Gunnera",
+      "colour": "#adffe2",
+      "rpmp": true,
+      "total": 10,
+      "areaSqm": 16,
+      "byFy": {
+        "21-22": 10,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 0,
+        "25-26": 0
+      },
+      "areaByFy": {
+        "21-22": 16,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 0,
+        "25-26": 0
+      }
+    },
+    {
+      "name": "Smilax spp.",
+      "colour": "#d9d9d9",
+      "rpmp": false,
+      "total": 10,
+      "areaSqm": 28,
+      "byFy": {
+        "21-22": 4,
+        "22-23": 3,
+        "23-24": 1,
+        "24-25": 0,
+        "25-26": 2
+      },
+      "areaByFy": {
+        "21-22": 5,
+        "22-23": 12,
+        "23-24": 1,
+        "24-25": 0,
+        "25-26": 10
+      }
+    },
+    {
+      "name": "Himalayan Honeysuckle",
+      "colour": "#f1fab4",
+      "rpmp": false,
+      "total": 6,
+      "areaSqm": 57,
+      "byFy": {
+        "21-22": 1,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 5,
+        "25-26": 0
+      },
+      "areaByFy": {
+        "21-22": 10,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 47,
+        "25-26": 0
+      }
+    },
+    {
+      "name": "Tutsan",
+      "colour": "#e18a85",
+      "rpmp": false,
+      "total": 6,
+      "areaSqm": 33,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 4,
+        "24-25": 0,
+        "25-26": 2
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 31,
+        "24-25": 0,
+        "25-26": 2
+      }
+    },
+    {
+      "name": "Bindweed",
+      "colour": "#e1f66a",
+      "rpmp": false,
+      "total": 4,
+      "areaSqm": 320,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 0,
+        "25-26": 4
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 0,
+        "25-26": 320
+      }
+    },
+    {
+      "name": "Field horsetail",
+      "colour": "#a5c794",
+      "rpmp": false,
+      "total": 4,
+      "areaSqm": 448,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 0,
+        "25-26": 4
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 0,
+        "25-26": 448
+      }
+    },
+    {
+      "name": "Boneseed",
+      "colour": "#bffc69",
+      "rpmp": true,
+      "total": 3,
+      "areaSqm": 15,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 1,
+        "25-26": 2
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 5,
+        "25-26": 10
+      }
+    },
+    {
+      "name": "African Club Moss",
+      "colour": "#00ff0d",
+      "rpmp": false,
+      "total": 2,
+      "areaSqm": 55,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 1,
+        "24-25": 1,
+        "25-26": 0
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 5,
+        "24-25": 50,
+        "25-26": 0
+      }
+    },
+    {
+      "name": "Holly",
+      "colour": "#ebde89",
+      "rpmp": false,
+      "total": 2,
+      "areaSqm": 6,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 1,
+        "23-24": 0,
+        "24-25": 1,
+        "25-26": 0
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 5,
+        "23-24": 0,
+        "24-25": 1,
+        "25-26": 0
+      }
+    },
+    {
+      "name": "Inkweed",
+      "colour": "#e1b8e5",
+      "rpmp": false,
+      "total": 2,
+      "areaSqm": 4,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 0,
+        "25-26": 2
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 0,
+        "25-26": 4
+      }
+    },
+    {
+      "name": "Pampas",
+      "colour": "#dbd0a7",
+      "rpmp": false,
+      "total": 2,
+      "areaSqm": 16,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 2,
+        "24-25": 0,
+        "25-26": 0
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 16,
+        "24-25": 0,
+        "25-26": 0
+      }
+    },
+    {
+      "name": "Willow",
+      "colour": "#c49192",
+      "rpmp": false,
+      "total": 2,
+      "areaSqm": 6,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 1,
+        "24-25": 1,
+        "25-26": 0
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 5,
+        "24-25": 1,
+        "25-26": 0
+      }
+    },
+    {
+      "name": "Barberry",
+      "colour": "#ffba5b",
+      "rpmp": false,
+      "total": 1,
+      "areaSqm": 3,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 1,
+        "24-25": 0,
+        "25-26": 0
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 3,
+        "24-25": 0,
+        "25-26": 0
+      }
+    },
+    {
+      "name": "Equisetum spp.",
+      "colour": "#8ca367",
+      "rpmp": false,
+      "total": 1,
+      "areaSqm": 100,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 1,
+        "24-25": 0,
+        "25-26": 0
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 100,
+        "24-25": 0,
+        "25-26": 0
+      }
+    },
+    {
+      "name": "Licorice Plant",
+      "colour": "#c5cfe2",
+      "rpmp": false,
+      "total": 1,
+      "areaSqm": 3,
+      "byFy": {
+        "21-22": 1,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 0,
+        "25-26": 0
+      },
+      "areaByFy": {
+        "21-22": 3,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 0,
+        "25-26": 0
+      }
+    },
+    {
+      "name": "Other",
+      "colour": null,
+      "rpmp": false,
+      "total": 1,
+      "areaSqm": 20,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 1,
+        "24-25": 0,
+        "25-26": 0
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 20,
+        "24-25": 0,
+        "25-26": 0
+      }
+    },
+    {
+      "name": "Sycamore",
+      "colour": "#6a909c",
+      "rpmp": false,
+      "total": 1,
+      "areaSqm": 1,
+      "byFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 1,
+        "25-26": 0
+      },
+      "areaByFy": {
+        "21-22": 0,
+        "22-23": 0,
+        "23-24": 0,
+        "24-25": 1,
+        "25-26": 0
+      }
+    }
+  ],
+  "sizeKey": {
+    "field": "Size_sqm",
+    "minValue": 1,
+    "maxValue": 500,
+    "minSize": 3.75,
+    "maxSize": 18.75
+  },
+  "track": {
+    "colour": "#d8d7db",
+    "casing": "#000000"
+  },
+  "titles": {
+    "group": "Tōtara Reserve Pest Plant Control",
+    "points": "Pest Plant Species",
+    "tracks": "Pest Plant Control Tracks"
+  }
+};
+    /* PEST_PLANT_DATA_END */
+  </script>
+</head>
+<body>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" data-tab="species" aria-selected="true">Species</button>
+    <button class="tab" role="tab" data-tab="time" aria-selected="false">Over time</button>
+    <button class="tab" role="tab" data-tab="outcome" aria-selected="false">Outcome &amp; age</button>
+  </nav>
+
+  <!-- SPECIES -->
+  <section class="panel active" id="panel-species">
+    <div class="controls">
+      <div class="seg" id="fy-seg" aria-label="Financial year"></div>
+      <div class="seg" id="metric-seg" aria-label="Measure">
+        <button data-metric="records" aria-pressed="true">Records</button>
+        <button data-metric="area" aria-pressed="false">Area m²</button>
+      </div>
+    </div>
+    <div class="card species-card">
+      <div class="card-head">
+        <span class="card-title" id="species-title">Weed records by species</span>
+        <span class="card-sub" id="species-sub"></span>
+      </div>
+      <div class="species-list" id="species-list"></div>
+      <p class="note" id="species-note"></p>
+    </div>
+  </section>
+
+  <!-- OVER TIME -->
+  <section class="panel" id="panel-time">
+    <div class="multiples" id="multiples"></div>
+  </section>
+
+  <!-- OUTCOME & AGE -->
+  <section class="panel" id="panel-outcome">
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Control outcome</span>
+        <span class="card-sub">share of weed records, by year</span>
+      </div>
+      <div class="legend" id="outcome-legend"></div>
+      <div class="stack-rows" id="outcome-rows"></div>
+      <p class="note" id="outcome-note"></p>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Age class</span>
+        <span class="card-sub">share of weed records, by year</span>
+      </div>
+      <div class="legend" id="age-legend"></div>
+      <div class="stack-rows" id="age-rows"></div>
+      <p class="note">More seedlings and juveniles than adults means control is reaching plants before they seed.</p>
+    </div>
+  </section>
+
+  <footer class="dash-footer">
+    <span id="footer-source">Source: Tōtara Reserve Contractor Data (AGOL)</span>
+    <span id="footer-date"></span>
+  </footer>
+
+  <div class="tip" id="tip"></div>
+
+<script>
+(function () {
+  const D = PEST_PLANT_DATA;
+  if (!D) { document.body.insertAdjacentHTML('afterbegin', '<p class="note">No data yet — run the export script.</p>'); return; }
+
+  const fmt = n => n == null ? '–' : Number(n).toLocaleString('en-NZ');
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const fyLong = fy => `20${fy.slice(0, 2)}-${fy.slice(3)}`;
+
+  // ── Tooltip ──────────────────────────────────────────────────────────────
+  const tip = document.getElementById('tip');
+  function bindTip(el, html) {
+    el.addEventListener('mousemove', e => {
+      tip.innerHTML = html;
+      tip.classList.add('show');
+      const w = tip.offsetWidth, h = tip.offsetHeight;
+      let x = e.clientX + 12, y = e.clientY + 12;
+      if (x + w > window.innerWidth - 4)  x = e.clientX - w - 12;
+      if (y + h > window.innerHeight - 4) y = e.clientY - h - 12;
+      tip.style.left = x + 'px';
+      tip.style.top  = y + 'px';
+    });
+    el.addEventListener('mouseleave', () => tip.classList.remove('show'));
+  }
+
+  // ── Tabs ─────────────────────────────────────────────────────────────────
+  document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', b === btn));
+    document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + btn.dataset.tab));
+    if (btn.dataset.tab === 'time') drawMultiples();   // needs its real size
+  }));
+
+  // ── Species ──────────────────────────────────────────────────────────────
+  let spFy = D.fy, spMetric = 'records';
+
+  const fySeg = document.getElementById('fy-seg');
+  fySeg.innerHTML = D.fys.map(f => `<button data-fy="${f}">${f}</button>`).join('') +
+                    `<button data-fy="all">All years</button>`;
+
+  function setPressed(seg, attr, val) {
+    seg.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset[attr] === val));
+  }
+
+  fySeg.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    spFy = b.dataset.fy; drawSpecies();
+  });
+  document.getElementById('metric-seg').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    spMetric = b.dataset.metric; drawSpecies();
+  });
+
+  function drawSpecies() {
+    setPressed(fySeg, 'fy', spFy);
+    setPressed(document.getElementById('metric-seg'), 'metric', spMetric);
+
+    const value = s => spMetric === 'records'
+      ? (spFy === 'all' ? s.total   : s.byFy[spFy]     || 0)
+      : (spFy === 'all' ? s.areaSqm : s.areaByFy[spFy] || 0);
+    const count = s => spFy === 'all' ? s.total   : s.byFy[spFy]     || 0;
+    const area  = s => spFy === 'all' ? s.areaSqm : s.areaByFy[spFy] || 0;
+
+    const rows = D.species.map(s => ({ s, v: value(s) })).filter(r => r.v > 0).sort((a, b) => b.v - a.v);
+    const max  = Math.max(1, ...rows.map(r => r.v));
+    const unit = spMetric === 'records' ? '' : ' m²';
+
+    document.getElementById('species-title').textContent =
+      spMetric === 'records' ? 'Weed records by species' : 'Area of weed recorded by species';
+    document.getElementById('species-sub').textContent =
+      `${rows.length} species · ${spFy === 'all' ? D.fys[0] + ' to ' + D.fys[D.fys.length - 1] : 'FY ' + fyLong(spFy)}`;
+
+    const list = document.getElementById('species-list');
+    list.innerHTML = rows.map(({ s, v }) => {
+      const bar = s.colour
+        ? `<div class="sp-bar" style="width:${(v / max * 100).toFixed(1)}%;background:${s.colour}"></div>`
+        : `<div class="sp-bar unmapped" style="width:${(v / max * 100).toFixed(1)}%"></div>`;
+      return `<div class="sp-row"><span class="sp-name">${esc(s.name)}</span><div class="sp-track">${bar}</div><span class="sp-val">${fmt(v)}${unit}</span></div>`;
+    }).join('');
+
+    [...list.children].forEach((row, i) => {
+      const s = rows[i].s;
+      bindTip(row,
+        `<b>${esc(s.name)}</b><br>${fmt(count(s))} record${count(s) === 1 ? '' : 's'} · ${fmt(area(s))} m²` +
+        (s.rpmp ? '<br>RPMP species' : '') +
+        (s.colour ? '' : '<br><i>No symbol in the web map — not drawn on the map</i>'));
+    });
+
+    const unmapped = rows.filter(r => !r.s.colour).map(r => r.s.name);
+    document.getElementById('species-note').textContent =
+      'Bar colours match the map.' +
+      (unmapped.length ? ` Hatched: ${unmapped.join(', ')} — recorded, but has no map symbol so does not appear on the map.` : '');
+  }
+
+  // ── Over time: small multiples, one measure each ─────────────────────────
+  const MINIS = [
+    { key: 'records', title: 'Weed records',     unit: '' },
+    { key: 'areaSqm', title: 'Area of weed',     unit: 'm²' },
+    { key: 'km',      title: 'Tracks walked',    unit: 'km' },
+    { key: 'days',    title: 'Field days',       unit: '' },
+  ];
+
+  const multiples = document.getElementById('multiples');
+  multiples.innerHTML = MINIS.map(m => `
+    <div class="card">
+      <div class="card-head"><span class="card-title">${m.title}</span><span class="card-sub">by year</span></div>
+      <div class="mini-val">${fmt(Math.round(D.current[m.key]))}<small>${m.unit} in ${D.fy}</small></div>
+      <div class="mini-chart" data-key="${m.key}" data-unit="${m.unit}"></div>
+    </div>`).join('');
+
+  function drawMultiples() {
+    multiples.querySelectorAll('.mini-chart').forEach(el => {
+      const key = el.dataset.key, unit = el.dataset.unit;
+      const W = el.clientWidth, H = el.clientHeight;
+      if (!W || !H) return;
+      const padTop = 14, padBot = 16;
+      const vals = D.byFy.map(r => r[key] || 0);
+      const max  = Math.max(1, ...vals);
+      const n    = vals.length;
+      const slot = W / n;
+      const bw   = Math.min(34, slot * 0.56);
+      const plotH = H - padTop - padBot;
+
+      let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${key} by financial year">`;
+      svg += `<line x1="0" x2="${W}" y1="${H - padBot}" y2="${H - padBot}" stroke="var(--border)" />`;
+      D.byFy.forEach((r, i) => {
+        const v = vals[i];
+        const h = Math.max(v > 0 ? 2 : 0, v / max * plotH);
+        const x = i * slot + (slot - bw) / 2;
+        const y = H - padBot - h;
+        const cur = r.fy === D.fy;
+        const rr = Math.min(4, h / 2, bw / 2);
+        // Rounded top, square base on the baseline
+        const d = `M${x},${y + h} V${y + rr} Q${x},${y} ${x + rr},${y} H${x + bw - rr} Q${x + bw},${y} ${x + bw},${y + rr} V${y + h} Z`;
+        svg += `<path d="${d}" fill="var(--forest)" opacity="${cur ? 1 : 0.4}" />`;
+        svg += `<text x="${x + bw / 2}" y="${y - 4}" text-anchor="middle" font-size="10" fill="var(--muted)" font-weight="${cur ? 600 : 400}">${fmt(Math.round(v))}</text>`;
+        svg += `<text x="${x + bw / 2}" y="${H - 3}" text-anchor="middle" font-size="10" fill="${cur ? 'var(--navy)' : 'var(--caption)'}" font-weight="${cur ? 700 : 400}">${r.fy}</text>`;
+        svg += `<rect class="hit" data-i="${i}" x="${i * slot}" y="0" width="${slot}" height="${H}" fill="transparent" />`;
+      });
+      svg += '</svg>';
+      el.innerHTML = svg;
+      el.querySelectorAll('.hit').forEach(h => {
+        const r = D.byFy[+h.dataset.i];
+        bindTip(h, `<b>FY ${fyLong(r.fy)}</b><br>${fmt(Math.round(r[key] || 0))}${unit ? ' ' + unit : ''}`);
+      });
+    });
+  }
+
+  // ── Outcome & age: 100% stacked rows per year ────────────────────────────
+  function stacked(rowsEl, legendEl, parts, get) {
+    legendEl.innerHTML = parts.map(p =>
+      `<span class="legend-item"><span class="legend-sw" style="background:${p.colour}"></span>${p.label}</span>`).join('');
+
+    rowsEl.innerHTML = D.byFy.map(r => {
+      const counts = parts.map(p => get(r, p.key));
+      const total  = counts.reduce((a, b) => a + b, 0) || 1;
+      const segs = parts.map((p, i) => counts[i] > 0
+        ? `<div class="stack-seg" style="flex:${counts[i]};background:${p.colour}"></div>` : '').join('');
+      return `<div class="stack-row"><span class="stack-fy ${r.fy === D.fy ? 'current' : ''}">${r.fy}</span>` +
+             `<div class="stack-bar">${segs}</div><span class="stack-end">${fmt(total)}</span></div>`;
+    }).join('');
+
+    [...rowsEl.children].forEach((row, i) => {
+      const r = D.byFy[i];
+      const counts = parts.map(p => get(r, p.key));
+      const total  = counts.reduce((a, b) => a + b, 0) || 1;
+      bindTip(row, `<b>FY ${fyLong(r.fy)}</b><br>` + parts.map((p, j) =>
+        `${p.label}: ${fmt(counts[j])} (${Math.round(counts[j] / total * 100)}%)`).join('<br>'));
+    });
+  }
+
+  const OUTCOME = [
+    { key: 'controlled',    label: 'Controlled',           colour: 'var(--ok)' },
+    { key: 'partial',       label: 'Partially controlled', colour: 'var(--part)' },
+    { key: 'notControlled', label: 'Not controlled',       colour: 'var(--not)' },
+    { key: 'unrecorded',    label: 'Not recorded',         colour: 'var(--none)' },
+  ];
+  const AGE = [
+    { key: 'A', label: 'Adult',    colour: 'var(--age-a)' },
+    { key: 'J', label: 'Juvenile', colour: 'var(--age-j)' },
+    { key: 'S', label: 'Seedling', colour: 'var(--age-s)' },
+  ];
+
+  stacked(document.getElementById('outcome-rows'), document.getElementById('outcome-legend'), OUTCOME, (r, k) => r[k] || 0);
+  stacked(document.getElementById('age-rows'),     document.getElementById('age-legend'),     AGE,     (r, k) => (r.age || {})[k] || 0);
+
+  // Flag years where the outcome was mostly not written down, so a grey bar is
+  // not misread as a failure of control.
+  const gaps = D.byFy.filter(r => r.records && r.unrecorded / r.records > 0.1);
+  document.getElementById('outcome-note').textContent =
+    `${D.current.controlledPct}% of ${D.fy} records with an outcome noted were controlled.` +
+    (gaps.length ? ' ' + gaps.map(r => `${r.fy}: ${fmt(r.unrecorded)} records had no outcome noted.`).join(' ') : '');
+
+  // ── Footer ───────────────────────────────────────────────────────────────
+  if (D.contractor) document.getElementById('footer-source').textContent =
+    `Source: Tōtara Reserve Contractor Data (AGOL) · ${D.contractor}`;
+  document.getElementById('footer-date').textContent = `Updated ${D.generated}`;
+
+  drawSpecies();
+  window.addEventListener('resize', drawMultiples);
+
+  // #time or #outcome in the URL opens that tab
+  const start = document.querySelector(`.tab[data-tab="${location.hash.slice(1)}"]`);
+  if (start) start.click();
+})();
+</script>
+</body>
+</html>
