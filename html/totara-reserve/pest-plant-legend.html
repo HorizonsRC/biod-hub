@@ -86,10 +86,8 @@
       border: 1px solid #1a1a1a;
     }
 
-    .dot.unmapped { background: none; border: 1px dashed var(--caption); }
 
     .sp-name { color: var(--navy); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .sp.unmapped .sp-name { color: var(--caption); font-style: italic; }
     .sp-n { color: var(--caption); font-size: 0.72rem; font-variant-numeric: tabular-nums; }
 
     .size-key {
@@ -910,9 +908,10 @@ const PEST_PLANT_DATA = {
   if (T.tracks) document.getElementById('tracks-title').textContent = T.tracks;
 
   // Species, most records first. The map shows every year, so counts do too.
-  document.getElementById('species-list').innerHTML = D.species.map(s => s.colour
-    ? `<li class="sp"><span class="dot" style="background:${s.colour}"></span><span class="sp-name">${esc(s.name)}</span><span class="sp-n">${fmt(s.total)}</span></li>`
-    : `<li class="sp unmapped" title="Recorded, but the map has no symbol for it"><span class="dot unmapped"></span><span class="sp-name">${esc(s.name)} (not on map)</span><span class="sp-n">${fmt(s.total)}</span></li>`
+  // Only species with a map symbol: the legend describes the map, and species
+  // left unsymbolised (e.g. 'Other') are deliberately not shown on it.
+  document.getElementById('species-list').innerHTML = D.species.filter(s => s.colour).map(s =>
+    `<li class="sp"><span class="dot" style="background:${s.colour}"></span><span class="sp-name">${esc(s.name)}</span><span class="sp-n">${fmt(s.total)}</span></li>`
   ).join('');
 
   // Size key: same linear scale the map uses (sizeInfo, sizes in points).
