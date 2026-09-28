@@ -213,9 +213,14 @@
     .chart-card {
       background: var(--surface);
       border: 1px solid var(--border);
+      border-top: 3px solid var(--forest);
       border-radius: 6px;
-      padding: 14px 16px 10px;
+      padding: 12px 16px 10px;
     }
+
+    /* Charts are drawn to the pixel size of this box, so they fill the card */
+    .chart-host { flex: 1; min-height: 120px; position: relative; }
+    .chart-host > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 
     .catches-legend {
       display: flex;
@@ -853,7 +858,7 @@ const PCO_DATA = {
     }
 
     // ── Catches stacked bar chart (SVG) ───────────────────────────────────────
-    function catchesChart(catchesByFy) {
+    function catchesChart(catchesByFy, W = 350, H = 208) {
       const fys     = catchesByFy.labels  || [];
       const species = catchesByFy.species || [];
       const data    = catchesByFy.data    || {};
@@ -889,7 +894,6 @@ const PCO_DATA = {
       }
       maxVal = Math.max(maxVal, 1);
 
-      const W = 350, H = 208;
       const ml = 40, mr = 14, mt = 12, mb = 36;
       const cw = W - ml - mr, ch = H - mt - mb;
       const yOf = v => mt + ch - (v / maxVal) * ch;
@@ -904,7 +908,7 @@ const PCO_DATA = {
         return `<line x1="${ml}" y1="${y}" x2="${W - mr}" y2="${y}"
                       stroke="var(--border)" stroke-width="1"/>
                 <text x="${ml - 5}" y="${y + 3.5}" text-anchor="end"
-                      font-size="9" fill="var(--caption)">${t}</text>`;
+                      font-size="10" fill="var(--caption)">${t}</text>`;
       }).join('');
 
       // Stacked bars — one per FY, segments built bottom-up
@@ -946,11 +950,11 @@ const PCO_DATA = {
       const xLabels = fys.map((fy, fi) => {
         const x = ml + fi * groupW + groupW / 2;
         return `<text x="${x.toFixed(1)}" y="${H - 6}" text-anchor="middle"
-                      font-size="10" fill="var(--muted)">${fy}</text>`;
+                      font-size="11" fill="var(--muted)">${fy}</text>`;
       }).join('');
 
       return `
-        <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;overflow:visible">
+        <svg viewBox="0 0 ${W} ${H}">
           ${yGrids}
           ${bars}
           ${xLabels}
@@ -958,7 +962,7 @@ const PCO_DATA = {
     }
 
     // ── TTI line chart ────────────────────────────────────────────────────────
-    function ttiChart(tti) {
+    function ttiChart(tti, W = 350, H = 275) {
       if (!tti || !tti.history || !tti.history.dates || !tti.history.dates.length) {
         return '<p style="font-size:12px;color:var(--caption);padding:12px 0">No history data available.</p>';
       }
@@ -969,7 +973,6 @@ const PCO_DATA = {
       const mouVals = keep.map(i => tti.history.mouse[i]);
       const n = dates.length;
 
-      const W = 350, H = 275;
       const ml = 40, mr = 14, mt = 20, mb = 40;
       const cw = W - ml - mr, ch = H - mt - mb;
 
@@ -988,7 +991,7 @@ const PCO_DATA = {
       const yGrids = ticks.map(t => {
         const y = yOf(t);
         return `<line x1="${ml}" y1="${y}" x2="${W - mr}" y2="${y}" stroke="var(--border)" stroke-width="1"/>
-                <text x="${ml - 5}" y="${y + 3.5}" text-anchor="end" font-size="9" fill="var(--caption)">${t}%</text>`;
+                <text x="${ml - 5}" y="${y + 3.5}" text-anchor="end" font-size="10" fill="var(--caption)">${t}%</text>`;
       }).join('');
 
       function makeLine(vals, col) {
@@ -1019,10 +1022,10 @@ const PCO_DATA = {
       for (let yr = dates[0].getFullYear() + 1; yr <= dates[n - 1].getFullYear(); yr++) {
         const x = xAt(new Date(yr, 0, 1).getTime());
         xLabels.push(`<line x1="${x.toFixed(1)}" y1="${mt + ch}" x2="${x.toFixed(1)}" y2="${mt + ch + 4}" stroke="var(--border)" stroke-width="1"/>
-          <text x="${x.toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="9" fill="var(--caption)">${yr}</text>`);
+          <text x="${x.toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="10" fill="var(--caption)">${yr}</text>`);
       }
 
-      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;overflow:visible">
+      return `<svg viewBox="0 0 ${W} ${H}">
         ${yGrids}
         ${makeLine(ratVals, 'var(--c0)')}
         ${makeLine(mouVals, 'var(--c3)')}
@@ -1105,7 +1108,7 @@ const PCO_DATA = {
           <div class="chart-card grow">
             <div class="prog-badge">Animal Pest Catches &middot; By Financial Year</div>
             <div class="catches-legend">${catchesLegend(d.catchesByFy.species)}</div>
-            ${catchesChart(d.catchesByFy)}
+            <div class="chart-host" id="catches-host"></div>
           </div>
 
           <div class="programme-card">
@@ -1168,7 +1171,7 @@ const PCO_DATA = {
                   <div class="legend-item"><div class="legend-dot" style="background:var(--c0)"></div><span>Rat</span></div>
                   <div class="legend-item"><div class="legend-dot" style="background:var(--c3)"></div><span>Mouse</span></div>
                 </div>
-                ${ttiChart(t)}`;
+                <div class="chart-host" id="tti-host"></div>`;
             })()}
             <div class="chart-note">
               <strong style="color:var(--navy)">What is TTI?</strong>
@@ -1189,7 +1192,21 @@ const PCO_DATA = {
       `;
     }
 
-    document.addEventListener('DOMContentLoaded', render);
+    // Draw each chart at its box's real size, so the x-axis sits at the foot of
+    // the card whatever height the embed gives it.
+    function drawCharts() {
+      const d = PCO_DATA;
+      for (const [id, draw] of [
+        ['catches-host', (w, h) => catchesChart(d.catchesByFy, w, h)],
+        ['tti-host',     (w, h) => ttiChart(d.tti, w, h)],
+      ]) {
+        const host = document.getElementById(id);
+        if (host) host.innerHTML = draw(Math.round(host.clientWidth), Math.round(host.clientHeight));
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => { render(); drawCharts(); });
+    window.addEventListener('resize', drawCharts);
   </script>
 </head>
 <body>
