@@ -44,30 +44,27 @@
       overflow-y: auto;
     }
 
-    /* ── LAYOUT: full-page embed, 1111 × 686 (no map on this ExB page) ── */
+    /* ── LAYOUT: 1111 × 564 embed under the 1111 × 122 header strip ── */
     #root {
       height: 100%;
-      min-height: 600px;
+      min-height: 540px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
     }
 
-    .top-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1.15fr;
-      gap: 10px;
-    }
-
-    .bottom-row {
+    .cols {
       flex: 1;
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 0.85fr 1fr 1fr;
       gap: 10px;
       min-height: 0;
     }
 
-    .bottom-row .chart-card { display: flex; flex-direction: column; gap: 8px; }
+    .col { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+    .col > .grow { flex: 1; }
+
+    .chart-card { display: flex; flex-direction: column; gap: 8px; }
 
     .bait-pair {
       display: grid;
@@ -305,7 +302,7 @@
       row-gap: 2px;
     }
 
-    .rtci-card .rtci-label { width: 100%; }
+    .rtci-card .rtci-label, .rtci-card .rtci-grade { width: 100%; }
 
     .rtci-label {
       font-size: 10px;
@@ -407,7 +404,7 @@
   <script>
     /* PCO_DATA_START */
 const PCO_DATA = {
-  "generated": "2026-09-24T09:56:50.160506",
+  "generated": "2026-09-28T13:36:44.428056",
   "bioTotara": {
     "total": 167,
     "byType": {
@@ -584,9 +581,9 @@ const PCO_DATA = {
   },
   "tti": {
     "latest": {
-      "date": "2025-08-01",
-      "rat": 14.0,
-      "mouse": 74.0
+      "date": "2026-08-01",
+      "rat": 2.0,
+      "mouse": 42.0
     },
     "history": {
       "dates": [
@@ -612,9 +609,9 @@ const PCO_DATA = {
         "2021-11-01",
         "2022-02-01",
         "2022-04-01",
+        "2022-05-01",
         "2022-08-01",
         "2022-11-01",
-        "2023-04-01",
         "2023-08-01",
         "2023-11-01",
         "2024-02-01",
@@ -623,7 +620,11 @@ const PCO_DATA = {
         "2024-11-01",
         "2025-02-01",
         "2025-05-01",
-        "2025-08-01"
+        "2025-08-01",
+        "2025-11-01",
+        "2026-02-01",
+        "2026-05-01",
+        "2026-08-01"
       ],
       "rat": [
         8.0,
@@ -648,18 +649,22 @@ const PCO_DATA = {
         6.0,
         18.0,
         36.0,
+        36.0,
         46.0,
         28.0,
-        4.0,
-        12.0,
+        14.0,
         16.0,
         4.0,
-        6.0,
+        12.0,
         22.0,
-        0.2,
-        0.2,
+        0.0,
+        0.0,
         6.0,
-        14.0
+        14.0,
+        2.0,
+        6.0,
+        0.0,
+        2.0
       ],
       "mouse": [
         23.0,
@@ -684,18 +689,22 @@ const PCO_DATA = {
         20.0,
         34.0,
         58.0,
+        60.0,
+        56.0,
         46.0,
-        46.0,
-        44.0,
         58.0,
         58.0,
-        66.0,
+        64.0,
         84.0,
         70.0,
-        57.0,
-        29.0,
-        71.0,
-        74.0
+        56.0,
+        28.0,
+        70.0,
+        74.0,
+        46.0,
+        54.0,
+        58.0,
+        42.0
       ]
     }
   }
@@ -792,7 +801,7 @@ const PCO_DATA = {
       }
       maxVal = Math.max(maxVal, 1);
 
-      const W = 510, H = 235;
+      const W = 350, H = 200;
       const ml = 40, mr = 14, mt = 12, mb = 36;
       const cw = W - ml - mr, ch = H - mt - mb;
       const yOf = v => mt + ch - (v / maxVal) * ch;
@@ -870,8 +879,8 @@ const PCO_DATA = {
       const mouVals = tti.history.mouse;
       const n = dates.length;
 
-      const W = 510, H = 165;
-      const ml = 40, mr = 14, mt = 12, mb = 40;
+      const W = 350, H = 275;
+      const ml = 40, mr = 14, mt = 20, mb = 40;
       const cw = W - ml - mr, ch = H - mt - mb;
 
       const allV   = [...ratVals, ...mouVals].filter(v => v !== null && v !== undefined);
@@ -960,16 +969,15 @@ const PCO_DATA = {
 
       document.getElementById('root').innerHTML = `
 
-        <div class="section-label">Pest Animal Control and Monitoring &middot; T&#x14d;tara Reserve</div>
-
-        <div class="top-row">
+        <div class="cols">
+          <div class="col">
           <div class="programme-card">
             <div class="prog-badge">Animal trapping</div>
             <div class="prog-total">${d.bioTotara.total || '—'}</div>
             <div class="prog-total-unit">Traps installed</div>
             <div class="prog-type-list">${typeBarList(d.bioTotara.byType)}</div>
           </div>
-          <div class="programme-card">
+          <div class="programme-card grow">
             <div class="prog-badge">Bait Stations</div>
             <div class="bait-pair">
               <div>
@@ -984,6 +992,15 @@ const PCO_DATA = {
             <div class="bait-sub-label" style="margin-top:2px">Possum bait fills by financial year</div>
             <div class="prog-type-list">${typeBarList(pFills)}</div>
           </div>
+          </div>
+
+          <div class="col">
+          <div class="chart-card grow">
+            <div class="prog-badge">Animal Pest Catches &middot; By Financial Year</div>
+            <div class="catches-legend">${catchesLegend(d.catchesByFy.species)}</div>
+            ${catchesChart(d.catchesByFy)}
+          </div>
+
           <div class="programme-card">
             <div class="prog-badge">Deer Management &middot; Fallow Deer &middot; 2024 Season</div>
             <div class="deer-stats-row">
@@ -1010,16 +1027,10 @@ const PCO_DATA = {
               Staff to target the remote western edge of the reserve over summer.
             </div>
           </div>
-        </div>
-
-        <div class="bottom-row">
-          <div class="chart-card">
-            <div class="prog-badge">Animal Pest Catches &middot; By Financial Year</div>
-            <div class="catches-legend">${catchesLegend(d.catchesByFy.species)}</div>
-            ${catchesChart(d.catchesByFy)}
           </div>
 
-          <div class="chart-card">
+          <div class="col">
+          <div class="chart-card grow">
             <div class="prog-badge">Rodent Tracking Tunnel Index</div>
             ${(() => {
               const t = d.tti;
@@ -1028,7 +1039,7 @@ const PCO_DATA = {
               const mPct  = t.latest.mouse !== null && t.latest.mouse !== undefined ? t.latest.mouse : null;
               const rCls  = ttiClass(rPct);
               const mCls  = ttiClass(mPct);
-              const lDate = t.latest.date || '';
+              const lDate = t.latest.date ? new Date(t.latest.date).toLocaleDateString('en-NZ', { month: 'short', year: 'numeric' }) : '';
               return `
                 <div class="rtci-row">
                   <div class="rtci-card">
@@ -1057,11 +1068,12 @@ const PCO_DATA = {
               <strong style="color:var(--unsafe)">&gt;25%</strong> = high pressure.
             </div>
           </div>
+          </div>
         </div>
 
         <div class="dash-footer">
           <span>Trap data: Animal Pest Control Layer (AGOL) &middot; downloaded ${gen}</span>
-          <span>TTI: Rodent tracking indices spreadsheet &middot; updated ${gen}</span>
+          <span>TTI: tracking tunnel records (from May 2022) and rodent tracking indices spreadsheet &middot; updated ${gen}</span>
         </div>
       `;
     }

@@ -90,3 +90,8 @@ KIA_WHARITE_GDB = r"\\gisdata\GIS\Department\Environmental_Management\Biodiversi
 # Rodent Tracking Tunnel Index spreadsheet, SharePoint-synced.
 # Columns 0-3 are Location / Date / Rat TTI / Mouse TTI, first sheet only.
 TOTARA_TTI_XLSX = r"C:\path\to\your\Rodent tracking indices ALL.xlsx"
+
+# Raw tracking tunnel records, one row per tunnel per survey (May 2022 on).
+# Columns: Date / Line / Tunnel / Mouse / Rat / ... with 1 = tracked. The TTI
+# for these dates is calculated from this file and replaces the summary above.
+TOTARA_TTI_RAW_XLSX = r"C:\path\to\your\Totara Reserve Tracking Tunnel Monitoring raw data.xlsx"

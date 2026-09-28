@@ -7,19 +7,19 @@ Pulls data for two Tōtara Reserve dashboards:
        LAWA recreational water quality (E.coli + Cyanobacteria), site hrc-10013.
        Horizons EnviroData Hilltop proxy — Stage/Flow for Totara Reserve & Piripiri.
 
-  2. predator-control.html — Predator control programme
+  2. predator-control.html + pest-animal-header.html — Predator control programme
        Features are selected by a live intersect against the Tōtara Reserve
        polygon (HRC Icon Sites layer, SiteName = 'Totara Reserve').
        Animal Pest Control layer (AGOL) — trap inventory + catches by FY.
        PC_Possum_Control_Layer_2025 (AGOL) — possum bait stations + fills by FY.
-       Rodent tracking indices spreadsheet (config.TOTARA_TTI_XLSX) — TTI.
+       Tracking tunnel spreadsheets (config.TOTARA_TTI_RAW_XLSX, TOTARA_TTI_XLSX) — TTI.
        PCO data requires the ArcGIS Pro Python environment (arcgis SDK, SSO auth).
 
 Marker comments in river-management.html:
     /* SWIM_DATA_START */  /* SWIM_DATA_END */
     /* RIVER_DATA_START */ /* RIVER_DATA_END */
 
-Marker comments in predator-control.html:
+Marker comments in predator-control.html and pest-animal-header.html:
     /* PCO_DATA_START */   /* PCO_DATA_END */
 
 Usage (ArcGIS Pro Python environment):
@@ -49,7 +49,12 @@ except ImportError:
 # ── Paths ─────────────────────────────────────────────────────────────────────
 HERE          = Path(__file__).parent
 HTML_PATH     = HERE / "html" / "totara-reserve" / "river-management.html"
-PCO_HTML_PATH = HERE / "html" / "totara-reserve" / "predator-control.html"
+# The pest animal page is two embeds sharing one data block: the header strip
+# and the full-width page beneath it (no map on that ExB page).
+PCO_HTML_PATHS = [
+    HERE / "html" / "totara-reserve" / name
+    for name in ("pest-animal-header.html", "predator-control.html")
+]
 # The pest plant page is three embeds sharing one data block: the header strip,
 # the charts panel beside the map, and the legend floated over the map.
 PEST_PLANT_HTML_PATHS = [
@@ -832,42 +837,93 @@ def extract_pco_data() -> dict | None:
 
 # ── TTI (Rodent Tracking Tunnel Index) ────────────────────────────────────────
 
+def _read_tti_summary(path: Path) -> pd.DataFrame:
+    """Summary spreadsheet: Location, Date, Rat TTI, Mouse TTI (0–1 scale).
+
+    Tōtara rows only, averaged across monitoring lines per date — pre-2020 has
+    one row per line, later years a single 'ALL' row, never both on one date.
+    """
+    df = pd.read_excel(path, usecols=[0, 1, 2, 3])
+    df.columns = ["Location", "Date", "Rat_TTI", "Mouse_TTI"]
+    df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
+    df = df.dropna(subset=["Location", "Date"])
+    totara = df[
+        df["Location"].str.contains("Reserve", na=False) &
+        ~df["Location"].str.contains("Kahikatea", na=False)
+    ]
+    return (
+        totara.groupby("Date")
+        .agg(rat=("Rat_TTI", "mean"), mouse=("Mouse_TTI", "mean"))
+        .reset_index()
+    )
+
+
+def _read_tti_raw(path: Path) -> pd.DataFrame:
+    """Raw tunnel records: one row per tunnel per survey, Rat/Mouse 1 = tracked.
+
+    TTI per line is the share of its tunnels tracked; the survey figure is the
+    mean across lines (the DOC method — equal to the plain share while every
+    line has 10 tunnels, and still right if one loses a tunnel).
+    """
+    df = pd.read_excel(path)
+    df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
+    df = df.dropna(subset=["Date", "Line"])
+    for col in ("Rat", "Mouse"):
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+    return (
+        df.groupby(["Date", "Line"])[["Rat", "Mouse"]].mean()
+        .groupby("Date").mean()
+        .rename(columns={"Rat": "rat", "Mouse": "mouse"})
+        .reset_index()
+    )
+
+
 def extract_tti_data() -> dict | None:
     """
-    Read rodent Tracking Tunnel Index data from the local SharePoint-synced Excel.
-    Columns used: Location, Date, Rat TTI, Mouse TTI (values 0–1 scale).
-    Filters to Tōtara Reserve rows; averages across monitoring sites per date.
-    Returns None if the file is missing, locked, or unreadable.
+    Rodent Tracking Tunnel Index, from two local spreadsheets:
+      - config.TOTARA_TTI_RAW_XLSX — raw tunnel records, May 2022 on. TTI is
+        calculated from these and wins for every date they cover.
+      - config.TOTARA_TTI_XLSX — the older summary sheet, used for the surveys
+        before the raw records start (Nov 2010 on).
+    Either file alone is enough. Returns None if neither can be read.
     """
-    if TTI_EXCEL_PATH is None:
-        log.warning("TOTARA_TTI_XLSX not set in config.py — skipping rodent TTI.")
+    raw_path = getattr(config, "TOTARA_TTI_RAW_XLSX", None) if config else None
+    raw_path = Path(raw_path) if raw_path else None
+
+    parts = []
+    for label, path, reader in (("raw", raw_path, _read_tti_raw),
+                                ("summary", TTI_EXCEL_PATH, _read_tti_summary)):
+        if path is None:
+            log.warning(f"  TTI {label} spreadsheet not set in config.py")
+            continue
+        if not path.exists():
+            log.warning(f"  TTI {label} spreadsheet not found: {path}")
+            continue
+        try:
+            parts.append((label, reader(path)))
+        except PermissionError:
+            log.warning(f"  TTI {label} spreadsheet is open in Excel — close it and rerun: {path.name}")
+        except Exception:
+            log.exception(f"  TTI {label} spreadsheet read failed: {path.name}")
+
+    if not parts:
         return None
-    if not TTI_EXCEL_PATH.exists():
-        log.warning(f"TTI Excel not found: {TTI_EXCEL_PATH}")
-        return None
+
     try:
-        df = pd.read_excel(TTI_EXCEL_PATH, usecols=[0, 1, 2, 3])
-        df.columns = ["Location", "Date", "Rat_TTI", "Mouse_TTI"]
-        df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
-        df = df.dropna(subset=["Location", "Date"])
+        found = dict(parts)
+        if "raw" in found and "summary" in found:
+            raw = found["raw"]
+            older = found["summary"][found["summary"]["Date"] < raw["Date"].min()]
+            grouped = pd.concat([older, raw], ignore_index=True)
+            log.info(f"  TTI: {len(older)} summary surveys before "
+                     f"{raw['Date'].min():%b %Y}, {len(raw)} calculated from raw records")
+        else:
+            grouped = next(iter(found.values()))
+        grouped = grouped.sort_values("Date").reset_index(drop=True)
 
-        # Keep Totara Reserve rows; exclude Kahikatea
-        totara = df[
-            df["Location"].str.contains("Reserve", na=False) &
-            ~df["Location"].str.contains("Kahikatea", na=False)
-        ].copy()
-
-        if totara.empty:
-            log.warning("  No Totara Reserve TTI records found in Excel.")
+        if grouped.empty:
+            log.warning("  No Totara Reserve TTI records found.")
             return None
-
-        # Average across monitoring sites per date (pre-2020 has multiple lines per date)
-        grouped = (
-            totara.groupby("Date")
-            .agg(rat=("Rat_TTI", "mean"), mouse=("Mouse_TTI", "mean"))
-            .reset_index()
-            .sort_values("Date")
-        )
 
         def _pct(v):
             try:
@@ -894,11 +950,8 @@ def extract_tti_data() -> dict | None:
                  f"{grouped['Date'].dt.year.min()}–{grouped['Date'].dt.year.max()}")
         return result
 
-    except PermissionError:
-        log.warning(f"  TTI Excel is open in Excel — close it and rerun: {TTI_EXCEL_PATH.name}")
-        return None
-    except Exception as exc:
-        log.error(f"  TTI Excel read failed: {exc}")
+    except Exception:
+        log.exception("  TTI processing failed")
         return None
 
 
@@ -1186,16 +1239,15 @@ def inject_into_html(swim: dict, river: dict) -> None:
 
 
 def inject_into_pco_html(pco: dict) -> None:
-    if not PCO_HTML_PATH.exists():
-        log.warning(f"{PCO_HTML_PATH} does not exist — skipping PCO injection.")
-        return
-    html = PCO_HTML_PATH.read_text(encoding="utf-8")
-    html = _replace_block(
-        html, "PCO_DATA_START", "PCO_DATA_END",
-        f"const PCO_DATA = {json.dumps(pco, indent=2, ensure_ascii=False)};"
-    )
-    PCO_HTML_PATH.write_text(html, encoding="utf-8")
-    log.info(f"Updated {PCO_HTML_PATH}")
+    block = f"const PCO_DATA = {json.dumps(pco, indent=2, ensure_ascii=False)};"
+    for path in PCO_HTML_PATHS:
+        if not path.exists():
+            log.warning(f"{path} does not exist — skipping.")
+            continue
+        html = path.read_text(encoding="utf-8")
+        html = _replace_block(html, "PCO_DATA_START", "PCO_DATA_END", block)
+        path.write_text(html, encoding="utf-8")
+        log.info(f"Updated {path}")
 
 
 def inject_into_pest_plant_html(data: dict) -> None:
@@ -1242,7 +1294,7 @@ def main():
             tti = extract_tti_data()
             if tti:
                 pco["tti"] = tti
-            log.info("--- Injecting into predator-control.html ---")
+            log.info("--- Injecting into predator-control.html + pest-animal-header.html ---")
             inject_into_pco_html(pco)
         else:
             log.warning("PCO data unavailable — predator-control.html not updated.")
