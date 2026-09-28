@@ -60,7 +60,7 @@
     .tiles {
       flex: 1;
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(5, 1fr);
       gap: 10px;
       min-width: 0;
     }
@@ -70,18 +70,15 @@
       border: 1px solid var(--border);
       border-top: 3px solid var(--forest);
       border-radius: 6px;
-      padding: 8px 14px;
-      display: grid;
-      grid-template-columns: auto 1fr;
-      grid-template-rows: auto auto auto;
-      column-gap: 18px;
-      row-gap: 3px;
-      align-content: center;
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 3px;
       min-width: 0;
     }
 
     .tile-label {
-      grid-column: 1 / -1;
       font-size: 10px;
       font-weight: 700;
       letter-spacing: 0.12em;
@@ -98,28 +95,15 @@
       white-space: nowrap;
     }
 
-    .tile-prev { grid-column: 1; font-size: 0.72rem; color: var(--caption); white-space: nowrap; }
+    .tile-val small { font-size: 0.8rem; color: var(--muted); font-weight: 400; margin-left: 2px; }
 
-    /* Breakdown beside the big number: trap types, or catches by species */
-    .tile-parts {
-      grid-column: 2;
-      grid-row: 2 / 4;
-      align-self: center;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 2px 12px;
-      font-size: 0.76rem;
-      color: var(--muted);
-      min-width: 0;
-    }
-
-    .tile-parts b { font-weight: 600; color: var(--navy); font-variant-numeric: tabular-nums; }
+    .tile-prev { font-size: 0.72rem; color: var(--caption); white-space: nowrap; }
   </style>
 
   <script>
     /* PCO_DATA_START */
 const PCO_DATA = {
-  "generated": "2026-09-28T13:36:44.428056",
+  "generated": "2026-09-28T14:12:40.985115",
   "bioTotara": {
     "total": 167,
     "byType": {
@@ -245,8 +229,26 @@ const PCO_DATA = {
       ]
     }
   },
+  "trapChecksByFy": {
+    "labels": [
+      "21-22",
+      "22-23",
+      "23-24",
+      "24-25",
+      "25-26",
+      "26-27"
+    ],
+    "data": [
+      224,
+      1302,
+      675,
+      1101,
+      1596,
+      395
+    ]
+  },
   "possumBait": {
-    "withinReserve": 672,
+    "withinReserve": 671,
     "fills": {
       "labels": [
         "23-24",
@@ -277,7 +279,7 @@ const PCO_DATA = {
           0,
           4,
           0,
-          0
+          8
         ],
         "Feratox SS Brodifacoum": [
           0,
@@ -292,6 +294,32 @@ const PCO_DATA = {
           0
         ]
       }
+    },
+    "baitRemaining": {
+      "labels": [
+        "23-24",
+        "24-25",
+        "25-26",
+        "26-27"
+      ],
+      "all": [
+        368,
+        492,
+        312,
+        24
+      ],
+      "half": [
+        162,
+        365,
+        760,
+        12
+      ],
+      "none": [
+        670,
+        607,
+        157,
+        14
+      ]
     }
   },
   "tti": {
@@ -443,48 +471,61 @@ const PCO_DATA = {
   if (!D) return;
 
   const fmt = n => n == null ? '–' : Number(n).toLocaleString('en-NZ');
-  const MUSTELIDS = ['Stoat', 'Weasel', 'Ferret'];
 
-  // Report the last completed FY (the current one is still filling up), falling
-  // back to the newest FY in the data if that one is missing.
-  const C = D.catchesByFy || { labels: [], species: [], data: {} };
+  // Report the last completed FY (the current one is still filling up).
   const gen = new Date(D.generated);
   const start = (gen.getMonth() >= 6 ? gen.getFullYear() : gen.getFullYear() - 1) - 1;
-  const wanted = `${String(start).slice(2)}-${String(start + 1).slice(2)}`;
-  const fi = C.labels.includes(wanted) ? C.labels.indexOf(wanted) : C.labels.length - 1;
-  const fy = C.labels[fi];
-  const prevFy = fi > 0 ? C.labels[fi - 1] : null;
+  const FY = `${String(start).slice(2)}-${String(start + 1).slice(2)}`;
+  const PREV = `${String(start - 1).slice(2)}-${String(start).slice(2)}`;
 
-  const totalFor = i => C.species.reduce((s, sp) => s + ((C.data[sp] || [])[i] || 0), 0);
-  const bySpecies = i => {
-    const out = {};
-    for (const sp of C.species) {
-      const name = MUSTELIDS.includes(sp) ? 'Mustelids' : sp;
-      out[name] = (out[name] || 0) + ((C.data[sp] || [])[i] || 0);
-    }
-    return Object.entries(out).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]);
+  document.getElementById('period').textContent = `Financial year 20${FY.slice(0, 2)}-${FY.slice(3)}`;
+
+  // Value for one FY from a {labels, data} series, or null if the FY is absent
+  const at = (series, fy, pick) => {
+    const i = (series && series.labels || []).indexOf(fy);
+    return i < 0 ? null : pick(i);
   };
 
-  document.getElementById('period').textContent =
-    fy ? `Financial year 20${fy.slice(0, 2)}-${fy.slice(3)}` : '';
+  const C = D.catchesByFy || {};
+  const caught = fy => at(C, fy, i => (C.species || []).reduce((s, sp) => s + ((C.data[sp] || [])[i] || 0), 0));
 
-  const T = (D.bioTotara || {}).byType || { labels: [], data: [] };
-  const trapParts = T.labels.map((l, i) => `<span>${l} <b>${fmt(T.data[i])}</b></span>`).join('');
-  const catchParts = fy ? bySpecies(fi).map(([sp, n]) => `<span>${sp} <b>${fmt(n)}</b></span>`).join('') : '';
+  const T = D.trapChecksByFy || {};
+  const checks = fy => at(T, fy, i => T.data[i]);
 
-  document.getElementById('tiles').innerHTML = `
-    <div class="tile">
-      <span class="tile-label">Traps</span>
-      <span class="tile-val">${fmt((D.bioTotara || {}).total)}</span>
-      <span class="tile-prev">reserve plus 200 m buffer</span>
-      <div class="tile-parts">${trapParts}</div>
-    </div>
-    <div class="tile">
-      <span class="tile-label">Animals caught${fy ? ' · ' + fy : ''}</span>
-      <span class="tile-val">${fy ? fmt(totalFor(fi)) : '–'}</span>
-      <span class="tile-prev">${prevFy ? `${fmt(totalFor(fi - 1))} in ${prevFy}` : '&nbsp;'}</span>
-      <div class="tile-parts">${catchParts}</div>
+  const F = (D.possumBait || {}).fills || {};
+  const fills = fy => at(F, fy, i => Object.values(F.fillCounts || {}).reduce((s, arr) => s + (arr[i] || 0), 0));
+
+  // Share of fill visits where some or all bait had been taken
+  const B = (D.possumBait || {}).baitRemaining || {};
+  const take = fy => at(B, fy, i => {
+    const n = B.all[i] + B.half[i] + B.none[i];
+    return n ? Math.round((B.half[i] + B.none[i]) / n * 100) : null;
+  });
+
+  const tti = D.tti && D.tti.history;
+  const nT = tti ? tti.dates.length : 0;
+  const month = d => new Date(d).toLocaleDateString('en-NZ', { month: 'short', year: 'numeric' });
+
+  const TILES = [
+    { label: 'Animals caught',  v: caught(FY), p: caught(PREV) },
+    { label: 'Trap checks',     v: checks(FY), p: checks(PREV) },
+    { label: 'Bait fills',      v: fills(FY),  p: fills(PREV) },
+    { label: 'Bait take',       v: take(FY),   p: take(PREV), unit: '%' },
+    { label: nT ? `Rat TTI · ${month(tti.dates[nT - 1])}` : 'Rat TTI',
+      v: nT ? tti.rat[nT - 1] : null,
+      unit: '%',
+      prevText: nT > 1 ? `${fmt(tti.rat[nT - 2])}% in ${month(tti.dates[nT - 2])}` : null },
+  ];
+
+  document.getElementById('tiles').innerHTML = TILES.map(t => {
+    const unit = t.unit || '';
+    const prev = t.prevText || (t.p == null ? null : `${fmt(t.p)}${unit} in ${PREV}`);
+    return `<div class="tile">
+      <span class="tile-label">${t.label}</span>
+      <span class="tile-val">${fmt(t.v)}<small>${unit}</small></span>
+      <span class="tile-prev">${prev || '&nbsp;'}</span>
     </div>`;
+  }).join('');
 })();
 </script>
 </body>
