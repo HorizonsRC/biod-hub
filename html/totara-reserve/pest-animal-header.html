@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pest Animal Header · Tōtara Reserve</title>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;500;600;700&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* Same tokens and shape as pest-plant-header.html */
+    :root {
+      --navy:       #1f2e35;
+      --bg:         #f4f0ef;
+      --surface:    #ffffff;
+      --border:     #ddddd8;
+      --muted:      #5a5a52;
+      --caption:    #888880;
+      --forest:     #2d6a4f;
+    }
+
+    html, body { height: 100%; }
+
+    body {
+      font-family: 'Source Sans 3', sans-serif;
+      background: var(--bg);
+      color: var(--navy);
+      display: flex;
+      align-items: stretch;
+      gap: 12px;
+      padding: 10px 16px;
+      overflow: hidden;
+    }
+
+    .title-block {
+      flex: 0 0 250px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .eyebrow {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--forest);
+    }
+
+    h1 {
+      font-family: 'Source Serif 4', serif;
+      font-size: 1.55rem;
+      font-weight: 600;
+      line-height: 1.1;
+    }
+
+    .period { font-size: 0.78rem; color: var(--muted); }
+
+    .tiles {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .tile {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--forest);
+      border-radius: 6px;
+      padding: 8px 14px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      grid-template-rows: auto auto auto;
+      column-gap: 18px;
+      row-gap: 3px;
+      align-content: center;
+      min-width: 0;
+    }
+
+    .tile-label {
+      grid-column: 1 / -1;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--caption);
+      white-space: nowrap;
+    }
+
+    .tile-val {
+      font-size: 1.75rem;
+      font-weight: 300;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .tile-prev { grid-column: 1; font-size: 0.72rem; color: var(--caption); white-space: nowrap; }
+
+    /* Breakdown beside the big number: trap types, or catches by species */
+    .tile-parts {
+      grid-column: 2;
+      grid-row: 2 / 4;
+      align-self: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2px 12px;
+      font-size: 0.76rem;
+      color: var(--muted);
+      min-width: 0;
+    }
+
+    .tile-parts b { font-weight: 600; color: var(--navy); font-variant-numeric: tabular-nums; }
+  </style>
+
+  <script>
+    /* PCO_DATA_START */
+const PCO_DATA = {
+  "generated": "2026-09-28T13:36:44.428056",
+  "bioTotara": {
+    "total": 167,
+    "byType": {
+      "labels": [
+        "DOC200",
+        "DOC250",
+        "Timms",
+        "Cage",
+        "A24"
+      ],
+      "data": [
+        83,
+        46,
+        24,
+        13,
+        1
+      ]
+    }
+  },
+  "vespex": {
+    "total": 290,
+    "byType": {
+      "labels": [
+        "Vespex Bait Station"
+      ],
+      "data": [
+        290
+      ]
+    }
+  },
+  "catchesByFy": {
+    "labels": [
+      "21-22",
+      "22-23",
+      "23-24",
+      "24-25",
+      "25-26",
+      "26-27"
+    ],
+    "species": [
+      "Cat",
+      "Ferret",
+      "Hedgehog",
+      "Mouse",
+      "Rabbit",
+      "Rat",
+      "Stoat",
+      "Possum",
+      "Weasel"
+    ],
+    "data": {
+      "Cat": [
+        3,
+        12,
+        10,
+        2,
+        3,
+        1
+      ],
+      "Ferret": [
+        0,
+        1,
+        4,
+        2,
+        1,
+        0
+      ],
+      "Hedgehog": [
+        34,
+        107,
+        48,
+        34,
+        41,
+        0
+      ],
+      "Mouse": [
+        0,
+        3,
+        1,
+        0,
+        5,
+        0
+      ],
+      "Rabbit": [
+        0,
+        4,
+        0,
+        3,
+        1,
+        0
+      ],
+      "Rat": [
+        13,
+        59,
+        112,
+        87,
+        93,
+        6
+      ],
+      "Stoat": [
+        1,
+        16,
+        3,
+        8,
+        6,
+        2
+      ],
+      "Possum": [
+        5,
+        23,
+        1,
+        13,
+        3,
+        0
+      ],
+      "Weasel": [
+        0,
+        4,
+        7,
+        13,
+        20,
+        1
+      ]
+    }
+  },
+  "possumBait": {
+    "withinReserve": 672,
+    "fills": {
+      "labels": [
+        "23-24",
+        "24-25",
+        "25-26",
+        "26-27"
+      ],
+      "fillCounts": {
+        "DS Brodifacoum": [
+          938,
+          1092,
+          636,
+          4
+        ],
+        "Diphacinone": [
+          194,
+          105,
+          132,
+          34
+        ],
+        "Feratox DS Brodifacoum": [
+          67,
+          262,
+          398,
+          4
+        ],
+        "Feratox Prefeed Pellets": [
+          0,
+          4,
+          0,
+          0
+        ],
+        "Feratox SS Brodifacoum": [
+          0,
+          1,
+          1,
+          0
+        ],
+        "SS Brodifacoum": [
+          1,
+          0,
+          62,
+          0
+        ]
+      }
+    }
+  },
+  "tti": {
+    "latest": {
+      "date": "2026-08-01",
+      "rat": 2.0,
+      "mouse": 42.0
+    },
+    "history": {
+      "dates": [
+        "2010-11-01",
+        "2011-01-01",
+        "2011-03-01",
+        "2011-11-01",
+        "2012-01-01",
+        "2012-03-01",
+        "2012-12-01",
+        "2013-02-01",
+        "2013-03-01",
+        "2013-12-01",
+        "2014-01-01",
+        "2014-03-01",
+        "2014-11-01",
+        "2015-01-01",
+        "2015-03-01",
+        "2015-11-01",
+        "2016-01-01",
+        "2016-03-01",
+        "2020-11-01",
+        "2021-11-01",
+        "2022-02-01",
+        "2022-04-01",
+        "2022-05-01",
+        "2022-08-01",
+        "2022-11-01",
+        "2023-08-01",
+        "2023-11-01",
+        "2024-02-01",
+        "2024-05-01",
+        "2024-08-01",
+        "2024-11-01",
+        "2025-02-01",
+        "2025-05-01",
+        "2025-08-01",
+        "2025-11-01",
+        "2026-02-01",
+        "2026-05-01",
+        "2026-08-01"
+      ],
+      "rat": [
+        8.0,
+        17.5,
+        35.0,
+        15.0,
+        27.5,
+        25.0,
+        17.5,
+        22.5,
+        55.0,
+        12.5,
+        15.0,
+        22.5,
+        33.0,
+        45.0,
+        52.5,
+        33.0,
+        8.0,
+        15.0,
+        30.0,
+        6.0,
+        18.0,
+        36.0,
+        36.0,
+        46.0,
+        28.0,
+        14.0,
+        16.0,
+        4.0,
+        12.0,
+        22.0,
+        0.0,
+        0.0,
+        6.0,
+        14.0,
+        2.0,
+        6.0,
+        0.0,
+        2.0
+      ],
+      "mouse": [
+        23.0,
+        7.5,
+        7.5,
+        12.5,
+        5.0,
+        10.0,
+        15.0,
+        15.0,
+        32.5,
+        0.0,
+        5.0,
+        0.0,
+        22.8,
+        17.5,
+        22.5,
+        2.6,
+        5.3,
+        7.5,
+        4.0,
+        20.0,
+        34.0,
+        58.0,
+        60.0,
+        56.0,
+        46.0,
+        58.0,
+        58.0,
+        64.0,
+        84.0,
+        70.0,
+        56.0,
+        28.0,
+        70.0,
+        74.0,
+        46.0,
+        54.0,
+        58.0,
+        42.0
+      ]
+    }
+  }
+};
+    /* PCO_DATA_END */
+  </script>
+</head>
+<body>
+
+  <div class="title-block">
+    <span class="eyebrow">Tōtara Reserve</span>
+    <h1>Pest Animal Control</h1>
+    <span class="period" id="period"></span>
+  </div>
+
+  <div class="tiles" id="tiles"></div>
+
+<script>
+(function () {
+  const D = PCO_DATA;
+  if (!D) return;
+
+  const fmt = n => n == null ? '–' : Number(n).toLocaleString('en-NZ');
+  const MUSTELIDS = ['Stoat', 'Weasel', 'Ferret'];
+
+  // Report the last completed FY (the current one is still filling up), falling
+  // back to the newest FY in the data if that one is missing.
+  const C = D.catchesByFy || { labels: [], species: [], data: {} };
+  const gen = new Date(D.generated);
+  const start = (gen.getMonth() >= 6 ? gen.getFullYear() : gen.getFullYear() - 1) - 1;
+  const wanted = `${String(start).slice(2)}-${String(start + 1).slice(2)}`;
+  const fi = C.labels.includes(wanted) ? C.labels.indexOf(wanted) : C.labels.length - 1;
+  const fy = C.labels[fi];
+  const prevFy = fi > 0 ? C.labels[fi - 1] : null;
+
+  const totalFor = i => C.species.reduce((s, sp) => s + ((C.data[sp] || [])[i] || 0), 0);
+  const bySpecies = i => {
+    const out = {};
+    for (const sp of C.species) {
+      const name = MUSTELIDS.includes(sp) ? 'Mustelids' : sp;
+      out[name] = (out[name] || 0) + ((C.data[sp] || [])[i] || 0);
+    }
+    return Object.entries(out).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]);
+  };
+
+  document.getElementById('period').textContent =
+    fy ? `Financial year 20${fy.slice(0, 2)}-${fy.slice(3)}` : '';
+
+  const T = (D.bioTotara || {}).byType || { labels: [], data: [] };
+  const trapParts = T.labels.map((l, i) => `<span>${l} <b>${fmt(T.data[i])}</b></span>`).join('');
+  const catchParts = fy ? bySpecies(fi).map(([sp, n]) => `<span>${sp} <b>${fmt(n)}</b></span>`).join('') : '';
+
+  document.getElementById('tiles').innerHTML = `
+    <div class="tile">
+      <span class="tile-label">Traps</span>
+      <span class="tile-val">${fmt((D.bioTotara || {}).total)}</span>
+      <span class="tile-prev">reserve plus 200 m buffer</span>
+      <div class="tile-parts">${trapParts}</div>
+    </div>
+    <div class="tile">
+      <span class="tile-label">Animals caught${fy ? ' · ' + fy : ''}</span>
+      <span class="tile-val">${fy ? fmt(totalFor(fi)) : '–'}</span>
+      <span class="tile-prev">${prevFy ? `${fmt(totalFor(fi - 1))} in ${prevFy}` : '&nbsp;'}</span>
+      <div class="tile-parts">${catchParts}</div>
+    </div>`;
+})();
+</script>
+</body>
+</html>
