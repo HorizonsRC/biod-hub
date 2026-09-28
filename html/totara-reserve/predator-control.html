@@ -389,6 +389,21 @@
 
     .deer-note strong { color: var(--navy); font-weight: 600; }
 
+    /* One row per control operation in the season */
+    .deer-log {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 4px 10px;
+      align-items: baseline;
+      font-size: 0.76rem;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      padding-top: 8px;
+    }
+
+    .deer-when { font-weight: 600; color: var(--navy); white-space: nowrap; }
+    .deer-n { font-weight: 600; color: var(--navy); text-align: right; font-variant-numeric: tabular-nums; }
+
     /* ── FOOTER ── */
     .dash-footer {
       display: flex;
@@ -801,7 +816,7 @@ const PCO_DATA = {
       }
       maxVal = Math.max(maxVal, 1);
 
-      const W = 350, H = 200;
+      const W = 350, H = 180;
       const ml = 40, mr = 14, mt = 12, mb = 36;
       const cw = W - ml - mr, ch = H - mt - mb;
       const yOf = v => mt + ch - (v / maxVal) * ch;
@@ -1002,29 +1017,33 @@ const PCO_DATA = {
           </div>
 
           <div class="programme-card">
-            <div class="prog-badge">Deer Management &middot; Fallow Deer &middot; 2024 Season</div>
+            <!-- Hand-entered from the ICC reports (Nov 2025, Feb 2026, Jul 2026) and the
+                 contractor's Deer Control Operational Report 2026 (3 Jul 2026). No data feed. -->
+            <div class="prog-badge">Deer Control &middot; 2025-26</div>
             <div class="deer-stats-row">
               <div class="deer-stat">
-                <div class="deer-stat-val">3</div>
-                <div class="deer-stat-label">Morning hunts</div>
-              </div>
-              <div class="deer-stat">
-                <div class="deer-stat-val">9</div>
-                <div class="deer-stat-label">Hours hunting</div>
-              </div>
-              <div class="deer-stat">
-                <div class="deer-stat-val">4</div>
+                <div class="deer-stat-val">16</div>
                 <div class="deer-stat-label">Deer culled</div>
               </div>
               <div class="deer-stat">
-                <div class="deer-stat-val">10</div>
-                <div class="deer-stat-label">Not accessible</div>
+                <div class="deer-stat-val">15</div>
+                <div class="deer-stat-label">Fallow</div>
+              </div>
+              <div class="deer-stat">
+                <div class="deer-stat-val">1</div>
+                <div class="deer-stat-label">Red</div>
               </div>
             </div>
+            <div class="deer-log">
+              <span class="deer-when">Oct 2025</span>
+              <span>Horizons staff &middot; 3 morning hunts, 9 hrs</span>
+              <span class="deer-n">4</span>
+              <span class="deer-when">Jun 2026</span>
+              <span>Contractor &middot; night shooting + day hunt, 70 hrs</span>
+              <span class="deer-n">12</span>
+            </div>
             <div class="deer-note">
-              Culling commenced <strong>October 2024</strong> by Horizons biosecurity pest animal team.
-              10 fallow deer sighted on the river were not shot — located on a private landowner parcel.
-              Staff to target the remote western edge of the reserve over summer.
+              About 15 more seen in June but not shot. Deer move in and out along the river corridor.
             </div>
           </div>
           </div>
