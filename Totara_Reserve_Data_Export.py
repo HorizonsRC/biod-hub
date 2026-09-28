@@ -621,6 +621,7 @@ def extract_pco_data() -> dict | None:
     bio_totara = {"total": 0, "byType": {"labels": [], "data": []}}
     vespex     = {"total": 0, "byType": {"labels": [], "data": []}}
     catches_by_fy: dict = {"labels": [], "species": [], "data": {}}
+    trap_checks_by_fy: dict = {"labels": [], "data": []}
 
     # ── Trap inventory + catch records ────────────────────────────────────────
     try:
@@ -692,6 +693,17 @@ def extract_pco_data() -> dict | None:
                 insp["_dt"] = pd.to_datetime(insp["created_date"],
                                              unit="ms", errors="coerce")
                 insp["_fy"] = insp["_dt"].apply(date_to_fy)
+
+                # Trap checks: every inspection bar the one logging the trap's install
+                if "TrapStatus2" in insp.columns:
+                    is_install = insp["TrapStatus2"].astype(str).str.strip().str.lower() == "initial set"
+                    checks = insp[~is_install]
+                else:
+                    checks = insp
+                cc = checks["_fy"].dropna().value_counts()
+                cc_fys = sorted(cc.index, key=lambda s: s.split("-")[0])
+                trap_checks_by_fy = {"labels": cc_fys, "data": [int(cc[f]) for f in cc_fys]}
+                log.info(f"  Trap checks by FY: {list(zip(cc_fys, trap_checks_by_fy['data']))}")
 
                 # Log every species present so the user can verify what's captured
                 all_sp = insp["SpeciesCaught"].dropna().value_counts()
@@ -822,6 +834,25 @@ def extract_pco_data() -> dict | None:
                     }
                     log.info(f"  Possum fills: {fy_order}, keys: {fill_keys}")
 
+                    # Bait take: what was left in the station at each fill visit
+                    # (All / Half / None). Half or None means possums took bait.
+                    if "BaitRemaining" in insp_f.columns:
+                        br = insp_f["BaitRemaining"].astype(str).str.strip().str.lower()
+                        possum_bait["baitRemaining"] = {
+                            "labels": fy_order,
+                            **{
+                                key: [int(((insp_f["_fy"] == fy) & (br == key)).sum())
+                                      for fy in fy_order]
+                                for key in ("all", "half", "none")
+                            },
+                        }
+                        log.info(f"  Bait remaining by FY: {possum_bait['baitRemaining']}")
+
+                    undated = int(insp_f["_dt"].isna().sum())
+                    if undated:
+                        log.info(f"  {undated:,} possum inspections have no created_date "
+                                 f"and are left out of the per-FY figures")
+
     except Exception:
         log.exception("  Possum inspection query failed")
 
@@ -830,6 +861,7 @@ def extract_pco_data() -> dict | None:
         "bioTotara":   bio_totara,
         "vespex":      vespex,
         "catchesByFy": catches_by_fy,
+        "trapChecksByFy": trap_checks_by_fy,
         "possumBait":  possum_bait,
     }
 
