@@ -862,6 +862,9 @@ const PEST_PLANT_DATA = {
   if (!D) return;
 
   const fmt = n => n == null ? '–' : Number(n).toLocaleString('en-NZ');
+  // "▲ up from 162 in 24-25": says outright that the big number is the newer one
+  const trend = (v, p, text) => v == null || p == null ? text
+    : (v > p ? '▲ up from ' : v < p ? '▼ down from ' : 'same as ') + text;
   const cur  = D.current;
   const idx  = D.byFy.findIndex(r => r.fy === D.fy);
   const prev = idx > 0 ? D.byFy[idx - 1] : null;
@@ -886,7 +889,7 @@ const PEST_PLANT_DATA = {
     return `<div class="tile">
       <span class="tile-label">${t.label}</span>
       <span class="tile-val">${fmt(v)}<small>${t.unit}</small></span>
-      <span class="tile-prev">${p == null ? '&nbsp;' : `${fmt(p)}${t.unit === '%' ? '%' : t.unit ? ' ' + t.unit : ''} in ${prev.fy}`}</span>
+      <span class="tile-prev">${p == null ? '&nbsp;' : trend(v, p, `${fmt(p)}${t.unit === '%' ? '%' : ''} in ${prev.fy}`)}</span>
     </div>`;
   }).join('');
 })();

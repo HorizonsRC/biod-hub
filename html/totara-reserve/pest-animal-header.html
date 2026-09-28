@@ -471,6 +471,9 @@ const PCO_DATA = {
   if (!D) return;
 
   const fmt = n => n == null ? '–' : Number(n).toLocaleString('en-NZ');
+  // "▲ up from 162 in 24-25": says outright that the big number is the newer one
+  const trend = (v, p, text) => v == null || p == null ? text
+    : (v > p ? '▲ up from ' : v < p ? '▼ down from ' : 'same as ') + text;
 
   // Report the last completed FY (the current one is still filling up).
   const gen = new Date(D.generated);
@@ -513,13 +516,14 @@ const PCO_DATA = {
     { label: 'Bait take',       v: take(FY),   p: take(PREV), unit: '%' },
     { label: nT ? `Rat TTI · ${month(tti.dates[nT - 1])}` : 'Rat TTI',
       v: nT ? tti.rat[nT - 1] : null,
+      p: nT > 1 ? tti.rat[nT - 2] : null,
       unit: '%',
-      prevText: nT > 1 ? `${fmt(tti.rat[nT - 2])}% in ${month(tti.dates[nT - 2])}` : null },
+      when: nT > 1 ? month(tti.dates[nT - 2]) : null },
   ];
 
   document.getElementById('tiles').innerHTML = TILES.map(t => {
     const unit = t.unit || '';
-    const prev = t.prevText || (t.p == null ? null : `${fmt(t.p)}${unit} in ${PREV}`);
+    const prev = t.p == null ? null : trend(t.v, t.p, `${fmt(t.p)}${unit} in ${t.when || PREV}`);
     return `<div class="tile">
       <span class="tile-label">${t.label}</span>
       <span class="tile-val">${fmt(t.v)}<small>${unit}</small></span>
