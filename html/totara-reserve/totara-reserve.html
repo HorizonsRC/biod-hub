@@ -9,13 +9,13 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --navy:    #1f2e35;
-      --bg:      #f4f0ef;
+      --navy:    #222222;
+      --bg:      #f0f0f0;
       --surface: #ffffff;
-      --border:  #ddddd8;
-      --muted:   #5a5a52;
-      --caption: #888880;
-      --totara:  #2d6a4f;
+      --border:  #dcdcdc;
+      --muted:   #515151;
+      --caption: #8a8a8a;
+      --totara:  #047f67;
     }
 
     html, body { height: 100%; margin: 0; }
@@ -33,7 +33,7 @@
     /* ── HEADER ── */
     .page-header {
       padding: 16px 28px;
-      background: #273747;
+      background: var(--totara);
       flex-shrink: 0;
     }
 
@@ -207,7 +207,7 @@
     .card-footer {
       padding: 10px 18px 14px;
       border-top: 1px solid var(--border);
-      background: #fafaf8;
+      background: #f7f7f7;
     }
 
     .card-btn {
@@ -231,12 +231,12 @@
     .card-btn svg { width: 12px; height: 12px; flex-shrink: 0; }
 
     /* ── PER-CARD THEMES ── */
-    .card--forest .card-accent   { background: #2d6a4f; }
-    .card--forest .card-icon     { background: #e4f0ea; color: #2d6a4f; }
-    .card--forest .card-subtitle { color: #2d6a4f; }
-    .card--forest .card-btn      { background: #2d6a4f; }
-    .card--forest .meta-box      { background: #f2f8f5; }
-    .card--forest .meta-key      { color: #2d6a4f; }
+    .card--forest .card-accent   { background: #047f67; }
+    .card--forest .card-icon     { background: #e2f1ed; color: #047f67; }
+    .card--forest .card-subtitle { color: #047f67; }
+    .card--forest .card-btn      { background: #047f67; }
+    .card--forest .meta-box      { background: #f0f8f6; }
+    .card--forest .meta-key      { color: #047f67; }
 
     .card--animal .card-accent   { background: #2c6e8a; }
     .card--animal .card-icon     { background: #e3eef5; color: #2c6e8a; }
