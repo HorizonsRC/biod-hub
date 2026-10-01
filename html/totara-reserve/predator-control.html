@@ -1048,7 +1048,10 @@ const PCO_DATA = {
     // ── Main render ───────────────────────────────────────────────────────────
     function render() {
       const d   = PCO_DATA;
-      const gen = d.generated ? d.generated.slice(0, 10) : '—';
+      // "28 Sep 2026", same style as the pest plant pages
+      const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const gd  = d.generated ? new Date(d.generated) : null;
+      const gen = gd ? `${gd.getDate()} ${MONTHS[gd.getMonth()]} ${gd.getFullYear()}` : '—';
       const pb = d.possumBait || {};
       const pRes = pb.withinReserve !== null && pb.withinReserve !== undefined ? pb.withinReserve : '—';
       // Fill records per FY, summed across whatever the fill field's values are
@@ -1186,8 +1189,8 @@ const PCO_DATA = {
         </div>
 
         <div class="dash-footer">
-          <span>Trap data: Animal Pest Control Layer (AGOL) &middot; downloaded ${gen}</span>
-          <span>TTI: tracking tunnel records (from May 2022) and rodent tracking indices spreadsheet &middot; updated ${gen}</span>
+          <span>Data: Horizons Regional Council</span>
+          <span>Updated ${gen}</span>
         </div>
       `;
     }

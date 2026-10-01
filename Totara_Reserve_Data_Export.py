@@ -1227,7 +1227,6 @@ def extract_pest_plant_data() -> dict | None:
         "fyLabel":   f"{fy_start}-{fy[3:]}",
         "fyWanted":  wanted,
         "fys":       fys,
-        "contractor": wp["Cont_name"].mode().iloc[0] if "Cont_name" in wp.columns and wp["Cont_name"].notna().any() else None,
         "current":   current,
         "byFy":      by_fy,
         "allYears":  summarise(wp, pl),
