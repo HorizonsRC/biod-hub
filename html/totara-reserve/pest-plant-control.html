@@ -274,7 +274,6 @@ const PEST_PLANT_DATA = {
     "24-25",
     "25-26"
   ],
-  "contractor": "Kaitiaki o Ngahere",
   "current": {
     "records": 1752,
     "species": 15,
@@ -1060,7 +1059,7 @@ const PEST_PLANT_DATA = {
   </section>
 
   <footer class="dash-footer">
-    <span id="footer-source">Source: Tōtara Reserve Contractor Data (AGOL)</span>
+    <span>Data: Horizons Regional Council</span>
     <span id="footer-date"></span>
   </footer>
 
@@ -1256,8 +1255,6 @@ const PEST_PLANT_DATA = {
     (gaps.length ? ' ' + gaps.map(r => `${r.fy}: ${fmt(r.unrecorded)} records had no outcome noted.`).join(' ') : '');
 
   // ── Footer ───────────────────────────────────────────────────────────────
-  if (D.contractor) document.getElementById('footer-source').textContent =
-    `Source: Tōtara Reserve Contractor Data (AGOL) · ${D.contractor}`;
   document.getElementById('footer-date').textContent = `Updated ${D.generated}`;
 
   drawSpecies();
