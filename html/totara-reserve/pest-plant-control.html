@@ -1004,7 +1004,8 @@ const PEST_PLANT_DATA = {
     /* PEST_PLANT_DATA_END */
   </script>
 </head>
-<body>
+<body data-base-w="557" data-base-h="577">
+  <script src="fit.js?v=1"></script>
 
   <nav class="tabs" role="tablist">
     <button class="tab" role="tab" data-tab="species" aria-selected="true">Species</button>
@@ -1080,12 +1081,14 @@ const PEST_PLANT_DATA = {
     el.addEventListener('mousemove', e => {
       tip.innerHTML = html;
       tip.classList.add('show');
-      const w = tip.offsetWidth, h = tip.offsetHeight;
+      // fit.js scales the body, so work in screen px and divide back down
+      const s = window.fitScale ? window.fitScale() : 1;
+      const w = tip.offsetWidth * s, h = tip.offsetHeight * s;
       let x = e.clientX + 12, y = e.clientY + 12;
       if (x + w > window.innerWidth - 4)  x = e.clientX - w - 12;
       if (y + h > window.innerHeight - 4) y = e.clientY - h - 12;
-      tip.style.left = x + 'px';
-      tip.style.top  = y + 'px';
+      tip.style.left = x / s + 'px';
+      tip.style.top  = y / s + 'px';
     });
     el.addEventListener('mouseleave', () => tip.classList.remove('show'));
   }
