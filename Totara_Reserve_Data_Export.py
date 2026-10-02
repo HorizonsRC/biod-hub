@@ -1421,14 +1421,58 @@ def _bird_data() -> dict:
     for s in out:
         if s["threat"]:
             log.info(f"  Threatened bird: {s['name']} — {s['threat']}")
+    photos = _inat_photos({"place_id": INAT_PLACE_ID, "iconic_taxa": "Aves",
+                           "quality_grade": "research"}, 4)
+    # Caption each photo with the list's own name for the species (te reo first)
+    # rather than iNaturalist's subspecies name ('Mainland New Zealand Bellbird').
+    by_sci = {s["sci"]: s for s in out}
+    for p in photos:
+        s = by_sci.get(" ".join((p["sci"] or "").split()[:2]))
+        if s:
+            p["name"] = s["mi"] or s["name"]
+    log.info(f"  Bird photos: {[p['name'] for p in photos]}")
     return {"species": out, "ebirdChecklists": n_lists, "inatObs": inat_obs,
-            "hotspots": list(EBIRD_HOTSPOTS.values()) if EBIRD_API_KEY else []}
+            "hotspots": list(EBIRD_HOTSPOTS.values()) if EBIRD_API_KEY else [],
+            "photos": photos}
 
 
 def _photo_credit(attribution: str) -> str:
     """'(c) Jane Doe, some rights reserved (CC BY-NC)' → 'Jane Doe'."""
     m = re.match(r"\(c\)\s*(.+?),", attribution or "")
     return m.group(1) if m else (attribution or "")
+
+
+def _inat_photos(base: dict, n: int) -> list[dict]:
+    """The latest photographed observations of endemic species, one per species.
+
+    Only openly licensed photos, each carrying its photographer credit."""
+    photos, seen = [], set()
+    recent = _inat("observations", per_page=60, photos="true", photo_license=INAT_OPEN_LICENCES,
+                   endemic="true", order_by="observed_on", locale="en",
+                   preferred_place_id=INAT_NZ_PLACE, **base)
+    for o in recent["results"]:
+        t, ph = o.get("taxon") or {}, (o.get("photos") or [{}])[0]
+        # One per species: a subspecies (North Island fantail) counts as its species.
+        # ancestor_ids ends with the taxon itself, so its parent is the one before.
+        anc = t.get("ancestor_ids") or []
+        species_id = t.get("id") if t.get("rank") == "species" or len(anc) < 2 else anc[-2]
+        if not ph.get("url") or not ph.get("license_code") or species_id in seen:
+            continue
+        seen.add(species_id)
+        cn = t.get("preferred_common_name")
+        # 'Kārearea (New Zealand Falcon)' → 'Kārearea', to fit the caption
+        cn = re.sub(r"\s*\(.*\)$", "", cn) if cn else None
+        photos.append({
+            "url": ph["url"].replace("/square.", "/small."),
+            "name": cn[0].upper() + cn[1:] if cn else t.get("name"),
+            "sci": t.get("name"),
+            "credit": _photo_credit(ph.get("attribution", "")),
+            "licence": ph["license_code"].upper(),
+            "obs": o.get("uri"),
+        })
+        if len(photos) == n:
+            break
+    return photos
 
 
 def _inat_group(iconic: str, n_top: int, n_photos: int) -> dict:
@@ -1458,26 +1502,7 @@ def _inat_group(iconic: str, n_top: int, n_photos: int) -> dict:
     for s in threatened:
         s["name"] = common(s.pop("taxon"))
 
-    # Latest photographed observations of native species, one per species
-    photos, seen = [], set()
-    recent = _inat("observations", per_page=60, photos="true", photo_license=INAT_OPEN_LICENCES,
-                   native="true", order_by="observed_on", locale="en",
-                   preferred_place_id=INAT_NZ_PLACE, **base)
-    for o in recent["results"]:
-        t, ph = o.get("taxon") or {}, (o.get("photos") or [{}])[0]
-        if not ph.get("url") or not ph.get("license_code") or t.get("id") in seen:
-            continue
-        seen.add(t.get("id"))
-        photos.append({
-            "url": ph["url"].replace("/square.", "/small."),
-            "name": common(t),
-            "sci": t.get("name"),
-            "credit": _photo_credit(ph.get("attribution", "")),
-            "licence": ph["license_code"].upper(),
-            "obs": o.get("uri"),
-        })
-        if len(photos) == n_photos:
-            break
+    photos = _inat_photos(base, n_photos)
 
     out = {
         "obs": obs,
