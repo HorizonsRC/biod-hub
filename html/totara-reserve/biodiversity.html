@@ -157,7 +157,8 @@
 
     /* ── BIRDS ── */
     .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.74rem; color: var(--muted); }
-    .legend span { display: inline-flex; align-items: center; gap: 5px; }
+    /* Direct children only — the E / ! marks inside are spans too */
+    .legend > span { display: inline-flex; align-items: center; gap: 5px; }
     .sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
 
     .bird-list { display: flex; flex-direction: column; justify-content: space-between; }
@@ -1263,7 +1264,13 @@ const BIO_DATA = {
     document.addEventListener('DOMContentLoaded', () => {
       render();
       new ResizeObserver(render).observe(document.getElementById('root'));
+      // The web font makes rows a little taller than the fallback font, so lists
+      // trimmed before it arrived can overflow — fit them again once it has.
+      // fonts.ready alone can resolve before the font has even been requested.
+      document.fonts.ready.then(render);
+      document.fonts.addEventListener('loadingdone', render);
     });
+    window.addEventListener('load', render);
   </script>
 </head>
 <body data-base-w="1111" data-base-h="687">
