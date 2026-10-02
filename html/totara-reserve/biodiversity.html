@@ -206,7 +206,24 @@
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
+    .intro-line.one { -webkit-line-clamp: 1; }
     .intro-line b { color: var(--navy); font-weight: 600; }
+
+    .info {
+      margin-left: auto;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      border: 1px solid var(--caption);
+      color: var(--caption);
+      font-size: 9px;
+      font-weight: 700;
+      font-style: italic;
+      font-family: Georgia, serif;
+      display: inline-flex !important;
+      align-items: center;
+      justify-content: center;
+      cursor: help;
+    }
 
     /* ── iNATURALIST GROUP CARDS ── */
     .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
@@ -295,7 +312,7 @@
   <script>
     /* BIO_DATA_START */
 const BIO_DATA = {
-  "generated": "2026-10-02T13:05:33.845869",
+  "generated": "2026-10-02T13:59:28.323363",
   "birds": {
     "species": [
       {
@@ -664,6 +681,40 @@ const BIO_DATA = {
     "hotspots": [
       "Tōtara Reserve – Fern Walk",
       "Pohangina Valley East"
+    ],
+    "photos": [
+      {
+        "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/678769490/small.jpg",
+        "name": "Pīwakawaka",
+        "sci": "Rhipidura fuliginosa placabilis",
+        "credit": "Max St Clair-Smith",
+        "licence": "CC-BY-NC",
+        "obs": "https://www.inaturalist.org/observations/371502037"
+      },
+      {
+        "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/634431256/small.jpg",
+        "name": "Pōpokotea",
+        "sci": "Mohoua albicilla",
+        "credit": "zstone",
+        "licence": "CC-BY-NC",
+        "obs": "https://www.inaturalist.org/observations/347913682"
+      },
+      {
+        "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/451778131/small.jpg",
+        "name": "Kererū",
+        "sci": "Hemiphaga novaeseelandiae novaeseelandiae",
+        "credit": "Michael Morgan",
+        "licence": "CC-BY-NC",
+        "obs": "https://www.inaturalist.org/observations/252376734"
+      },
+      {
+        "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/445908874/small.jpeg",
+        "name": "Korimako",
+        "sci": "Anthornis melanura melanura",
+        "credit": "Michael Morgan",
+        "licence": "CC-BY-NC",
+        "obs": "https://www.inaturalist.org/observations/249446325"
+      }
     ]
   },
   "plants": {
@@ -746,14 +797,6 @@ const BIO_DATA = {
         "obs": "https://www.inaturalist.org/observations/404904834"
       },
       {
-        "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/737971026/small.jpg",
-        "name": "Akeake",
-        "sci": "Dodonaea viscosa",
-        "credit": "A V",
-        "licence": "CC-BY-NC",
-        "obs": "https://www.inaturalist.org/observations/402025897"
-      },
-      {
         "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/735127681/small.jpg",
         "name": "Black Maire",
         "sci": "Nestegis cunninghamii",
@@ -768,6 +811,14 @@ const BIO_DATA = {
         "credit": "Grey Smith",
         "licence": "CC-BY",
         "obs": "https://www.inaturalist.org/observations/392754002"
+      },
+      {
+        "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/712478240/small.jpg",
+        "name": "Swamp maire",
+        "sci": "Syzygium maire",
+        "credit": "A V",
+        "licence": "CC-BY-NC",
+        "obs": "https://www.inaturalist.org/observations/388977802"
       }
     ]
   },
@@ -855,22 +906,6 @@ const BIO_DATA = {
     "top": [],
     "photos": [
       {
-        "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/695025820/small.jpg",
-        "name": "False Turkey-Tail",
-        "sci": "Stereum ostrea",
-        "credit": "Max St Clair-Smith",
-        "licence": "CC-BY-NC",
-        "obs": "https://www.inaturalist.org/observations/379931065"
-      },
-      {
-        "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/695027880/small.jpg",
-        "name": "White porecap",
-        "sci": "Favolaschia pustulosa",
-        "credit": "Max St Clair-Smith",
-        "licence": "CC-BY-NC",
-        "obs": "https://www.inaturalist.org/observations/379932072"
-      },
-      {
         "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/686966735/small.jpg",
         "name": "Pekepeke-kiore",
         "sci": "Hericium novae-zealandiae",
@@ -879,12 +914,28 @@ const BIO_DATA = {
         "obs": "https://www.inaturalist.org/observations/375758884"
       },
       {
-        "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/686966697/small.jpg",
-        "name": "Ear fungus",
-        "sci": "Auricularia cornea",
-        "credit": "Chris Tuffley",
+        "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/635932403/small.jpg",
+        "name": "Heimiomyces velutipes",
+        "sci": "Heimiomyces velutipes",
+        "credit": "B Nankivell",
         "licence": "CC-BY-NC",
-        "obs": "https://www.inaturalist.org/observations/375758875"
+        "obs": "https://www.inaturalist.org/observations/348668450"
+      },
+      {
+        "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/598091749/small.jpg",
+        "name": "Puccinia otagensis",
+        "sci": "Puccinia otagensis",
+        "credit": "A V",
+        "licence": "CC-BY-NC",
+        "obs": "https://www.inaturalist.org/observations/329897217"
+      },
+      {
+        "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/561976319/small.jpg",
+        "name": "Diplochorella colensoi",
+        "sci": "Diplochorella colensoi",
+        "credit": "Grey Smith",
+        "licence": "CC-BY",
+        "obs": "https://www.inaturalist.org/observations/311318652"
       }
     ]
   },
@@ -1046,16 +1097,14 @@ const BIO_DATA = {
             <span><i class="sw" style="background:var(--ebird)"></i>eBird</span>
             <span><span class="mark e" style="margin:0">E</span>endemic</span>
             ${threatened.length ? '<span><span class="mark t" style="margin:0">!</span>threatened</span>' : ''}
+            <span class="info" title="How birds are counted: sightings, not birds. Each iNaturalist observation and each eBird checklist naming the species counts once.${hotspots ? '&#10;eBird hotspots: ' + esc(hotspots) + '.' : ''}">i</span>
           </div>
           <div class="bird-list fill" data-trim data-more="native species">${native.map(s => birdRow(s, max)).join('')}</div>
-          ${threatened.length ? `<div class="intro-line">${threatened.map(s =>
+          ${threatened.length ? `<div class="intro-line one">${threatened.map(s =>
             `<b>${esc(s.mi || s.name)}</b> ${s.mi ? '(' + esc(s.name.toLowerCase()) + ') ' : ''}is ${esc(s.threat)}.`).join(' ')}</div>` : ''}
-          ${intro.length ? `<div class="intro-line"><b>Also ${intro.length} introduced species:</b>
+          ${intro.length ? `<div class="intro-line one" title="${esc(intro.map(s => s.name).join(', '))}"><b>Also ${intro.length} introduced species:</b>
             ${intro.map(s => esc(s.name.toLowerCase())).join(', ')}.</div>` : ''}
-          <div class="note" title="${hotspots ? 'eBird hotspots: ' + esc(hotspots) : ''}">
-            Sightings, not birds counted: each iNaturalist observation and each eBird
-            checklist naming the species counts once.
-          </div>
+          ${photoStrip(b.photos)}
         </div>`;
     }
 
