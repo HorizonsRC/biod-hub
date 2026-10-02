@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>River Management Header · Tōtara Reserve</title>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;500;600;700&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* Same tokens and shape as pest-animal-header.html */
+    :root {
+      --navy:       #222222;
+      --bg:         #f0f0f0;
+      --surface:    #ffffff;
+      --border:     #dcdcdc;
+      --muted:      #515151;
+      --caption:    #8a8a8a;
+      --forest:     #047f67;
+    }
+
+    html, body { height: 100%; }
+
+    body {
+      font-family: 'Source Sans 3', sans-serif;
+      background: var(--bg);
+      color: var(--navy);
+      display: flex;
+      align-items: stretch;
+      gap: 24px;
+      padding: 10px 16px;
+      overflow: hidden;
+    }
+
+    .title-block {
+      flex: 0 0 250px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .eyebrow {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--forest);
+    }
+
+    h1 {
+      font-family: 'Source Serif 4', serif;
+      font-size: 1.55rem;
+      font-weight: 600;
+      line-height: 1.1;
+    }
+
+    .period { font-size: 0.78rem; color: var(--muted); }
+
+    .intro {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      font-size: 0.85rem;
+      line-height: 1.4;
+      color: var(--muted);
+      max-width: 460px;
+    }
+
+    /* Left empty for the ExB Views Navigation widget, which sits on top of
+       the embed. Only the label is drawn here. */
+    .nav-slot {
+      flex: 0 0 300px;
+      margin-left: auto;
+      border-left: 1px solid var(--border);
+      padding-left: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      padding-top: 14px;
+    }
+
+    .nav-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--caption);
+    }
+  </style>
+</head>
+<body data-base-w="1111" data-base-h="104">
+  <script src="fit.js?v=1"></script>
+
+  <div class="title-block">
+    <span class="eyebrow">Tōtara Reserve</span>
+    <h1>River Management</h1>
+    <span class="period">Pohangina River</span>
+  </div>
+
+  <p class="intro">
+    Live river levels and rainfall from Horizons' monitoring sites on the
+    Pohangina River, at the reserve and upstream at Piripiri.
+  </p>
+
+  <div class="nav-slot">
+    <span class="nav-label">Choose a monitoring site</span>
+  </div>
+</body>
+</html>
