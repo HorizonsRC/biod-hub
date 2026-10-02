@@ -15,6 +15,14 @@ Pulls data for two Tōtara Reserve dashboards:
        Tracking tunnel spreadsheets (config.TOTARA_TTI_RAW_XLSX, TOTARA_TTI_XLSX) — TTI.
        PCO data requires the ArcGIS Pro Python environment (arcgis SDK, SSO auth).
 
+  3. pest-plant-header/-control/-legend.html — Pest plant control (contractor data)
+
+  4. biodiversity.html — public sightings and bat monitoring (--only bio)
+       eBird hotspots (EBIRD_HOTSPOTS) — species lists + checklists reporting them.
+       iNaturalist place 208780 — research-grade birds, plants, insects, fungi.
+       Bat detector CSV exports (BAT_CSV_GLOB) — one file per survey.
+       No ArcGIS needed.
+
 Marker comments in river-management.html:
     /* SWIM_DATA_START */  /* SWIM_DATA_END */
     /* RIVER_DATA_START */ /* RIVER_DATA_END */
@@ -33,7 +41,9 @@ import json
 import logging
 import re
 import sys
+import time
 import datetime
+from collections import Counter
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
@@ -140,6 +150,22 @@ PEST_PLANT_TRACKS_LAYER = 2
 # Tōtara Reserve web map. Species colours, the size key and the layer titles are
 # read from its symbology so the dashboard always matches what the map draws.
 TOTARA_WEBMAP_ID        = "e3d60ce2a731408f9e25126fc4e2ef7d"
+
+# Biodiversity page — public sightings plus the bat monitoring exports.
+BIO_HTML_PATH   = HERE / "html" / "totara-reserve" / "biodiversity.html"
+EBIRD_API_KEY   = getattr(config, "EBIRD_API_KEY", None) if config else None
+EBIRD_URL       = "https://api.ebird.org/v2"
+# Both hotspots sit inside iNaturalist's Tōtara Reserve place. Pohangina Valley
+# East is a roadside pin, so it carries more farmland birds than Fern Walk.
+EBIRD_HOTSPOTS  = {"L2898183": "Tōtara Reserve – Fern Walk",
+                   "L4137184": "Pohangina Valley East"}
+INAT_URL        = "https://api.inaturalist.org/v1"
+INAT_PLACE_ID   = 208780   # inaturalist.org/places/totara-reserve-nz
+INAT_NZ_PLACE   = 6803     # New Zealand — establishment means and threat status
+# Only photos under these licences are shown, each with its credit line.
+INAT_OPEN_LICENCES = "cc0,cc-by,cc-by-nc,cc-by-sa,cc-by-nd,cc-by-nc-sa,cc-by-nc-nd"
+# One CSV per survey, exported from the bat detector platform.
+BAT_CSV_GLOB    = "Data/Totara-Reserve/*bat_data*.csv"
 
 SESSION = requests.Session()
 SESSION.headers.update({"User-Agent": "BioD-Hub/1.0 (HorizonsRC; internal dashboard)"})
@@ -1237,6 +1263,302 @@ def extract_pest_plant_data() -> dict | None:
     }
 
 
+# ── Biodiversity — eBird, iNaturalist, bat monitoring ─────────────────────────
+#
+# Sightings are not dated on the page: eBird activity at Tōtara is sparse, so the
+# page shows what has been recorded here rather than a recent window.
+# Birds are merged across eBird and iNaturalist by iNaturalist taxon id (eBird
+# scientific names are resolved to it), which sidesteps common-name spelling
+# differences between the two. A bird's "records" are iNaturalist research-grade
+# observations plus eBird checklists reporting it — a count of sightings, not of
+# individual birds. Plants, insects and fungi are iNaturalist only.
+
+def _inat(path: str, **params):
+    time.sleep(1)  # iNaturalist asks for no more than about one request a second
+    r = SESSION.get(f"{INAT_URL}/{path}", params=params, timeout=60)
+    r.raise_for_status()
+    return r.json()
+
+
+def _ebird(path: str, **params):
+    r = SESSION.get(f"{EBIRD_URL}/{path}", params=params, timeout=60,
+                    headers={"X-eBirdApiToken": EBIRD_API_KEY})
+    r.raise_for_status()
+    return r.json()
+
+
+def _inat_taxa(ids: list[int], locale: str) -> dict[int, dict]:
+    """Full taxon records, 30 ids per call (the API's limit)."""
+    out = {}
+    for i in range(0, len(ids), 30):
+        chunk = ",".join(map(str, ids[i:i + 30]))
+        for t in _inat(f"taxa/{chunk}", locale=locale, preferred_place_id=INAT_NZ_PLACE)["results"]:
+            out[t["id"]] = t
+    return out
+
+
+def _nz_status(ids: list[int]) -> dict[str, set]:
+    """Which of these taxa iNaturalist lists as endemic / introduced / threatened in NZ."""
+    out = {}
+    for flag in ("endemic", "introduced", "threatened"):
+        res = _inat("observations/species_counts", place_id=INAT_NZ_PLACE,
+                    taxon_id=",".join(map(str, ids)), per_page=500, **{flag: "true"})["results"]
+        out[flag] = {r["taxon"]["id"] for r in res}
+    return out
+
+
+IUCN_NAMES = {"CR": "Critically Endangered", "EN": "Endangered", "VU": "Vulnerable"}
+
+
+def _nz_threat_status(taxon: dict) -> str | None:
+    """A taxon's NZ Threat Classification status, else its global IUCN one.
+
+    iNaturalist holds NZTCS statuses for some taxa only — swamp maire and
+    ramarama carry just an IUCN Critically Endangered listing. IUCN Near
+    Threatened and Least Concern are not shown as threatened."""
+    for cs in taxon.get("conservation_statuses") or []:
+        if (cs.get("place") or {}).get("id") == INAT_NZ_PLACE:
+            return cs.get("status_name") or cs.get("status")
+    for cs in taxon.get("conservation_statuses") or []:
+        if not cs.get("place") and cs.get("authority") == "IUCN Red List" \
+                and cs.get("status") in IUCN_NAMES:
+            return f"{IUCN_NAMES[cs['status']]} (IUCN)"
+    return None
+
+
+def _split_names(en_name: str, mi_name: str | None) -> tuple[str | None, str]:
+    """(te reo, English) from iNaturalist's NZ names.
+
+    The NZ English name is sometimes 'Tauhou (Silvereye)' and sometimes plain
+    'Fantail' with the te reo name only in the Māori locale, which may itself
+    read 'Riroriro (Grey Warbler)'. A te reo-only name such as 'Kererū' stays as
+    the main name with no English one."""
+    m = re.fullmatch(r"(.+?)\s*\((.+)\)", en_name)
+    if m:
+        return m.group(1), m.group(2)
+    if mi_name:
+        mi = re.sub(r"\s*\(.*\)$", "", mi_name)
+        if mi.lower() != en_name.lower():
+            return mi, en_name
+    return None, en_name
+
+
+def _bird_data() -> dict:
+    """Bird species across both eBird hotspots and iNaturalist, merged by taxon."""
+    birds: dict = {}   # iNat taxon id (or eBird sci name if unresolved) → record
+
+    # iNaturalist — research-grade bird observations in the reserve place
+    res = _inat("observations/species_counts", place_id=INAT_PLACE_ID, iconic_taxa="Aves",
+                quality_grade="research", per_page=500)["results"]
+    inat_obs = 0
+    for r in res:
+        t = r["taxon"]
+        birds[t["id"]] = {"id": t["id"], "sci": t["name"], "ebird": 0, "inat": r["count"]}
+        inat_obs += r["count"]
+    log.info(f"  iNaturalist birds: {len(res)} species, {inat_obs} research-grade observations")
+
+    # eBird — every species on each hotspot's list, and how many checklists report it
+    n_lists = 0
+    if not EBIRD_API_KEY:
+        log.warning("  EBIRD_API_KEY not set — eBird birds skipped.")
+    else:
+        codes, reported = set(), Counter()
+        for loc, label in EBIRD_HOTSPOTS.items():
+            loc_codes = _ebird(f"product/spplist/{loc}")
+            lists = _ebird(f"product/lists/{loc}", maxResults=200)
+            codes.update(loc_codes)
+            n_lists += len(lists)
+            for cl in lists:
+                view = _ebird(f"product/checklist/view/{cl['subId']}")
+                reported.update({o["speciesCode"] for o in view.get("obs", [])})
+            log.info(f"  eBird {label}: {len(loc_codes)} species, {len(lists)} checklists")
+        tax = _ebird("ref/taxonomy/ebird", species=",".join(sorted(codes)), fmt="json")
+        for t in tax:
+            if t.get("category") not in ("species", "issf", "form"):
+                log.info(f"  eBird: skipping {t.get('comName')} ({t.get('category')})")
+                continue
+            sci = " ".join(t["sciName"].split()[:2])
+            hits = _inat("taxa", q=sci, rank="species", is_active="true", per_page=5)["results"]
+            exact = [h for h in hits if h["name"].lower() == sci.lower()]
+            pick = (exact or hits or [None])[0]
+            if pick is None:
+                log.warning(f"  eBird {t['comName']} ({sci}) has no iNaturalist match — kept unclassified")
+                key = sci
+                birds.setdefault(key, {"id": None, "sci": sci, "en": t["comName"], "ebird": 0, "inat": 0})
+            else:
+                if not exact:
+                    log.info(f"  eBird {sci} matched iNaturalist {pick['name']} (synonym)")
+                key = pick["id"]
+                birds.setdefault(key, {"id": key, "sci": pick["name"], "ebird": 0, "inat": 0})
+            birds[key]["ebird"] += max(reported.get(t["speciesCode"], 0), 1)
+
+    # Names and NZ status, from iNaturalist's NZ checklist
+    ids = [b["id"] for b in birds.values() if b["id"]]
+    en, mi = _inat_taxa(ids, "en"), _inat_taxa(ids, "mi")
+    status = _nz_status(ids)
+    out = []
+    for b in birds.values():
+        tid = b["id"]
+        e = (en.get(tid) or {}).get("preferred_common_name") or b.get("en") or b["sci"]
+        reo, eng = _split_names(e[0].upper() + e[1:], (mi.get(tid) or {}).get("preferred_common_name"))
+        intro = tid in status["introduced"]
+        out.append({
+            "name": eng,
+            # Te reo transliterations of introduced birds (Makipai, Tiu) are left off
+            "mi": None if intro else reo,
+            "sci": b["sci"],
+            "status": ("unknown" if not tid else
+                       "endemic" if tid in status["endemic"] else
+                       "introduced" if intro else "native"),
+            "threat": _nz_threat_status(en.get(tid) or {}) if tid in status["threatened"] else None,
+            "ebird": b["ebird"],
+            "inat": b["inat"],
+        })
+    out.sort(key=lambda s: (-(s["ebird"] + s["inat"]), s["name"]))
+    log.info(f"  Birds combined: {len(out)} species — "
+             + ", ".join(f"{k} {sum(s['status'] == k for s in out)}"
+                         for k in ("endemic", "native", "introduced", "unknown")))
+    for s in out:
+        if s["threat"]:
+            log.info(f"  Threatened bird: {s['name']} — {s['threat']}")
+    return {"species": out, "ebirdChecklists": n_lists, "inatObs": inat_obs,
+            "hotspots": list(EBIRD_HOTSPOTS.values()) if EBIRD_API_KEY else []}
+
+
+def _photo_credit(attribution: str) -> str:
+    """'(c) Jane Doe, some rights reserved (CC BY-NC)' → 'Jane Doe'."""
+    m = re.match(r"\(c\)\s*(.+?),", attribution or "")
+    return m.group(1) if m else (attribution or "")
+
+
+def _inat_group(iconic: str, n_top: int, n_photos: int) -> dict:
+    """Summary of one iconic group's research-grade observations in the reserve."""
+    base = {"place_id": INAT_PLACE_ID, "iconic_taxa": iconic, "quality_grade": "research"}
+    obs = _inat("observations", per_page=0, **base)["total_results"]
+    sc = _inat("observations/species_counts", per_page=n_top, locale="en",
+               preferred_place_id=INAT_NZ_PLACE, **base)
+    flags = {f: _inat("observations/species_counts", per_page=0, **base, **{f: "true"})["total_results"]
+             for f in ("native", "introduced", "endemic")}
+    thr = _inat("observations/species_counts", per_page=50, threatened="true", **base)["results"]
+    # iNaturalist's threatened flag can come from any authority (nīkau is flagged
+    # while IUCN Least Concern); keep only taxa with a status worth showing.
+    thr_taxa = _inat_taxa([r["taxon"]["id"] for r in thr], "en") if thr else {}
+    threatened = []
+    for tid, t in thr_taxa.items():
+        st = _nz_threat_status(t)
+        if st:
+            threatened.append({"name": None, "sci": t["name"], "status": st, "taxon": t})
+        else:
+            log.info(f"  {t['name']} flagged threatened with no NZ or IUCN threat status — left off")
+
+    def common(t):
+        n = t.get("preferred_common_name")
+        return n[0].upper() + n[1:] if n else t["name"]
+
+    for s in threatened:
+        s["name"] = common(s.pop("taxon"))
+
+    # Latest photographed observations of native species, one per species
+    photos, seen = [], set()
+    recent = _inat("observations", per_page=60, photos="true", photo_license=INAT_OPEN_LICENCES,
+                   native="true", order_by="observed_on", locale="en",
+                   preferred_place_id=INAT_NZ_PLACE, **base)
+    for o in recent["results"]:
+        t, ph = o.get("taxon") or {}, (o.get("photos") or [{}])[0]
+        if not ph.get("url") or not ph.get("license_code") or t.get("id") in seen:
+            continue
+        seen.add(t.get("id"))
+        photos.append({
+            "url": ph["url"].replace("/square.", "/small."),
+            "name": common(t),
+            "sci": t.get("name"),
+            "credit": _photo_credit(ph.get("attribution", "")),
+            "licence": ph["license_code"].upper(),
+            "obs": o.get("uri"),
+        })
+        if len(photos) == n_photos:
+            break
+
+    out = {
+        "obs": obs,
+        "species": sc["total_results"],
+        **flags,
+        "threatened": sorted(threatened, key=lambda s: s["name"]),
+        "top": [{"name": common(r["taxon"]), "sci": r["taxon"]["name"], "count": r["count"]}
+                for r in sc["results"]],
+        "photos": photos,
+    }
+    log.info(f"  iNaturalist {iconic}: {obs} obs, {out['species']} species "
+             f"(native {flags['native']}, introduced {flags['introduced']}, endemic {flags['endemic']}, "
+             f"threatened {len(threatened)}), {len(photos)} photos")
+    return out
+
+
+def extract_bat_data() -> dict | None:
+    """One summary per bat detector export (one CSV per survey)."""
+    files = sorted(HERE.glob(BAT_CSV_GLOB))
+    if not files:
+        log.warning(f"  No bat CSVs match {BAT_CSV_GLOB}")
+        return None
+    surveys = []
+    for f in files:
+        df = pd.read_csv(f)
+        if df.empty:
+            log.warning(f"  {f.name} is empty — skipped")
+            continue
+        df["night"] = pd.to_datetime(df["recording_night"], dayfirst=True)
+        df["t"] = pd.to_datetime(df["captured_at"])
+        det = df["species_detection"].fillna("")
+        possible = det.str.startswith("Possible")
+        bats = df[(det != "Non-bat") & (det != "") & ~possible]
+        nights = pd.date_range(df["night"].min(), df["night"].max(), freq="D")
+        per_night = bats.groupby("night").size().reindex(nights, fill_value=0)
+        surveys.append({
+            "file": f.name,
+            "from": nights[0].strftime("%Y-%m-%d"),
+            "to": nights[-1].strftime("%Y-%m-%d"),
+            "nights": len(nights),
+            "nightsWithBats": int((per_night > 0).sum()),
+            "recorders": sorted(df["device_name"].dropna().unique().tolist()),
+            "byRecorder": {k: int(v) for k, v in bats.groupby("device_name").size().items()},
+            "triggers": len(df),
+            "passes": len(bats),
+            "possible": int(possible.sum()),
+            "verified": int(bats["verification_status"].isin(["Verified", "Modified"]).sum()),
+            "bySpecies": {k: int(v) for k, v in bats["species_detection"].value_counts().items()},
+            "byHour": [int((bats["t"].dt.hour == h).sum()) for h in range(24)],
+            "byNight": {"dates": [d.strftime("%Y-%m-%d") for d in nights],
+                        "passes": [int(v) for v in per_night]},
+        })
+        log.info(f"  Bats {f.name}: {len(bats)} passes over {len(nights)} nights, "
+                 f"{df['device_name'].nunique()} recorders")
+    return {"surveys": surveys} if surveys else None
+
+
+def extract_biodiversity_data() -> dict | None:
+    """Everything the biodiversity page shows. None keeps the page's last good data."""
+    try:
+        birds = _bird_data()
+        plants  = _inat_group("Plantae", n_top=6, n_photos=4)
+        insects = _inat_group("Insecta", n_top=6, n_photos=4)
+        fungi   = _inat_group("Fungi",   n_top=0, n_photos=4)
+    except Exception:
+        log.exception("  Biodiversity fetch failed — page left as it was")
+        return None
+    # An empty answer from a feed is not the same as nothing being there.
+    if not birds["species"] or not plants["species"]:
+        log.warning("  Birds or plants came back empty — page left as it was")
+        return None
+    return {
+        "generated": datetime.datetime.now().isoformat(),
+        "birds": birds,
+        "plants": plants,
+        "insects": insects,
+        "fungi": fungi,
+        "bats": extract_bat_data(),
+    }
+
+
 # ── HTML injection ─────────────────────────────────────────────────────────────
 
 def _replace_block(html: str, start_marker: str, end_marker: str, new_content: str) -> str:
@@ -1293,14 +1615,25 @@ def inject_into_pest_plant_html(data: dict) -> None:
         log.info(f"Updated {path}")
 
 
+def inject_into_bio_html(data: dict) -> None:
+    if not BIO_HTML_PATH.exists():
+        log.warning(f"{BIO_HTML_PATH} does not exist — skipping.")
+        return
+    block = f"const BIO_DATA = {json.dumps(data, indent=2, ensure_ascii=False)};"
+    html = BIO_HTML_PATH.read_text(encoding="utf-8")
+    html = _replace_block(html, "BIO_DATA_START", "BIO_DATA_END", block)
+    BIO_HTML_PATH.write_text(html, encoding="utf-8")
+    log.info(f"Updated {BIO_HTML_PATH}")
+
+
 # ── Main ───────────────────────────────────────────────────────────────────────
 
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Tōtara Reserve dashboard data export")
     parser.add_argument(
-        "--only", choices=["river", "pco", "plants"],
-        help="Run one section only. Default runs all three.",
+        "--only", choices=["river", "pco", "plants", "bio"],
+        help="Run one section only. Default runs all four.",
     )
     only = parser.parse_args().only
 
@@ -1337,6 +1670,12 @@ def main():
             inject_into_pest_plant_html(plants)
         else:
             log.warning("Pest plant data unavailable — pest-plant-*.html not updated.")
+
+    if only in (None, "bio"):
+        log.info("--- Biodiversity (eBird, iNaturalist, bat monitoring) ---")
+        bio = extract_biodiversity_data()
+        if bio:
+            inject_into_bio_html(bio)
 
     log.info("=== Done ===")
 
