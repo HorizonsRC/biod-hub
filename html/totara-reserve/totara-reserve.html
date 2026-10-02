@@ -18,79 +18,68 @@
       --totara:  #047f67;
     }
 
-    html, body { height: 100%; margin: 0; }
+    /* Every size below is in rem, so the whole page grows with the embed's
+       width: about 19px per rem on a 1700px-wide ExB page. */
+    html {
+      height: 100%;
+      font-size: clamp(15px, 1.1vw, 22px);
+    }
 
     body {
+      height: 100%;
+      margin: 0;
       font-family: 'Source Sans 3', sans-serif;
       background: var(--bg);
       color: var(--navy);
-      font-size: 16px;
       line-height: 1.55;
-      display: flex;
-      flex-direction: column;
     }
 
     /* ── HEADER ── */
     .page-header {
-      padding: 16px 28px;
+      padding: 0.9rem 1.6rem;
       background: var(--totara);
-      flex-shrink: 0;
     }
 
     .page-title {
       font-family: 'Source Serif 4', serif;
-      font-size: 1.5rem;
+      font-size: 1.9rem;
       font-weight: 600;
       color: #ffffff;
       line-height: 1.2;
     }
 
     /* ── CONTENT ── */
+    /* Flows top-down at its natural height, like the hub page (html/index.html) */
     .content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      padding: 20px 28px 24px;
-      gap: 0;
+      padding: 1.2rem 1.6rem 1.4rem;
     }
 
     /* ── STAT STRIP ── */
     .stat-strip {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      flex-shrink: 0;
-      margin-bottom: 0;
-    }
-
-    /* ── CARDS SECTION (centred in remaining space) ── */
-    .cards-section {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 12px;
+      gap: 0.6rem;
     }
 
     .stat-box {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-left: 3px solid var(--totara);
+      border-left: 4px solid var(--totara);
       border-radius: 4px;
-      padding: 10px 14px;
+      padding: 0.65rem 0.9rem;
     }
 
     .stat-label {
-      font-size: 9.5px;
+      font-size: 0.66rem;
       font-weight: 700;
       letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--caption);
-      margin-bottom: 3px;
+      margin-bottom: 0.2rem;
     }
 
     .stat-value {
-      font-size: 13.5px;
+      font-size: 1rem;
       font-weight: 600;
       color: var(--navy);
       line-height: 1.3;
@@ -98,173 +87,141 @@
 
     /* ── SECTION LABEL ── */
     .section-label {
-      font-size: 10px;
+      font-size: 0.7rem;
       font-weight: 700;
       letter-spacing: 0.14em;
       text-transform: uppercase;
       color: var(--caption);
-      padding-bottom: 10px;
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
+      margin: 1.6rem 0 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
     }
 
-    /* ── CARD GRID ── */
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── CARD GRID (same shape as the hub page cards) ── */
     .cards-grid {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
-      gap: 16px;
-      flex-shrink: 0;
+      gap: 0.8rem;
     }
 
-    /* ── CARD ── */
     .card {
       background: var(--surface);
-      border-radius: 6px;
       border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
-      transition: box-shadow 0.18s ease;
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
 
-    .card:hover { box-shadow: 0 4px 18px rgba(0,0,0,0.09); }
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.1);
+    }
 
-    .card-accent { height: 5px; flex-shrink: 0; }
+    .card-accent { height: 0.45rem; }
 
     .card-body {
-      padding: 16px 18px 12px;
+      padding: 1rem 1.1rem 0.8rem;
+      flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 7px;
-      flex: 1;
     }
 
     .card-icon {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
+      width: 2.2rem;
+      height: 2.2rem;
+      border-radius: 0.5rem;
       display: flex;
       align-items: center;
       justify-content: center;
+      margin-bottom: 0.6rem;
       flex-shrink: 0;
     }
 
-    .card-icon svg { width: 18px; height: 18px; }
+    .card-icon svg { width: 1.35rem; height: 1.35rem; }
 
     .card-subtitle {
-      font-size: 9.5px;
+      font-size: 0.66rem;
       font-weight: 700;
       letter-spacing: 0.13em;
       text-transform: uppercase;
+      margin-bottom: 0.15rem;
     }
 
     .card-title {
       font-family: 'Source Serif 4', serif;
-      font-size: 1.05rem;
+      font-size: 1.3rem;
       font-weight: 600;
-      line-height: 1.2;
+      line-height: 1.3;
       color: var(--navy);
+      margin-bottom: 0.35rem;
     }
 
     .card-desc {
-      font-size: 12px;
-      color: var(--muted);
+      font-size: 0.95rem;
       line-height: 1.6;
+      color: #3a3a3a;
       flex: 1;
+      margin-bottom: 1.2rem;
     }
 
-    /* ── META BOXES ── */
-    .card-meta {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-      margin-top: 4px;
-    }
-
-    .meta-box {
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 6px 9px;
-      overflow: hidden;
-    }
-
-    .meta-key {
-      font-size: 8.5px;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      margin-bottom: 2px;
-    }
-
-    .meta-val {
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--navy);
-      line-height: 1.25;
-    }
-
-    /* ── CARD FOOTER ── */
     .card-footer {
-      padding: 10px 18px 14px;
       border-top: 1px solid var(--border);
-      background: #f7f7f7;
+      padding: 0.65rem 1.1rem;
     }
 
-    .card-btn {
-      padding: 7px 15px;
-      color: #fff;
-      text-decoration: none;
-      font-family: 'Source Sans 3', sans-serif;
-      font-size: 12px;
-      font-weight: 600;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      display: inline-flex;
+    .card-arrow {
+      font-size: 0.88rem;
+      font-weight: 700;
+      display: flex;
       align-items: center;
-      gap: 7px;
-      transition: opacity 0.15s ease, transform 0.1s ease;
-      letter-spacing: 0.02em;
+      gap: 0.3rem;
+      transition: gap 0.2s;
     }
 
-    .card-btn:hover { opacity: 0.84; transform: translateX(2px); }
-    .card-btn svg { width: 12px; height: 12px; flex-shrink: 0; }
+    .card:hover .card-arrow { gap: 0.5rem; }
 
     /* ── PER-CARD THEMES ── */
     .card--forest .card-accent   { background: #047f67; }
     .card--forest .card-icon     { background: #e2f1ed; color: #047f67; }
-    .card--forest .card-subtitle { color: #047f67; }
-    .card--forest .card-btn      { background: #047f67; }
-    .card--forest .meta-box      { background: #f0f8f6; }
-    .card--forest .meta-key      { color: #047f67; }
+    .card--forest .card-subtitle,
+    .card--forest .card-arrow    { color: #047f67; }
+    .card--forest .card-footer   { background: #f0f8f6; }
 
     .card--animal .card-accent   { background: #2c6e8a; }
     .card--animal .card-icon     { background: #e3eef5; color: #2c6e8a; }
-    .card--animal .card-subtitle { color: #2c6e8a; }
-    .card--animal .card-btn      { background: #2c6e8a; }
-    .card--animal .meta-box      { background: #f0f6f9; }
-    .card--animal .meta-key      { color: #2c6e8a; }
+    .card--animal .card-subtitle,
+    .card--animal .card-arrow    { color: #2c6e8a; }
+    .card--animal .card-footer   { background: #f0f6f9; }
 
-    .card--plant .card-accent   { background: #4a6b2e; }
-    .card--plant .card-icon     { background: #eaf0e4; color: #4a6b2e; }
-    .card--plant .card-subtitle { color: #4a6b2e; }
-    .card--plant .card-btn      { background: #4a6b2e; }
-    .card--plant .meta-box      { background: #f3f7ee; }
-    .card--plant .meta-key      { color: #4a6b2e; }
+    .card--plant .card-accent    { background: #4a6b2e; }
+    .card--plant .card-icon      { background: #eaf0e4; color: #4a6b2e; }
+    .card--plant .card-subtitle,
+    .card--plant .card-arrow     { color: #4a6b2e; }
+    .card--plant .card-footer    { background: #f3f7ee; }
 
-    .card--camp .card-accent   { background: #8b5e30; }
-    .card--camp .card-icon     { background: #f3ece3; color: #8b5e30; }
-    .card--camp .card-subtitle { color: #8b5e30; }
-    .card--camp .card-btn      { background: #8b5e30; }
-    .card--camp .meta-box      { background: #faf4ee; }
-    .card--camp .meta-key      { color: #8b5e30; }
+    .card--camp .card-accent     { background: #8b5e30; }
+    .card--camp .card-icon       { background: #f3ece3; color: #8b5e30; }
+    .card--camp .card-subtitle,
+    .card--camp .card-arrow      { color: #8b5e30; }
+    .card--camp .card-footer     { background: #faf4ee; }
 
-    .card--river .card-accent   { background: #1a535c; }
-    .card--river .card-icon     { background: #e3f0f2; color: #1a535c; }
-    .card--river .card-subtitle { color: #1a535c; }
-    .card--river .card-btn      { background: #1a535c; }
-    .card--river .meta-box      { background: #eef6f7; }
-    .card--river .meta-key      { color: #1a535c; }
+    .card--river .card-accent    { background: #1a535c; }
+    .card--river .card-icon      { background: #e3f0f2; color: #1a535c; }
+    .card--river .card-subtitle,
+    .card--river .card-arrow     { color: #1a535c; }
+    .card--river .card-footer    { background: #eef6f7; }
   </style>
 </head>
 <body>
@@ -296,16 +253,13 @@
       </div>
     </div>
 
-    <!-- CARDS SECTION: label + cards centred vertically -->
-    <div class="cards-section">
-
     <div class="section-label">Programme Dashboards</div>
 
-    <!-- CARDS -->
+    <!-- CARDS: the whole card is the link -->
     <div class="cards-grid">
 
       <!-- Biodiversity -->
-      <div class="card card--forest">
+      <a class="card card--forest" href="https://experience.arcgis.com/experience/0b02dc0ca9c545f7bf31fe3ea20ace1a/page/Biodiversity?draft=true" target="_blank" rel="noopener">
         <div class="card-accent"></div>
         <div class="card-body">
           <div class="card-icon">
@@ -316,27 +270,14 @@
           <div class="card-subtitle">Biodiversity Monitoring</div>
           <div class="card-title">Biodiversity</div>
           <p class="card-desc">Native birds, plants, insects and fungi recorded in the reserve from eBird checklists and iNaturalist observations, plus long-tailed bat acoustic monitoring.</p>
-          <div class="card-meta">
-            <div class="meta-box">
-              <div class="meta-key">Species Records</div>
-              <div class="meta-val">eBird &amp; iNaturalist</div>
-            </div>
-            <div class="meta-box">
-              <div class="meta-key">Monitoring</div>
-              <div class="meta-val">Bat acoustic surveys</div>
-            </div>
-          </div>
         </div>
         <div class="card-footer">
-          <a class="card-btn" href="https://experience.arcgis.com/experience/0b02dc0ca9c545f7bf31fe3ea20ace1a/page/Biodiversity?draft=true" target="_blank" rel="noopener">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            Open Dashboard
-          </a>
+          <span class="card-arrow">Open Dashboard →</span>
         </div>
-      </div>
+      </a>
 
       <!-- Pest Animal Control -->
-      <div class="card card--animal">
+      <a class="card card--animal" href="https://experience.arcgis.com/experience/0b02dc0ca9c545f7bf31fe3ea20ace1a/page/Pest-Animal-Control?draft=true" target="_blank" rel="noopener">
         <div class="card-accent"></div>
         <div class="card-body">
           <div class="card-icon">
@@ -350,27 +291,14 @@
           <div class="card-subtitle">Pest Control</div>
           <div class="card-title">Pest Animal Control</div>
           <p class="card-desc">Trap catch and PCO data from Horizons' internal layers. Covers possum, mustelid, and rodent operations plus deer control across the reserve.</p>
-          <div class="card-meta">
-            <div class="meta-box">
-              <div class="meta-key">Data Source</div>
-              <div class="meta-val">Horizons trapping &amp; PCO layers</div>
-            </div>
-            <div class="meta-box">
-              <div class="meta-key">Species</div>
-              <div class="meta-val">Possum, mustelid, rodent, deer</div>
-            </div>
-          </div>
         </div>
         <div class="card-footer">
-          <a class="card-btn" href="https://experience.arcgis.com/experience/0b02dc0ca9c545f7bf31fe3ea20ace1a/page/Pest-Animal-Control?draft=true" target="_blank" rel="noopener">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            Open Dashboard
-          </a>
+          <span class="card-arrow">Open Dashboard →</span>
         </div>
-      </div>
+      </a>
 
       <!-- Pest Plant Control -->
-      <div class="card card--plant">
+      <a class="card card--plant" href="https://experience.arcgis.com/experience/0b02dc0ca9c545f7bf31fe3ea20ace1a/page/Pest-Plant-Control?draft=true" target="_blank" rel="noopener">
         <div class="card-accent"></div>
         <div class="card-body">
           <div class="card-icon">
@@ -381,28 +309,15 @@
           </div>
           <div class="card-subtitle">Pest Control</div>
           <div class="card-title">Pest Plant Control</div>
-          <p class="card-desc">Pest plant control data from Horizons' contractor layer — species targeted, treatment locations, area treated, and effort trends across the reserve.</p>
-          <div class="card-meta">
-            <div class="meta-box">
-              <div class="meta-key">Data Source</div>
-              <div class="meta-val">Horizons contractor layer</div>
-            </div>
-            <div class="meta-box">
-              <div class="meta-key">Coverage</div>
-              <div class="meta-val">Reserve boundary</div>
-            </div>
-          </div>
+          <p class="card-desc">Pest plant control data from Horizons' contractor layer: species targeted, treatment locations, area treated, and effort trends across the reserve.</p>
         </div>
         <div class="card-footer">
-          <a class="card-btn" href="https://experience.arcgis.com/experience/0b02dc0ca9c545f7bf31fe3ea20ace1a/page/Pest-Plant-Control?draft=true" target="_blank" rel="noopener">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            Open Dashboard
-          </a>
+          <span class="card-arrow">Open Dashboard →</span>
         </div>
-      </div>
+      </a>
 
       <!-- Campground -->
-      <div class="card card--camp">
+      <a class="card card--camp" href="https://experience.arcgis.com/experience/0b02dc0ca9c545f7bf31fe3ea20ace1a/page/Camp-ground?draft=true" target="_blank" rel="noopener">
         <div class="card-accent"></div>
         <div class="card-body">
           <div class="card-icon">
@@ -412,28 +327,15 @@
           </div>
           <div class="card-subtitle">Campground Management</div>
           <div class="card-title">Campground</div>
-          <p class="card-desc">Booking and occupancy reporting via the Newbook system — seasonal guest numbers, daily occupancy trends, and bookings-placed data across the camping season.</p>
-          <div class="card-meta">
-            <div class="meta-box">
-              <div class="meta-key">Booking System</div>
-              <div class="meta-val">Newbook API</div>
-            </div>
-            <div class="meta-box">
-              <div class="meta-key">Income</div>
-              <div class="meta-val">~$73k/yr camping &amp; rental</div>
-            </div>
-          </div>
+          <p class="card-desc">Booking and occupancy reporting via the Newbook system, covering seasonal guest numbers, daily occupancy trends, and bookings-placed data across the camping season.</p>
         </div>
         <div class="card-footer">
-          <a class="card-btn" href="https://experience.arcgis.com/experience/0b02dc0ca9c545f7bf31fe3ea20ace1a/page/Camp-ground?draft=true" target="_blank" rel="noopener">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            Open Dashboard
-          </a>
+          <span class="card-arrow">Open Dashboard →</span>
         </div>
-      </div>
+      </a>
 
       <!-- River Management -->
-      <div class="card card--river">
+      <a class="card card--river" href="https://experience.arcgis.com/experience/0b02dc0ca9c545f7bf31fe3ea20ace1a/page/River-Management?draft=true" target="_blank" rel="noopener">
         <div class="card-accent"></div>
         <div class="card-body">
           <div class="card-icon">
@@ -446,28 +348,13 @@
           <div class="card-subtitle">Flood Modelling &amp; Water Quality</div>
           <div class="card-title">River Management</div>
           <p class="card-desc">FloodWatch flood modelling for the Pohangina River through the reserve, alongside LAWA water quality monitoring at Tōtara Reserve.</p>
-          <div class="card-meta">
-            <div class="meta-box">
-              <div class="meta-key">Flood Data</div>
-              <div class="meta-val">FloodWatch modelling</div>
-            </div>
-            <div class="meta-box">
-              <div class="meta-key">Water Quality</div>
-              <div class="meta-val">LAWA — Pohangina at Tōtara</div>
-            </div>
-          </div>
         </div>
         <div class="card-footer">
-          <a class="card-btn" href="https://experience.arcgis.com/experience/0b02dc0ca9c545f7bf31fe3ea20ace1a/page/River-Management?draft=true" target="_blank" rel="noopener">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            Open Dashboard
-          </a>
+          <span class="card-arrow">Open Dashboard →</span>
         </div>
-      </div>
+      </a>
 
     </div><!-- /cards-grid -->
-
-    </div><!-- /cards-section -->
 
   </div><!-- /content -->
 
