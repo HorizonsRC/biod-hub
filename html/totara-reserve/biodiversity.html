@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Biodiversity · Tōtara Reserve</title>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* Same tokens as predator-control.html */
+    :root {
+      --navy:       #222222;
+      --bg:         #f0f0f0;
+      --surface:    #ffffff;
+      --border:     #dcdcdc;
+      --muted:      #515151;
+      --caption:    #8a8a8a;
+      --forest:     #047f67;
+      --forest-lt:  #e2f1ed;
+      --lime:       #86be3d;   /* the website's "Book online" green */
+      --unsafe:     #9b2226;
+
+      --inat:       var(--forest);
+      --ebird:      var(--lime);
+    }
+
+    html, body { height: 100%; }
+
+    body {
+      font-family: 'Source Sans 3', sans-serif;
+      background: var(--bg);
+      color: var(--navy);
+      padding: 12px 16px 8px;
+    }
+
+    /* ── LAYOUT: one embed filling the whole ExB page, 1111 × 687 ── */
+    #root {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .head {
+      display: flex;
+      gap: 12px;
+      flex: 0 0 92px;
+    }
+
+    .title-block {
+      flex: 0 0 230px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .eyebrow {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--forest);
+    }
+
+    h1 {
+      font-family: 'Source Serif 4', serif;
+      font-size: 1.55rem;
+      font-weight: 600;
+      line-height: 1.1;
+    }
+
+    .period { font-size: 0.78rem; color: var(--muted); }
+
+    .tiles {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .tile, .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--forest);
+      border-radius: 6px;
+      min-width: 0;
+    }
+
+    .tile {
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 3px;
+    }
+
+    .tile-label, .badge {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .tile-label { color: var(--caption); }
+
+    .tile-val {
+      font-size: 1.75rem;
+      font-weight: 300;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .tile-sub { font-size: 0.72rem; color: var(--caption); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .cols {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1.12fr 1fr 1fr;
+      gap: 10px;
+      min-height: 0;
+    }
+
+    .col { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+
+    .card {
+      padding: 11px 16px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .card.grow { flex: 1; }
+
+    .card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+    .badge { color: var(--forest); }
+    .card-meta { font-size: 0.72rem; color: var(--caption); white-space: nowrap; }
+
+    .sub-label { font-size: 0.76rem; color: var(--caption); }
+
+    .note {
+      font-size: 0.72rem;
+      color: var(--muted);
+      line-height: 1.45;
+      padding-top: 7px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Lists that fill the space they are given. trimToFit() drops whole rows
+       from the end rather than letting the card cut one in half. */
+    .fill { flex: 1; min-height: 0; overflow: hidden; }
+
+    /* ── BIRDS ── */
+    .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.74rem; color: var(--muted); }
+    .legend span { display: inline-flex; align-items: center; gap: 5px; }
+    .sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
+    .bird-list { display: flex; flex-direction: column; justify-content: space-between; }
+
+    .bird {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 96px 24px;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.76rem;
+      line-height: 1.2;
+      min-height: 14px;
+    }
+
+    .more { font-size: 0.72rem; color: var(--caption); font-style: italic; }
+
+    .bird-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bird-name b { font-weight: 600; }
+    .bird-name .en { color: var(--caption); margin-left: 4px; }
+
+    .mark {
+      display: inline-block;
+      font-size: 9px;
+      font-weight: 700;
+      line-height: 13px;
+      width: 13px;
+      text-align: center;
+      border-radius: 50%;
+      margin-left: 4px;
+      vertical-align: 1px;
+    }
+    .mark.e { color: var(--forest); border: 1px solid var(--forest); }
+    .mark.t { color: #fff; background: var(--unsafe); }
+
+    .stack { display: flex; height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+    .stack i { display: block; height: 100%; }
+    .num { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+    .intro-line {
+      font-size: 0.74rem;
+      color: var(--muted);
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .intro-line b { color: var(--navy); font-weight: 600; }
+
+    /* ── iNATURALIST GROUP CARDS ── */
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .stats.three { grid-template-columns: repeat(3, 1fr); }
+    .stat { background: var(--bg); border-radius: 5px; padding: 4px 8px 5px; min-width: 0; }
+    .stat-val { font-size: 1.2rem; font-weight: 300; line-height: 1.1; font-variant-numeric: tabular-nums; }
+    .stat-lbl { font-size: 0.68rem; color: var(--muted); white-space: nowrap; }
+
+    .top-list { display: flex; flex-direction: column; gap: 3px; }
+    .top {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 70px 22px;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.76rem;
+    }
+    .top-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
+    .top-name.sci { font-style: italic; }
+    .bar { height: 7px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+    .bar i { display: block; height: 100%; background: var(--forest); opacity: 0.75; border-radius: 4px; }
+
+    .threat-list { display: flex; flex-wrap: wrap; gap: 4px; flex-shrink: 0; }
+    .threat {
+      font-size: 0.7rem;
+      border: 1px solid #e3c4c5;
+      background: #fbf3f3;
+      color: var(--navy);
+      border-radius: 10px;
+      padding: 1px 8px;
+      white-space: nowrap;
+    }
+    .threat em { font-style: normal; color: var(--unsafe); }
+
+    .photos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; flex-shrink: 0; }
+    .photo {
+      position: relative;
+      display: block;
+      aspect-ratio: 1.25;
+      border-radius: 5px;
+      overflow: hidden;
+      background: var(--bg);
+      color: #fff;
+      text-decoration: none;
+    }
+    .photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .photo span {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      padding: 10px 5px 3px;
+      background: linear-gradient(transparent, rgba(0, 0, 0, 0.72));
+      font-size: 9.5px;
+      line-height: 1.15;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .photo span small { display: block; font-size: 8px; opacity: 0.85; overflow: hidden; text-overflow: ellipsis; }
+
+    /* ── BATS ── */
+    .bat-top { display: grid; grid-template-columns: 118px minmax(0, 1fr); gap: 12px; align-items: center; }
+    .bat-clock svg { width: 118px; height: 118px; display: block; }
+    .bat-big { display: flex; align-items: baseline; gap: 6px; }
+    .bat-big b { font-size: 1.9rem; font-weight: 300; line-height: 1; }
+    .bat-big span { font-size: 0.78rem; color: var(--muted); }
+    .bat-sp { font-size: 0.86rem; font-weight: 600; margin-top: 3px; }
+    .bat-sp i { font-weight: 400; color: var(--caption); font-style: normal; }
+    .bat-facts { font-size: 0.74rem; color: var(--muted); line-height: 1.5; margin-top: 4px; }
+
+    .nights { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; }
+    .night-bars { display: flex; align-items: flex-end; gap: 2px; height: 34px; }
+    .night-bars i { flex: 1; background: var(--forest); opacity: 0.75; border-radius: 2px 2px 0 0; min-height: 1px; }
+    .night-bars i.zero { background: var(--border); opacity: 1; }
+    .night-axis { display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--caption); }
+
+    /* ── FOOTER ── */
+    .dash-footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: var(--caption);
+      gap: 4px;
+      flex: 0 0 auto;
+    }
+  </style>
+
+  <script>
+    /* BIO_DATA_START */
+const BIO_DATA = {
+  "generated": "2026-10-02T13:05:33.845869",
+  "birds": {
+    "species": [
+      {
+        "name": "Kererū",
+        "mi": null,
+        "sci": "Hemiphaga novaeseelandiae",
+        "status": "endemic",
+        "threat": null,
+        "ebird": 27,
+        "inat": 52
+      },
+      {
+        "name": "Fantail",
+        "mi": "Pīwakawaka",
+        "sci": "Rhipidura fuliginosa",
+        "status": "endemic",
+        "threat": null,
+        "ebird": 31,
+        "inat": 30
+      },
+      {
+        "name": "Tūī",
+        "mi": "Kōkō",
+        "sci": "Prosthemadera novaeseelandiae",
+        "status": "endemic",
+        "threat": null,
+        "ebird": 26,
+        "inat": 19
+      },
+      {
+        "name": "Silvereye",
+        "mi": "Tauhou",
+        "sci": "Zosterops lateralis",
+        "status": "native",
+        "threat": null,
+        "ebird": 20,
+        "inat": 17
+      },
+      {
+        "name": "Grey Warbler",
+        "mi": "Riroriro",
+        "sci": "Gerygone igata",
+        "status": "endemic",
+        "threat": null,
+        "ebird": 29,
+        "inat": 6
+      },
+      {
+        "name": "Bellbird",
+        "mi": "Korimako",
+        "sci": "Anthornis melanura",
+        "status": "endemic",
+        "threat": null,
+        "ebird": 26,
+        "inat": 8
+      },
+      {
+        "name": "Common Chaffinch",
+        "mi": null,
+        "sci": "Fringilla coelebs",
+        "status": "introduced",
+        "threat": null,
+        "ebird": 27,
+        "inat": 1
+      },
+      {
+        "name": "Australian Magpie",
+        "mi": null,
+        "sci": "Gymnorhina tibicen",
+        "status": "introduced",
+        "threat": null,
+        "ebird": 21,
+        "inat": 4
+      },
+      {
+        "name": "Common Blackbird",
+        "mi": null,
+        "sci": "Turdus merula",
+        "status": "introduced",
+        "threat": null,
+        "ebird": 25,
+        "inat": 0
+      },
+      {
+        "name": "Whitehead",
+        "mi": "Pōpokotea",
+        "sci": "Mohoua albicilla",
+        "status": "endemic",
+        "threat": null,
+        "ebird": 12,
+        "inat": 12
+      },
+      {
+        "name": "Eastern Rosella",
+        "mi": null,
+        "sci": "Platycercus eximius",
+        "status": "introduced",
+        "threat": null,
+        "ebird": 15,
+        "inat": 3
+      },
+      {
+        "name": "European Goldfinch",
+        "mi": null,
+        "sci": "Carduelis carduelis",
+        "status": "introduced",
+        "threat": null,
+        "ebird": 10,
+        "inat": 3
+      },
+      {
+        "name": "Shining Bronze Cuckoo",
+        "mi": "Pīpīwharauroa",
+        "sci": "Chalcites lucidus",
+        "status": "endemic",
+        "threat": null,
+        "ebird": 6,
+        "inat": 7
+      },
+      {
+        "name": "Swamp Harrier",
+        "mi": "Kāhu",
+        "sci": "Circus approximans",
+        "status": "native",
+        "threat": null,
+        "ebird": 8,
+        "inat": 3
+      },
+      {
+        "name": "Sacred Kingfisher",
+        "mi": "Kōtare",
+        "sci": "Todiramphus sanctus",
+        "status": "endemic",
+        "threat": null,
+        "ebird": 10,
+        "inat": 0
+      },
+      {
+        "name": "Ring-necked Pheasant",
+        "mi": null,
+        "sci": "Phasianus colchicus",
+        "status": "introduced",
+        "threat": null,
+        "ebird": 9,
+        "inat": 0
+      },
+      {
+        "name": "Song Thrush",
+        "mi": null,
+        "sci": "Turdus philomelos",
+        "status": "introduced",
+        "threat": null,
+        "ebird": 7,
+        "inat": 2
+      },
+      {
+        "name": "Paradise Shelduck",
+        "mi": "Pūtangitangi",
+        "sci": "Tadorna variegata",
+        "status": "endemic",
+        "threat": null,
+        "ebird": 5,
+        "inat": 0
+      },
+      {
+        "name": "Starling",
+        "mi": null,
+        "sci": "Sturnus vulgaris",
+        "status": "introduced",
+        "threat": null,
+        "ebird": 5,
+        "inat": 0
+      },
+      {
+        "name": "Dunnock",
+        "mi": null,
+        "sci": "Prunella modularis",
+        "status": "introduced",
+        "threat": null,
+        "ebird": 4,
+        "inat": 0
+      },
+      {
+        "name": "Morepork",
+        "mi": "Ruru",
+        "sci": "Ninox novaeseelandiae",
+        "status": "endemic",
+        "threat": null,
+        "ebird": 3,
+        "inat": 1
+      },
+      {
+        "name": "New Zealand Falcon",
+        "mi": "Kārearea",
+        "sci": "Falco novaeseelandiae",
+        "status": "endemic",
+        "threat": null,
+        "ebird": 2,
+        "inat": 2
+      },
+      {
+        "name": "Spur-winged Plover",
+        "mi": null,
+        "sci": "Vanellus miles",
+        "status": "native",
+        "threat": null,
+        "ebird": 4,
+        "inat": 0
+      },
+      {
+        "name": "Welcome Swallow",
+        "mi": "Warou",
+        "sci": "Hirundo neoxena",
+        "status": "native",
+        "threat": null,
+        "ebird": 4,
+        "inat": 0
+      },
+      {
+        "name": "Yellowhammer",
+        "mi": null,
+        "sci": "Emberiza citrinella",
+        "status": "introduced",
+        "threat": null,
+        "ebird": 4,
+        "inat": 0
+      },
+      {
+        "name": "Black Shag",
+        "mi": "Māpunga",
+        "sci": "Phalacrocorax carbo",
+        "status": "native",
+        "threat": null,
+        "ebird": 3,
+        "inat": 0
+      },
+      {
+        "name": "Eurasian Skylark",
+        "mi": null,
+        "sci": "Alauda arvensis",
+        "status": "introduced",
+        "threat": null,
+        "ebird": 3,
+        "inat": 0
+      },
+      {
+        "name": "Grey Duck",
+        "mi": "Pārera",
+        "sci": "Anas superciliosa",
+        "status": "native",
+        "threat": "Nationally Vulnerable",
+        "ebird": 3,
+        "inat": 0
+      },
+      {
+        "name": "House Sparrow",
+        "mi": null,
+        "sci": "Passer domesticus",
+        "status": "introduced",
+        "threat": null,
+        "ebird": 2,
+        "inat": 1
+      },
+      {
+        "name": "Sulphur-crested Cockatoo",
+        "mi": null,
+        "sci": "Cacatua galerita",
+        "status": "introduced",
+        "threat": null,
+        "ebird": 2,
+        "inat": 1
+      },
+      {
+        "name": "Tomtit",
+        "mi": "Miromiro",
+        "sci": "Petroica macrocephala",
+        "status": "endemic",
+        "threat": null,
+        "ebird": 1,
+        "inat": 2
+      },
+      {
+        "name": "Pūkeko",
+        "mi": null,
+        "sci": "Porphyrio melanotus",
+        "status": "native",
+        "threat": null,
+        "ebird": 2,
+        "inat": 0
+      },
+      {
+        "name": "Black-backed Gull",
+        "mi": "Karoro",
+        "sci": "Larus dominicanus",
+        "status": "native",
+        "threat": null,
+        "ebird": 1,
+        "inat": 0
+      },
+      {
+        "name": "Black-fronted Dotterel",
+        "mi": null,
+        "sci": "Thinornis melanops",
+        "status": "native",
+        "threat": null,
+        "ebird": 1,
+        "inat": 0
+      },
+      {
+        "name": "California Quail",
+        "mi": null,
+        "sci": "Callipepla californica",
+        "status": "introduced",
+        "threat": null,
+        "ebird": 1,
+        "inat": 0
+      },
+      {
+        "name": "Greenfinch",
+        "mi": null,
+        "sci": "Chloris chloris",
+        "status": "introduced",
+        "threat": null,
+        "ebird": 1,
+        "inat": 0
+      },
+      {
+        "name": "Grey Teal",
+        "mi": "Tētē Moroiti",
+        "sci": "Anas gracilis",
+        "status": "native",
+        "threat": null,
+        "ebird": 1,
+        "inat": 0
+      },
+      {
+        "name": "Greylag Goose",
+        "mi": null,
+        "sci": "Anser anser",
+        "status": "introduced",
+        "threat": null,
+        "ebird": 0,
+        "inat": 1
+      },
+      {
+        "name": "Pied Stilt",
+        "mi": "Poaka",
+        "sci": "Himantopus leucocephalus",
+        "status": "native",
+        "threat": null,
+        "ebird": 1,
+        "inat": 0
+      },
+      {
+        "name": "Rifleman",
+        "mi": "Tītitipounamu",
+        "sci": "Acanthisitta chloris",
+        "status": "endemic",
+        "threat": null,
+        "ebird": 1,
+        "inat": 0
+      }
+    ],
+    "ebirdChecklists": 35,
+    "inatObs": 175,
+    "hotspots": [
+      "Tōtara Reserve – Fern Walk",
+      "Pohangina Valley East"
+    ]
+  },
+  "plants": {
+    "obs": 640,
+    "species": 209,
+    "native": 160,
+    "introduced": 44,
+    "endemic": 114,
+    "threatened": [
+      {
+        "name": "Hakapiri",
+        "sci": "Olearia traversiorum",
+        "status": "Nationally Vulnerable"
+      },
+      {
+        "name": "Ramarama",
+        "sci": "Lophomyrtus bullata",
+        "status": "Critically Endangered (IUCN)"
+      },
+      {
+        "name": "Rohutu",
+        "sci": "Lophomyrtus obcordata",
+        "status": "At Risk-Declining"
+      },
+      {
+        "name": "Shrubby tororaro",
+        "sci": "Muehlenbeckia astonii",
+        "status": "Nationally Endangered"
+      },
+      {
+        "name": "Swamp maire",
+        "sci": "Syzygium maire",
+        "status": "Critically Endangered (IUCN)"
+      },
+      {
+        "name": "Tāwhirikaro",
+        "sci": "Pittosporum cornifolium",
+        "status": "At Risk-Naturally Uncommon"
+      }
+    ],
+    "top": [
+      {
+        "name": "Krauss's spikemoss",
+        "sci": "Selaginella kraussiana",
+        "count": 18
+      },
+      {
+        "name": "Tōtara",
+        "sci": "Podocarpus totara",
+        "count": 16
+      },
+      {
+        "name": "Long-leaved lacebark",
+        "sci": "Hoheria sexstylosa",
+        "count": 13
+      },
+      {
+        "name": "Small leaved milk tree",
+        "sci": "Paratrophis microphylla",
+        "count": 13
+      },
+      {
+        "name": "Ongaonga",
+        "sci": "Urtica ferox",
+        "count": 12
+      },
+      {
+        "name": "Tradescantia",
+        "sci": "Tradescantia fluminensis",
+        "count": 10
+      }
+    ],
+    "photos": [
+      {
+        "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/743646489/small.jpg",
+        "name": "Heketara",
+        "sci": "Olearia rani",
+        "credit": "A V",
+        "licence": "CC-BY-NC",
+        "obs": "https://www.inaturalist.org/observations/404904834"
+      },
+      {
+        "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/737971026/small.jpg",
+        "name": "Akeake",
+        "sci": "Dodonaea viscosa",
+        "credit": "A V",
+        "licence": "CC-BY-NC",
+        "obs": "https://www.inaturalist.org/observations/402025897"
+      },
+      {
+        "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/735127681/small.jpg",
+        "name": "Black Maire",
+        "sci": "Nestegis cunninghamii",
+        "credit": "Grey Smith",
+        "licence": "CC-BY",
+        "obs": "https://www.inaturalist.org/observations/400582797"
+      },
+      {
+        "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/719805104/small.jpg",
+        "name": "Waxweed pennywort",
+        "sci": "Hydrocotyle heteromeria",
+        "credit": "Grey Smith",
+        "licence": "CC-BY",
+        "obs": "https://www.inaturalist.org/observations/392754002"
+      }
+    ]
+  },
+  "insects": {
+    "obs": 174,
+    "species": 112,
+    "native": 81,
+    "introduced": 19,
+    "endemic": 76,
+    "threatened": [],
+    "top": [
+      {
+        "name": "Talitropsis sedilloti",
+        "sci": "Talitropsis sedilloti",
+        "count": 9
+      },
+      {
+        "name": "Pachyrhamma edwardsii",
+        "sci": "Pachyrhamma edwardsii",
+        "count": 7
+      },
+      {
+        "name": "Yellow-haired ladybird",
+        "sci": "Adoxellus flavihirtus",
+        "count": 4
+      },
+      {
+        "name": "Brown soldier bug",
+        "sci": "Cermatulus nasalis",
+        "count": 4
+      },
+      {
+        "name": "Ectopsocus gracilis",
+        "sci": "Ectopsocus gracilis",
+        "count": 4
+      },
+      {
+        "name": "Titoki moth",
+        "sci": "Vanicela disjunctella",
+        "count": 4
+      }
+    ],
+    "photos": [
+      {
+        "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/735497674/small.jpg",
+        "name": "Megadromus capito",
+        "sci": "Megadromus capito",
+        "credit": "zstone",
+        "licence": "CC-BY-NC",
+        "obs": "https://www.inaturalist.org/observations/400770993"
+      },
+      {
+        "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/686983108/small.jpg",
+        "name": "Talitropsis sedilloti",
+        "sci": "Talitropsis sedilloti",
+        "credit": "Chris Tuffley",
+        "licence": "CC-BY-NC",
+        "obs": "https://www.inaturalist.org/observations/375764683"
+      },
+      {
+        "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/680104092/small.jpg",
+        "name": "Laminicoccus asteliae",
+        "sci": "Laminicoccus asteliae",
+        "credit": "Grey Smith",
+        "licence": "CC-BY",
+        "obs": "https://www.inaturalist.org/observations/372196118"
+      },
+      {
+        "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/682969802/small.jpg",
+        "name": "Ectopsocus gracilis",
+        "sci": "Ectopsocus gracilis",
+        "credit": "Grey Smith",
+        "licence": "CC-BY",
+        "obs": "https://www.inaturalist.org/observations/373698670"
+      }
+    ]
+  },
+  "fungi": {
+    "obs": 320,
+    "species": 123,
+    "native": 77,
+    "introduced": 15,
+    "endemic": 38,
+    "threatened": [],
+    "top": [],
+    "photos": [
+      {
+        "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/695025820/small.jpg",
+        "name": "False Turkey-Tail",
+        "sci": "Stereum ostrea",
+        "credit": "Max St Clair-Smith",
+        "licence": "CC-BY-NC",
+        "obs": "https://www.inaturalist.org/observations/379931065"
+      },
+      {
+        "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/695027880/small.jpg",
+        "name": "White porecap",
+        "sci": "Favolaschia pustulosa",
+        "credit": "Max St Clair-Smith",
+        "licence": "CC-BY-NC",
+        "obs": "https://www.inaturalist.org/observations/379932072"
+      },
+      {
+        "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/686966735/small.jpg",
+        "name": "Pekepeke-kiore",
+        "sci": "Hericium novae-zealandiae",
+        "credit": "Chris Tuffley",
+        "licence": "CC-BY-NC",
+        "obs": "https://www.inaturalist.org/observations/375758884"
+      },
+      {
+        "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/686966697/small.jpg",
+        "name": "Ear fungus",
+        "sci": "Auricularia cornea",
+        "credit": "Chris Tuffley",
+        "licence": "CC-BY-NC",
+        "obs": "https://www.inaturalist.org/observations/375758875"
+      }
+    ]
+  },
+  "bats": {
+    "surveys": [
+      {
+        "file": "Totara_Reserve_March_2026_bat_data_2026-03-26T00-47-26.csv",
+        "from": "2026-03-03",
+        "to": "2026-03-25",
+        "nights": 23,
+        "nightsWithBats": 20,
+        "recorders": [
+          "BIOD1",
+          "BIOD17",
+          "BIOD4",
+          "BIOD7"
+        ],
+        "byRecorder": {
+          "BIOD1": 74,
+          "BIOD17": 17,
+          "BIOD4": 3,
+          "BIOD7": 5
+        },
+        "triggers": 735,
+        "passes": 99,
+        "possible": 2,
+        "verified": 99,
+        "bySpecies": {
+          "Long-tailed": 99
+        },
+        "byHour": [
+          11,
+          20,
+          7,
+          8,
+          12,
+          4,
+          4,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          7,
+          15,
+          10
+        ],
+        "byNight": {
+          "dates": [
+            "2026-03-03",
+            "2026-03-04",
+            "2026-03-05",
+            "2026-03-06",
+            "2026-03-07",
+            "2026-03-08",
+            "2026-03-09",
+            "2026-03-10",
+            "2026-03-11",
+            "2026-03-12",
+            "2026-03-13",
+            "2026-03-14",
+            "2026-03-15",
+            "2026-03-16",
+            "2026-03-17",
+            "2026-03-18",
+            "2026-03-19",
+            "2026-03-20",
+            "2026-03-21",
+            "2026-03-22",
+            "2026-03-23",
+            "2026-03-24",
+            "2026-03-25"
+          ],
+          "passes": [
+            0,
+            1,
+            3,
+            0,
+            1,
+            1,
+            4,
+            3,
+            2,
+            4,
+            0,
+            10,
+            5,
+            6,
+            8,
+            10,
+            5,
+            1,
+            4,
+            5,
+            10,
+            13,
+            3
+          ]
+        }
+      }
+    ]
+  }
+};
+    /* BIO_DATA_END */
+
+    const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const FULL_MONTHS = ['January','February','March','April','May','June','July',
+                         'August','September','October','November','December'];
+    const fmt = n => Number(n).toLocaleString('en-NZ');
+    const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    // 'YYYY-MM-DD' read as a local date, not UTC midnight
+    const day = iso => new Date(iso + 'T00:00:00');
+    const dayMon = iso => { const d = day(iso); return `${d.getDate()} ${MONTHS[d.getMonth()]}`; };
+
+    // ── Birds ─────────────────────────────────────────────────────────────────
+    function birdRow(s, max) {
+      const total = s.inat + s.ebird;
+      const name = s.mi
+        ? `<b>${esc(s.mi)}</b><span class="en">${esc(s.name)}</span>`
+        : `<b>${esc(s.name)}</b>`;
+      const marks = (s.status === 'endemic' ? '<span class="mark e" title="Endemic — found only in New Zealand">E</span>' : '')
+        + (s.threat ? `<span class="mark t" title="${esc(s.threat)}">!</span>` : '');
+      const tip = `${s.mi ? s.mi + ' · ' : ''}${s.name} (${s.sci}): ${s.inat} iNaturalist, ${s.ebird} eBird`
+        + (s.threat ? ` · ${s.threat}` : '');
+      return `
+        <div class="bird" title="${esc(tip)}">
+          <span class="bird-name">${name}${marks}</span>
+          <span class="stack">
+            <i style="width:${s.inat / max * 100}%;background:var(--inat)"></i>
+            <i style="width:${s.ebird / max * 100}%;background:var(--ebird)"></i>
+          </span>
+          <span class="num">${total}</span>
+        </div>`;
+    }
+
+    function birdCard(b) {
+      const native = b.species.filter(s => s.status !== 'introduced');
+      const intro  = b.species.filter(s => s.status === 'introduced');
+      const max = Math.max(...native.map(s => s.inat + s.ebird), 1);
+      const threatened = native.filter(s => s.threat);
+      const hotspots = (b.hotspots || []).join(' and ');
+      return `
+        <div class="card grow">
+          <div class="card-head">
+            <span class="badge">Native birds &middot; eBird + iNaturalist</span>
+            <span class="card-meta">${native.length} species</span>
+          </div>
+          <div class="legend">
+            <span><i class="sw" style="background:var(--inat)"></i>iNaturalist</span>
+            <span><i class="sw" style="background:var(--ebird)"></i>eBird</span>
+            <span><span class="mark e" style="margin:0">E</span>endemic</span>
+            ${threatened.length ? '<span><span class="mark t" style="margin:0">!</span>threatened</span>' : ''}
+          </div>
+          <div class="bird-list fill" data-trim data-more="native species">${native.map(s => birdRow(s, max)).join('')}</div>
+          ${threatened.length ? `<div class="intro-line">${threatened.map(s =>
+            `<b>${esc(s.mi || s.name)}</b> ${s.mi ? '(' + esc(s.name.toLowerCase()) + ') ' : ''}is ${esc(s.threat)}.`).join(' ')}</div>` : ''}
+          ${intro.length ? `<div class="intro-line"><b>Also ${intro.length} introduced species:</b>
+            ${intro.map(s => esc(s.name.toLowerCase())).join(', ')}.</div>` : ''}
+          <div class="note" title="${hotspots ? 'eBird hotspots: ' + esc(hotspots) : ''}">
+            Sightings, not birds counted: each iNaturalist observation and each eBird
+            checklist naming the species counts once.
+          </div>
+        </div>`;
+    }
+
+    // ── iNaturalist groups ────────────────────────────────────────────────────
+    function photoStrip(photos) {
+      if (!photos || !photos.length) return '';
+      return `<div class="photos">${photos.map(p => `
+        <a class="photo" href="${esc(p.obs)}" target="_blank" rel="noopener"
+           title="${esc(p.name)}${p.sci && p.sci !== p.name ? ' (' + esc(p.sci) + ')' : ''} — © ${esc(p.credit)}, ${esc(p.licence)}, via iNaturalist">
+          <img src="${esc(p.url)}" alt="${esc(p.name)}" loading="lazy" />
+          <span>${esc(p.name)}<small>© ${esc(p.credit)}</small></span>
+        </a>`).join('')}</div>`;
+    }
+
+    function topList(top) {
+      if (!top || !top.length) return '';
+      const max = Math.max(...top.map(t => t.count), 1);
+      return `
+        <div class="sub-label">Most recorded</div>
+        <div class="top-list fill" data-trim>${top.map(t => `
+          <div class="top" title="${esc(t.name)}${t.sci !== t.name ? ' (' + esc(t.sci) + ')' : ''}: ${t.count} sightings">
+            <span class="top-name${t.name === t.sci ? ' sci' : ''}">${esc(t.name)}</span>
+            <span class="bar"><i style="width:${t.count / max * 100}%"></i></span>
+            <span class="num">${t.count}</span>
+          </div>`).join('')}</div>`;
+    }
+
+    function groupCard(title, g, detailed) {
+      // Names only, so all of them fit; the status is on hover
+      const threat = detailed && g.threatened && g.threatened.length ? `
+        <div class="sub-label">${g.threatened.length} threatened species recorded</div>
+        <div class="threat-list">${g.threatened.map(t =>
+          `<span class="threat" title="${esc(t.name)} (${esc(t.sci)}): ${esc(t.status)}"><em>!</em> ${esc(t.name)}</span>`).join('')}</div>` : '';
+      const stats = detailed ? `
+        <div class="stats">
+          <div class="stat"><div class="stat-val">${fmt(g.species)}</div><div class="stat-lbl">species</div></div>
+          <div class="stat"><div class="stat-val">${fmt(g.native)}</div><div class="stat-lbl">native</div></div>
+          <div class="stat"><div class="stat-val">${fmt(g.endemic)}</div><div class="stat-lbl">endemic</div></div>
+          <div class="stat"><div class="stat-val">${fmt(g.introduced)}</div><div class="stat-lbl">introduced</div></div>
+        </div>` : `
+        <div class="stats three">
+          <div class="stat"><div class="stat-val">${fmt(g.species)}</div><div class="stat-lbl">species</div></div>
+          <div class="stat"><div class="stat-val">${fmt(g.native)}</div><div class="stat-lbl">native</div></div>
+          <div class="stat"><div class="stat-val">${fmt(g.endemic)}</div><div class="stat-lbl">endemic</div></div>
+        </div>`;
+      return `
+        <div class="card${detailed ? ' grow' : ''}">
+          <div class="card-head">
+            <span class="badge">${title} &middot; iNaturalist</span>
+            <span class="card-meta">${fmt(g.obs)} sightings</span>
+          </div>
+          ${stats}
+          ${detailed ? topList(g.top) : ''}
+          ${threat}
+          ${photoStrip(g.photos)}
+        </div>`;
+    }
+
+    // ── Bats ──────────────────────────────────────────────────────────────────
+    // A 24-hour clock with midnight at the top; one bar per hour, length by passes.
+    function batClock(byHour) {
+      const C = 59, R0 = 19, R1 = 46;
+      const max = Math.max(...byHour, 1);
+      const ang = h => (h / 24) * 2 * Math.PI - Math.PI / 2;   // 0h at top, 6am right, 6pm left
+      const pt = (r, a) => [C + r * Math.cos(a), C + r * Math.sin(a)];
+      // Night half (18:00 → 06:00) shaded, which with midnight at the top is the upper half
+      const night = `<path d="M${C - R1 - 4},${C} A${R1 + 4},${R1 + 4} 0 0 1 ${C + R1 + 4},${C} Z"
+                       fill="var(--forest-lt)"/>`;
+      const bars = byHour.map((n, h) => {
+        const a0 = ang(h) + 0.03, a1 = ang(h + 1) - 0.03;
+        const r = R0 + (n / max) * (R1 - R0);
+        if (!n) return '';
+        const [x0, y0] = pt(R0, a0), [x1, y1] = pt(r, a0), [x2, y2] = pt(r, a1), [x3, y3] = pt(R0, a1);
+        const hh = String(h).padStart(2, '0');
+        return `<path d="M${x0},${y0} L${x1},${y1} A${r},${r} 0 0 1 ${x2},${y2} L${x3},${y3} A${R0},${R0} 0 0 0 ${x0},${y0} Z"
+                  fill="var(--forest)" opacity="0.85"><title>${hh}:00–${hh}:59 · ${n} passes</title></path>`;
+      }).join('');
+      const lbl = (txt, x, y, anchor) =>
+        `<text x="${x}" y="${y}" text-anchor="${anchor}" font-size="8.5" fill="var(--caption)">${txt}</text>`;
+      return `<svg viewBox="0 0 118 118" role="img" aria-label="Bat passes by hour of night">
+        ${night}
+        <circle cx="${C}" cy="${C}" r="${R0}" fill="var(--surface)" stroke="var(--border)"/>
+        <circle cx="${C}" cy="${C}" r="${R1}" fill="none" stroke="var(--border)" stroke-dasharray="2 2"/>
+        ${bars}
+        ${lbl('midnight', C, 8, 'middle')}
+        ${lbl('6pm', 2, C + 12, 'start')}
+        ${lbl('6am', 116, C + 12, 'end')}
+        <text x="${C}" y="${C + 3}" text-anchor="middle" font-size="7.5" fill="var(--caption)">by hour</text>
+      </svg>`;
+    }
+
+    function batCard(bats) {
+      const s = bats && bats.surveys && bats.surveys[bats.surveys.length - 1];
+      if (!s) return '';
+      const from = day(s.from);
+      const month = `${FULL_MONTHS[from.getMonth()]} ${from.getFullYear()}`;
+      const max = Math.max(...s.byNight.passes, 1);
+      const species = Object.keys(s.bySpecies);
+      const lt = species.length === 1 && species[0] === 'Long-tailed';
+      return `
+        <div class="card">
+          <div class="card-head">
+            <span class="badge">Bats &middot; acoustic monitoring</span>
+            <span class="card-meta">${month}</span>
+          </div>
+          <div class="bat-top">
+            <div class="bat-clock">${batClock(s.byHour)}</div>
+            <div>
+              <div class="bat-big"><b>${fmt(s.passes)}</b><span>bat passes recorded</span></div>
+              <div class="bat-sp">${lt ? 'Pekapeka-tou-roa <i>long-tailed bat</i>' : esc(species.join(', '))}</div>
+              <div class="bat-facts">
+                ${s.recorders.length} recorders &middot; bats on ${s.nightsWithBats} of ${s.nights} nights
+              </div>
+            </div>
+          </div>
+          <div class="nights">
+            <div class="night-bars">${s.byNight.passes.map((n, i) =>
+              `<i class="${n ? '' : 'zero'}" style="height:${n ? Math.max(n / max * 100, 6) : 4}%"
+                  title="Night of ${dayMon(s.byNight.dates[i])}: ${n} passes"></i>`).join('')}</div>
+            <div class="night-axis"><span>${dayMon(s.from)}</span><span>passes per night</span><span>${dayMon(s.to)}</span></div>
+          </div>
+        </div>`;
+    }
+
+    // ── Page ──────────────────────────────────────────────────────────────────
+    function render() {
+      const root = document.getElementById('root');
+      const d = BIO_DATA;
+      if (!d) { root.innerHTML = '<p class="sub-label">No data yet — run the export script.</p>'; return; }
+
+      const birds  = d.birds.species;
+      const native = birds.filter(s => s.status !== 'introduced').length;
+      const bat = d.bats && d.bats.surveys && d.bats.surveys[d.bats.surveys.length - 1];
+      const gd = new Date(d.generated);
+      const gen = `${gd.getDate()} ${MONTHS[gd.getMonth()]} ${gd.getFullYear()}`;
+      const tile = (label, val, sub) => `
+        <div class="tile">
+          <div class="tile-label">${label}</div>
+          <div class="tile-val">${val}</div>
+          <div class="tile-sub">${sub}</div>
+        </div>`;
+
+      root.innerHTML = `
+        <div class="head">
+          <div class="title-block">
+            <div class="eyebrow">Tōtara Reserve</div>
+            <h1>Biodiversity</h1>
+            <div class="period">Species recorded on eBird and iNaturalist</div>
+          </div>
+          <div class="tiles">
+            ${tile('Bird species', birds.length, `${native} native`)}
+            ${tile('Plant species', fmt(d.plants.species), `${fmt(d.plants.native)} native`)}
+            ${tile('Insect species', fmt(d.insects.species), `${fmt(d.insects.native)} native`)}
+            ${tile('Fungi species', fmt(d.fungi.species), `${fmt(d.fungi.native)} native`)}
+            ${bat ? tile('Bat passes', fmt(bat.passes),
+                `Long-tailed bat &middot; ${MONTHS[day(bat.from).getMonth()]} ${day(bat.from).getFullYear()}`) : ''}
+          </div>
+        </div>
+
+        <div class="cols">
+          <div class="col">${birdCard(d.birds)}</div>
+          <div class="col">
+            ${groupCard('Plants', d.plants, true)}
+            ${groupCard('Fungi', d.fungi, false)}
+          </div>
+          <div class="col">
+            ${groupCard('Insects', d.insects, true)}
+            ${batCard(d.bats)}
+          </div>
+        </div>
+
+        <div class="dash-footer">
+          <span>Data: eBird &middot; iNaturalist (research grade) &middot; Horizons Regional Council bat monitoring</span>
+          <span>Updated ${gen}</span>
+        </div>`;
+      trimToFit();
+    }
+
+    // Drop whole rows from the end of each fill list until it fits its box.
+    // Skipped while the frame has no size yet (ExB can mount embeds hidden);
+    // the ResizeObserver renders again once it has one.
+    // With data-more, a closing "+ N more" line names the dropped rows on hover.
+    function trimToFit() {
+      document.querySelectorAll('[data-trim]').forEach(list => {
+        if (!list.clientHeight) return;
+        const over = () => list.scrollHeight > list.clientHeight + 1;
+        const dropped = [];
+        let more = null;
+        while (over() && list.children.length > (more ? 2 : 1)) {
+          const row = more ? more.previousElementSibling : list.lastElementChild;
+          dropped.unshift(row.getAttribute('title') || '');
+          row.remove();
+          if (list.dataset.more && !more) {
+            more = document.createElement('div');
+            more.className = 'more';
+            list.appendChild(more);
+          }
+          if (more) {
+            more.textContent = `+ ${dropped.length} more ${list.dataset.more}`;
+            more.title = dropped.map(t => t.split(':')[0]).join('\n');
+          }
+        }
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      render();
+      new ResizeObserver(render).observe(document.getElementById('root'));
+    });
+  </script>
+</head>
+<body data-base-w="1111" data-base-h="687">
+  <script src="fit.js?v=1"></script>
+  <div id="root"></div>
+</body>
+</html>
