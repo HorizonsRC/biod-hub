@@ -64,6 +64,10 @@
       color: var(--forest);
     }
 
+    /* Back link to the app's Main Page */
+    a.eyebrow { text-decoration: none; align-self: flex-start; }
+    a.eyebrow:hover { text-decoration: underline; }
+
     h1 {
       font-family: 'Source Serif 4', serif;
       font-size: 1.55rem;
@@ -1250,7 +1254,7 @@ const BIO_DATA = {
       root.innerHTML = `
         <div class="head">
           <div class="title-block">
-            <div class="eyebrow">Tōtara Reserve</div>
+            <a class="eyebrow" href="https://experience.arcgis.com/experience/0b02dc0ca9c545f7bf31fe3ea20ace1a?draft=true" target="_top">← Tōtara Reserve</a>
             <h1>Biodiversity</h1>
             <div class="period">Species recorded on eBird and iNaturalist</div>
           </div>
