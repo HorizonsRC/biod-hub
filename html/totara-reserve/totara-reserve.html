@@ -358,5 +358,27 @@
 
   </div><!-- /content -->
 
+<script>
+/* Start from the width-based size in the CSS, then step the text down until
+   the page fits the embed's height with no scrollbar. */
+(function () {
+  const root = document.documentElement;
+
+  function fitText() {
+    root.style.fontSize = '';
+    let size = parseFloat(getComputedStyle(root).fontSize);
+    while (root.scrollHeight > root.clientHeight && size > 10) {
+      size -= 0.5;
+      root.style.fontSize = size + 'px';
+    }
+  }
+
+  fitText();
+  window.addEventListener('resize', fitText);
+  window.addEventListener('load', fitText);
+  if (document.fonts) document.fonts.ready.then(fitText);
+})();
+</script>
+
 </body>
 </html>
