@@ -232,6 +232,9 @@ FIVE_MBC_ALIASES = {
     "common pheasant": "pheasant",
     "sulphur-crested cockatoo": "cockatoo",
 }
+# Less common birds kept in the page's top list when space runs short (rows lower
+# down are dropped first). Only shown if at least one was counted that spring.
+FIVE_MBC_WATCH = ["whitehead", "kaka"]
 # Counted in the sheet but not identified to a species — left out of the split.
 FIVE_MBC_UNIDENTIFIED = {"unknown", "unidentified", "unknown identification",
                          "finch sp.", "duck, (grey or mallard)"}
@@ -1688,7 +1691,7 @@ def extract_5mbc_data() -> dict | None:
     dl = df[(df["Year"] == latest) & (df["status"] == "native")]
     per = dl.groupby("key")["Total"].sum() / years[-1]["counts"]
     top = [{"mi": FIVE_MBC_BIRDS[k][0], "name": FIVE_MBC_BIRDS[k][1] or FIVE_MBC_BIRDS[k][0],
-            "perCount": round(float(v), 2)}
+            "perCount": round(float(v), 2), "watch": k in FIVE_MBC_WATCH}
            for k, v in per.sort_values(ascending=False).items() if v > 0]
     log.info(f"  5MBC: {len(years)} years {years[0]['year']}–{latest}, "
              f"{sum(y['counts'] for y in years)} counts, {series + 1} station series; "
