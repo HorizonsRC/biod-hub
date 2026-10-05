@@ -248,7 +248,7 @@
     /* ── FIVE-MINUTE BIRD COUNTS ── */
     :root { --intro: #b9b9b9; }
 
-    .mbc-chart { display: flex; align-items: stretch; gap: 4px; height: 128px; flex-shrink: 0; }
+    .mbc-chart { display: flex; align-items: stretch; gap: 4px; height: 112px; flex-shrink: 0; }
     .mbc-year { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
     .mbc-year.break { border-left: 1px dashed var(--caption); padding-left: 4px; }
     .mbc-val { font-size: 0.68rem; font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -1175,72 +1175,86 @@ const BIO_DATA = {
       {
         "mi": "Tūī",
         "name": "Tūī",
-        "perCount": 2.32
+        "perCount": 2.32,
+        "watch": false
       },
       {
         "mi": "Tauhou",
         "name": "Silvereye",
-        "perCount": 2.03
+        "perCount": 2.03,
+        "watch": false
       },
       {
         "mi": "Kererū",
         "name": "Kererū",
-        "perCount": 1.76
+        "perCount": 1.76,
+        "watch": false
       },
       {
         "mi": "Korimako",
         "name": "Bellbird",
-        "perCount": 1.35
+        "perCount": 1.35,
+        "watch": false
       },
       {
         "mi": "Riroriro",
         "name": "Grey warbler",
-        "perCount": 0.95
+        "perCount": 0.95,
+        "watch": false
       },
       {
         "mi": "Pīwakawaka",
         "name": "Fantail",
-        "perCount": 0.89
+        "perCount": 0.89,
+        "watch": false
       },
       {
         "mi": "Pīpīwharauroa",
         "name": "Shining cuckoo",
-        "perCount": 0.81
+        "perCount": 0.81,
+        "watch": false
       },
       {
         "mi": "Pōpokotea",
         "name": "Whitehead",
-        "perCount": 0.35
+        "perCount": 0.35,
+        "watch": true
       },
       {
         "mi": "Kōtare",
         "name": "Kingfisher",
-        "perCount": 0.27
+        "perCount": 0.27,
+        "watch": false
       },
       {
         "mi": "Miromiro",
         "name": "Tomtit",
-        "perCount": 0.27
+        "perCount": 0.27,
+        "watch": false
       },
       {
         "mi": "Warou",
         "name": "Welcome swallow",
-        "perCount": 0.08
+        "perCount": 0.08,
+        "watch": false
       },
       {
         "mi": "Kārearea",
         "name": "NZ falcon",
-        "perCount": 0.05
+        "perCount": 0.05,
+        "watch": false
       },
       {
         "mi": null,
         "name": "Spur-winged plover",
-        "perCount": 0.05
+        "perCount": 0.05,
+        "watch": false
       },
       {
         "mi": "Poaka",
         "name": "Pied stilt",
-        "perCount": 0.03
+        "perCount": 0.03,
+        "watch": false
       }
     ]
   }
@@ -1366,7 +1380,7 @@ const BIO_DATA = {
           <div class="mbc-chart">${cols}</div>
           <div class="sub-label">Most counted native birds, spring ${last.year} (per count)</div>
           <div class="top-list fill" data-trim>${top.map(t => `
-            <div class="top" title="${esc(t.mi && t.mi !== t.name ? t.mi + ' · ' : '')}${esc(t.name)}: ${t.perCount} per count">
+            <div class="top"${t.watch ? ' data-keep' : ''} title="${esc(t.mi && t.mi !== t.name ? t.mi + ' · ' : '')}${esc(t.name)}: ${t.perCount} per count">
               <span class="top-name bird-name">${t.mi ? `<b>${esc(t.mi)}</b>` : `<b>${esc(t.name)}</b>`}${t.mi && t.mi !== t.name ? `<span class="en">${esc(t.name)}</span>` : ''}</span>
               <span class="bar"><i style="width:${t.perCount / tmax * 100}%"></i></span>
               <span class="num">${t.perCount.toFixed(1)}</span>
@@ -1555,6 +1569,7 @@ const BIO_DATA = {
     // Skipped while the frame has no size yet (ExB can mount embeds hidden);
     // the ResizeObserver renders again once it has one.
     // With data-more, a closing "+ N more" line names the dropped rows on hover.
+    // Rows marked data-keep are skipped, so the row above them goes instead.
     function trimToFit() {
       document.querySelectorAll('[data-trim]').forEach(list => {
         if (!list.clientHeight) return;
@@ -1562,7 +1577,8 @@ const BIO_DATA = {
         const dropped = [];
         let more = null;
         while (over() && list.children.length > (more ? 2 : 1)) {
-          const row = more ? more.previousElementSibling : list.lastElementChild;
+          const row = [...list.children].reverse().find(r => r !== more && !r.hasAttribute('data-keep'));
+          if (!row) break;
           dropped.unshift(row.getAttribute('title') || '');
           row.remove();
           if (list.dataset.more && !more) {
