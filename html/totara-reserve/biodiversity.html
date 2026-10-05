@@ -229,6 +229,35 @@
       cursor: help;
     }
 
+    /* Bird card tabs: species recorded / five-minute bird counts */
+    .tabs { display: flex; gap: 4px; flex-shrink: 0; }
+    .tab {
+      font: inherit;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--muted);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1px 10px;
+      cursor: pointer;
+    }
+    .tab:hover { border-color: var(--forest); }
+    .tab.on { color: #fff; background: var(--forest); border-color: var(--forest); }
+
+    /* ── FIVE-MINUTE BIRD COUNTS ── */
+    :root { --intro: #b9b9b9; }
+
+    .mbc-chart { display: flex; align-items: stretch; gap: 4px; height: 128px; flex-shrink: 0; }
+    .mbc-year { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
+    .mbc-year.break { border-left: 1px dashed var(--caption); padding-left: 4px; }
+    .mbc-val { font-size: 0.68rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .mbc-bar { flex: 1; width: 70%; display: flex; flex-direction: column; justify-content: flex-end; }
+    .mbc-bar i { display: block; width: 100%; }
+    .mbc-bar i.n { background: var(--forest); opacity: 0.85; border-radius: 0 0 2px 2px; }
+    .mbc-bar i.x { background: var(--intro); border-radius: 2px 2px 0 0; }
+    .mbc-lbl { font-size: 0.68rem; color: var(--caption); }
+
     /* ── iNATURALIST GROUP CARDS ── */
     .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
     .stats.three { grid-template-columns: repeat(3, 1fr); }
@@ -1050,6 +1079,170 @@ const BIO_DATA = {
         }
       }
     ]
+  },
+  "fiveMbc": {
+    "years": [
+      {
+        "year": 2017,
+        "series": 0,
+        "counts": 233,
+        "stations": 60,
+        "from": "2017-12-11",
+        "to": "2017-12-17",
+        "native": 7.7,
+        "introduced": 4.8,
+        "nativeSpecies": 4.6
+      },
+      {
+        "year": 2018,
+        "series": 0,
+        "counts": 227,
+        "stations": 60,
+        "from": "2018-11-27",
+        "to": "2018-12-06",
+        "native": 7.3,
+        "introduced": 6.3,
+        "nativeSpecies": 4.2
+      },
+      {
+        "year": 2019,
+        "series": 0,
+        "counts": 240,
+        "stations": 60,
+        "from": "2019-11-25",
+        "to": "2019-12-05",
+        "native": 11.9,
+        "introduced": 10.0,
+        "nativeSpecies": 4.0
+      },
+      {
+        "year": 2021,
+        "series": 1,
+        "counts": 40,
+        "stations": 40,
+        "from": "2021-10-21",
+        "to": "2021-10-30",
+        "native": 11.9,
+        "introduced": 8.3,
+        "nativeSpecies": 5.5
+      },
+      {
+        "year": 2022,
+        "series": 1,
+        "counts": 40,
+        "stations": 40,
+        "from": "2022-11-01",
+        "to": "2022-11-07",
+        "native": 11.8,
+        "introduced": 8.8,
+        "nativeSpecies": 6.5
+      },
+      {
+        "year": 2023,
+        "series": 1,
+        "counts": 35,
+        "stations": 35,
+        "from": "2023-10-20",
+        "to": "2023-10-28",
+        "native": 12.9,
+        "introduced": 7.9,
+        "nativeSpecies": 6.1
+      },
+      {
+        "year": 2024,
+        "series": 1,
+        "counts": 35,
+        "stations": 35,
+        "from": "2024-10-05",
+        "to": "2024-10-17",
+        "native": 14.0,
+        "introduced": 9.3,
+        "nativeSpecies": 6.8
+      },
+      {
+        "year": 2025,
+        "series": 1,
+        "counts": 37,
+        "stations": 37,
+        "from": "2025-11-12",
+        "to": "2025-12-13",
+        "native": 11.2,
+        "introduced": 7.0,
+        "nativeSpecies": 6.3
+      }
+    ],
+    "top": [
+      {
+        "mi": "Tūī",
+        "name": "Tūī",
+        "perCount": 2.32
+      },
+      {
+        "mi": "Tauhou",
+        "name": "Silvereye",
+        "perCount": 2.03
+      },
+      {
+        "mi": "Kererū",
+        "name": "Kererū",
+        "perCount": 1.76
+      },
+      {
+        "mi": "Korimako",
+        "name": "Bellbird",
+        "perCount": 1.35
+      },
+      {
+        "mi": "Riroriro",
+        "name": "Grey warbler",
+        "perCount": 0.95
+      },
+      {
+        "mi": "Pīwakawaka",
+        "name": "Fantail",
+        "perCount": 0.89
+      },
+      {
+        "mi": "Pīpīwharauroa",
+        "name": "Shining cuckoo",
+        "perCount": 0.81
+      },
+      {
+        "mi": "Pōpokotea",
+        "name": "Whitehead",
+        "perCount": 0.35
+      },
+      {
+        "mi": "Kōtare",
+        "name": "Kingfisher",
+        "perCount": 0.27
+      },
+      {
+        "mi": "Miromiro",
+        "name": "Tomtit",
+        "perCount": 0.27
+      },
+      {
+        "mi": "Warou",
+        "name": "Welcome swallow",
+        "perCount": 0.08
+      },
+      {
+        "mi": "Kārearea",
+        "name": "NZ falcon",
+        "perCount": 0.05
+      },
+      {
+        "mi": null,
+        "name": "Spur-winged plover",
+        "perCount": 0.05
+      },
+      {
+        "mi": "Poaka",
+        "name": "Pied stilt",
+        "perCount": 0.03
+      }
+    ]
   }
 };
     /* BIO_DATA_END */
@@ -1084,7 +1277,18 @@ const BIO_DATA = {
         </div>`;
     }
 
-    function birdCard(b) {
+    // Which tab the bird card shows. Kept outside render(), which rebuilds the
+    // page on every resize. #counts in the URL opens the bird counts tab.
+    let birdTab = location.hash === '#counts' ? 'counts' : 'species';
+
+    function birdTabs(mbc) {
+      if (!mbc) return '';
+      return `<div class="tabs">${[['species', 'Species recorded'], ['counts', 'Bird counts']].map(([k, label]) =>
+        `<button class="tab${birdTab === k ? ' on' : ''}" data-bird-tab="${k}">${label}</button>`).join('')}</div>`;
+    }
+
+    function birdCard(b, mbc) {
+      if (mbc && birdTab === 'counts') return mbcCard(mbc);
       const native = b.species.filter(s => s.status !== 'introduced');
       const intro  = b.species.filter(s => s.status === 'introduced');
       const max = Math.max(...native.map(s => s.inat + s.ebird), 1);
@@ -1092,6 +1296,7 @@ const BIO_DATA = {
       const hotspots = (b.hotspots || []).join(' and ');
       return `
         <div class="card grow">
+          ${birdTabs(mbc)}
           <div class="card-head">
             <span class="badge">Native birds &middot; eBird + iNaturalist</span>
             <span class="card-meta">${native.length} species</span>
@@ -1109,6 +1314,65 @@ const BIO_DATA = {
           ${intro.length ? `<div class="intro-line one" title="${esc(intro.map(s => s.name).join(', '))}"><b>Also ${intro.length} introduced species:</b>
             ${intro.map(s => esc(s.name.toLowerCase())).join(', ')}.</div>` : ''}
           ${photoStrip(b.photos)}
+        </div>`;
+    }
+
+    // Five-minute bird counts: birds per count each spring, native under introduced.
+    // A dashed line marks where the counts moved to a different set of stations.
+    function mbcCard(m) {
+      const ys = m.years;
+      const last = ys[ys.length - 1];
+      const max = Math.max(...ys.map(y => y.native + y.introduced), 1);
+      const cols = ys.map((y, i) => `
+        <div class="mbc-year${i && y.series !== ys[i - 1].series ? ' break' : ''}"
+             title="Spring ${y.year}: ${y.native} native + ${y.introduced} introduced birds per count · ${y.counts} counts at ${y.stations} stations">
+          <span class="mbc-val">${y.native}</span>
+          <span class="mbc-bar">
+            <i class="x" style="height:${y.introduced / max * 100}%"></i>
+            <i class="n" style="height:${y.native / max * 100}%"></i>
+          </span>
+          <span class="mbc-lbl">'${String(y.year).slice(2)}</span>
+        </div>`).join('');
+
+      // One line per station series, e.g. "2017–19: 60 stations, about 4 counts each"
+      const series = [...new Set(ys.map(y => y.series))].map(s => {
+        const g = ys.filter(y => y.series === s);
+        const st = g.map(y => y.stations);
+        const lo = Math.min(...st), hi = Math.max(...st);
+        const visits = Math.round(g.reduce((a, y) => a + y.counts / y.stations, 0) / g.length);
+        const yrs = g.length > 1 ? `${g[0].year}–${String(g[g.length - 1].year).slice(2)}` : `${g[0].year}`;
+        return `${yrs}: ${lo === hi ? lo : lo + '–' + hi} stations, ${visits > 1 ? 'about ' + visits + ' counts' : 'one count'} each`;
+      });
+
+      const top = m.top || [];
+      const tmax = Math.max(...top.map(t => t.perCount), 0.01);
+      return `
+        <div class="card grow">
+          ${birdTabs(m)}
+          <div class="card-head">
+            <span class="badge">Five-minute bird counts &middot; Horizons</span>
+            <span class="card-meta">Spring ${last.year}</span>
+          </div>
+          <div class="stats three">
+            <div class="stat"><div class="stat-val">${last.native}</div><div class="stat-lbl">native birds per count</div></div>
+            <div class="stat"><div class="stat-val">${last.nativeSpecies}</div><div class="stat-lbl">native species per count</div></div>
+            <div class="stat"><div class="stat-val">${last.stations}</div><div class="stat-lbl">stations counted</div></div>
+          </div>
+          <div class="legend">
+            <span class="sub-label" style="margin-right:auto">Birds per count, each spring</span>
+            <span><i class="sw" style="background:var(--forest)"></i>native</span>
+            <span><i class="sw" style="background:var(--intro)"></i>introduced</span>
+          </div>
+          <div class="mbc-chart">${cols}</div>
+          <div class="sub-label">Most counted native birds, spring ${last.year} (per count)</div>
+          <div class="top-list fill" data-trim>${top.map(t => `
+            <div class="top" title="${esc(t.mi && t.mi !== t.name ? t.mi + ' · ' : '')}${esc(t.name)}: ${t.perCount} per count">
+              <span class="top-name bird-name">${t.mi ? `<b>${esc(t.mi)}</b>` : `<b>${esc(t.name)}</b>`}${t.mi && t.mi !== t.name ? `<span class="en">${esc(t.name)}</span>` : ''}</span>
+              <span class="bar"><i style="width:${t.perCount / tmax * 100}%"></i></span>
+              <span class="num">${t.perCount.toFixed(1)}</span>
+            </div>`).join('')}</div>
+          <div class="note">Every bird seen or heard in five minutes at a fixed station.
+            ${series.join('; ')}. The stations changed at the dashed line, so compare years within each period.</div>
         </div>`;
     }
 
@@ -1269,7 +1533,7 @@ const BIO_DATA = {
         </div>
 
         <div class="cols">
-          <div class="col">${birdCard(d.birds)}</div>
+          <div class="col">${birdCard(d.birds, d.fiveMbc)}</div>
           <div class="col">
             ${groupCard('Plants', d.plants, true)}
             ${groupCard('Fungi', d.fungi, false)}
@@ -1281,7 +1545,7 @@ const BIO_DATA = {
         </div>
 
         <div class="dash-footer">
-          <span>Data: eBird &middot; iNaturalist (research grade) &middot; Horizons Regional Council bat monitoring</span>
+          <span>Data: eBird &middot; iNaturalist (research grade) &middot; Horizons Regional Council bird counts and bat monitoring</span>
           <span>Updated ${gen}</span>
         </div>`;
       trimToFit();
@@ -1313,6 +1577,11 @@ const BIO_DATA = {
         }
       });
     }
+
+    document.addEventListener('click', e => {
+      const tab = e.target.closest('[data-bird-tab]');
+      if (tab && tab.dataset.birdTab !== birdTab) { birdTab = tab.dataset.birdTab; render(); }
+    });
 
     document.addEventListener('DOMContentLoaded', () => {
       render();

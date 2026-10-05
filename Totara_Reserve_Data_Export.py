@@ -21,6 +21,7 @@ Pulls data for two Tōtara Reserve dashboards:
        eBird hotspots (EBIRD_HOTSPOTS) — species lists + checklists reporting them.
        iNaturalist place 208780 — research-grade birds, plants, insects, fungi.
        Bat detector CSV exports (BAT_CSV_GLOB) — one file per survey.
+       Five-minute bird count spreadsheet (FIVE_MBC_XLSX) — spring surveys.
        No ArcGIS needed.
 
 Marker comments in river-management.html:
@@ -166,6 +167,74 @@ INAT_NZ_PLACE   = 6803     # New Zealand — establishment means and threat stat
 INAT_OPEN_LICENCES = "cc0,cc-by,cc-by-nc,cc-by-sa,cc-by-nd,cc-by-nc-sa,cc-by-nc-nd"
 # One CSV per survey, exported from the bat detector platform.
 BAT_CSV_GLOB    = "Data/Totara-Reserve/*bat_data*.csv"
+# Five-minute bird counts (5MBC), Biodiversity team spring surveys. One row per
+# species per count; the newer surveys also list the species that weren't seen, as 0.
+FIVE_MBC_XLSX   = "Data/Totara-Reserve/5MBC_Totara_ALLDATA.xlsx"
+FIVE_MBC_SHEET  = "5MBC_Totara_ALLDATA"
+# The sheet's Status column is blank before 2018 and the names vary between
+# observers, so every name is mapped here: key -> (te reo, English, status).
+FIVE_MBC_BIRDS = {
+    "tui":                ("Tūī", None, "native"),
+    "silvereye":          ("Tauhou", "Silvereye", "native"),
+    "grey warbler":       ("Riroriro", "Grey warbler", "native"),
+    "bellbird":           ("Korimako", "Bellbird", "native"),
+    "kereru":             ("Kererū", None, "native"),
+    "fantail":            ("Pīwakawaka", "Fantail", "native"),
+    "whitehead":          ("Pōpokotea", "Whitehead", "native"),
+    "shining cuckoo":     ("Pīpīwharauroa", "Shining cuckoo", "native"),
+    "kingfisher":         ("Kōtare", "Kingfisher", "native"),
+    "tomtit":             ("Miromiro", "Tomtit", "native"),
+    "paradise shelduck":  ("Pūtangitangi", "Paradise shelduck", "native"),
+    "spur-winged plover": (None, "Spur-winged plover", "native"),
+    "welcome swallow":    ("Warou", "Welcome swallow", "native"),
+    "falcon":             ("Kārearea", "NZ falcon", "native"),
+    "harrier":            ("Kāhu", "Swamp harrier", "native"),
+    "morepork":           ("Ruru", "Morepork", "native"),
+    "pied stilt":         ("Poaka", "Pied stilt", "native"),
+    "black-backed gull":  ("Karoro", "Black-backed gull", "native"),
+    "black-billed gull":  ("Tarāpuka", "Black-billed gull", "native"),
+    "red-billed gull":    ("Tarāpunga", "Red-billed gull", "native"),
+    "black shag":         ("Kawau", "Black shag", "native"),
+    "white-faced heron":  (None, "White-faced heron", "native"),
+    "rifleman":           ("Tītitipounamu", "Rifleman", "native"),
+    "kaka":               ("Kākā", None, "native"),
+    "pukeko":             ("Pūkeko", None, "native"),
+    "chaffinch":          (None, "Chaffinch", "introduced"),
+    "blackbird":          (None, "Blackbird", "introduced"),
+    "goldfinch":          (None, "Goldfinch", "introduced"),
+    "greenfinch":         (None, "Greenfinch", "introduced"),
+    "redpoll":            (None, "Redpoll", "introduced"),
+    "eastern rosella":    (None, "Eastern rosella", "introduced"),
+    "song thrush":        (None, "Song thrush", "introduced"),
+    "magpie":             (None, "Magpie", "introduced"),
+    "starling":           (None, "Starling", "introduced"),
+    "pheasant":           (None, "Pheasant", "introduced"),
+    "dunnock":            (None, "Dunnock", "introduced"),
+    "house sparrow":      (None, "House sparrow", "introduced"),
+    "cockatoo":           (None, "Sulphur-crested cockatoo", "introduced"),
+    "yellowhammer":       (None, "Yellowhammer", "introduced"),
+    "skylark":            (None, "Skylark", "introduced"),
+    "mallard":            (None, "Mallard", "introduced"),
+    "rock pigeon":        (None, "Rock pigeon", "introduced"),
+    "california quail":   (None, "California quail", "introduced"),
+}
+FIVE_MBC_ALIASES = {
+    "new zealand pigeon, kereru": "kereru",
+    "north island fantail": "fantail",
+    "new zealand kingfisher": "kingfisher",
+    "north island tomtit": "tomtit",
+    "pied tomtit": "tomtit",
+    "new zealand falcon": "falcon",
+    "bush falcon": "falcon",
+    "swamp harrier": "harrier",
+    "southern black-backed gull": "black-backed gull",
+    "australian magpie": "magpie",
+    "common pheasant": "pheasant",
+    "sulphur-crested cockatoo": "cockatoo",
+}
+# Counted in the sheet but not identified to a species — left out of the split.
+FIVE_MBC_UNIDENTIFIED = {"unknown", "unidentified", "unknown identification",
+                         "finch sp.", "duck, (grey or mallard)"}
 
 SESSION = requests.Session()
 SESSION.headers.update({"User-Agent": "BioD-Hub/1.0 (HorizonsRC; internal dashboard)"})
@@ -1560,6 +1629,73 @@ def extract_bat_data() -> dict | None:
     return {"surveys": surveys} if surveys else None
 
 
+def extract_5mbc_data() -> dict | None:
+    """Five-minute bird counts: birds per count by year, native vs introduced.
+
+    A count is one station on one date. Figures are means per count, so years
+    with more stations or repeat visits stay comparable. A year whose stations
+    mostly differ from the year before starts a new series: the page draws a
+    break there rather than joining two different sets of stations.
+    """
+    path = HERE / FIVE_MBC_XLSX
+    if not path.exists():
+        log.warning(f"  No 5MBC spreadsheet at {FIVE_MBC_XLSX}")
+        return None
+    df = pd.read_excel(path, sheet_name=FIVE_MBC_SHEET)
+    df.columns = [str(c).replace("\n", " ").strip() for c in df.columns]
+    df = df.dropna(subset=["Date", "Station number", "Species"])
+    df["Date"] = pd.to_datetime(df["Date"])
+    df["station"] = df["Station number"].astype(str).str.strip().str.upper()
+    # Every count, before any rows are dropped, so a count with nothing
+    # identifiable in it still counts towards the means
+    counts_all = df[["Year", "station", "Date"]].drop_duplicates()
+    raw = df["Species"].astype(str).str.strip().str.lower()
+    df["key"] = raw.map(lambda n: FIVE_MBC_ALIASES.get(n, n))
+    unknown = sorted(set(df["key"]) - set(FIVE_MBC_BIRDS) - FIVE_MBC_UNIDENTIFIED)
+    if unknown:
+        log.warning(f"  5MBC names not in FIVE_MBC_BIRDS, left out: {unknown}")
+    df = df[df["key"].isin(FIVE_MBC_BIRDS)].copy()
+    df["status"] = df["key"].map(lambda k: FIVE_MBC_BIRDS[k][2])
+    df["Total"] = pd.to_numeric(df["Total"], errors="coerce").fillna(0)
+
+    years, series, prev_stations = [], 0, None
+    for year, cy in counts_all.groupby("Year"):
+        stations = set(cy["station"])
+        if prev_stations is not None and len(stations & prev_stations) < len(stations) / 2:
+            series += 1
+        prev_stations = stations
+        n = len(cy)
+        dy = df[df["Year"] == year]
+        birds = dy.groupby("status")["Total"].sum()
+        seen = dy[(dy["Total"] > 0) & (dy["status"] == "native")]
+        native_sp = seen.groupby(["station", "Date"])["key"].nunique().sum() / n
+        years.append({
+            "year": int(year),
+            "series": series,
+            "counts": n,
+            "stations": len(stations),
+            "from": cy["Date"].min().strftime("%Y-%m-%d"),
+            "to": cy["Date"].max().strftime("%Y-%m-%d"),
+            "native": round(float(birds.get("native", 0)) / n, 1),
+            "introduced": round(float(birds.get("introduced", 0)) / n, 1),
+            "nativeSpecies": round(float(native_sp), 1),
+        })
+    if not years:
+        log.warning("  5MBC spreadsheet has no counts")
+        return None
+
+    latest = years[-1]["year"]
+    dl = df[(df["Year"] == latest) & (df["status"] == "native")]
+    per = dl.groupby("key")["Total"].sum() / years[-1]["counts"]
+    top = [{"mi": FIVE_MBC_BIRDS[k][0], "name": FIVE_MBC_BIRDS[k][1] or FIVE_MBC_BIRDS[k][0],
+            "perCount": round(float(v), 2)}
+           for k, v in per.sort_values(ascending=False).items() if v > 0]
+    log.info(f"  5MBC: {len(years)} years {years[0]['year']}–{latest}, "
+             f"{sum(y['counts'] for y in years)} counts, {series + 1} station series; "
+             f"{latest}: {years[-1]['native']} native birds per count")
+    return {"years": years, "top": top}
+
+
 def extract_biodiversity_data() -> dict | None:
     """Everything the biodiversity page shows. None keeps the page's last good data."""
     try:
@@ -1581,6 +1717,7 @@ def extract_biodiversity_data() -> dict | None:
         "insects": insects,
         "fungi": fungi,
         "bats": extract_bat_data(),
+        "fiveMbc": extract_5mbc_data(),
     }
 
 
@@ -1697,7 +1834,7 @@ def main():
             log.warning("Pest plant data unavailable — pest-plant-*.html not updated.")
 
     if only in (None, "bio"):
-        log.info("--- Biodiversity (eBird, iNaturalist, bat monitoring) ---")
+        log.info("--- Biodiversity (eBird, iNaturalist, bat monitoring, 5MBC) ---")
         bio = extract_biodiversity_data()
         if bio:
             inject_into_bio_html(bio)
