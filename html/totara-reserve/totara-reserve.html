@@ -38,6 +38,28 @@
     .page-header {
       padding: 0.9rem 1.6rem;
       background: var(--totara);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    /* Back to the Biodiversity Hub: outlined button, fills white on hover */
+    .hub-button {
+      flex-shrink: 0;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #ffffff;
+      text-decoration: none;
+      border: 1px solid rgba(255,255,255,0.7);
+      border-radius: 4px;
+      padding: 0.35rem 0.9rem;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .hub-button:hover {
+      background: #ffffff;
+      color: var(--totara);
     }
 
     .page-title {
@@ -229,6 +251,7 @@
   <!-- HEADER -->
   <div class="page-header">
     <div class="page-title">Tōtara Reserve Regional Park</div>
+    <a class="hub-button" href="https://experience.arcgis.com/experience/81e523ff695449b195fcf5b49ae177d3" target="_blank" rel="noopener">← Back to Biodiversity Hub</a>
   </div>
 
   <div class="content">
