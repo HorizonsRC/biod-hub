@@ -1551,8 +1551,11 @@ def _inat_group(iconic: str, n_top: int, n_photos: int) -> dict:
     """Summary of one iconic group's research-grade observations in the reserve."""
     base = {"place_id": INAT_PLACE_ID, "iconic_taxa": iconic, "quality_grade": "research"}
     obs = _inat("observations", per_page=0, **base)["total_results"]
-    sc = _inat("observations/species_counts", per_page=n_top, locale="en",
-               preferred_place_id=INAT_NZ_PLACE, **base)
+    sc = _inat("observations/species_counts", per_page=0, **base)
+    # The "most recorded" list features native species only, so weeds such as
+    # Krauss's spikemoss and tradescantia don't top the plants list.
+    top = _inat("observations/species_counts", per_page=n_top, locale="en", native="true",
+                preferred_place_id=INAT_NZ_PLACE, **base)["results"] if n_top else []
     flags = {f: _inat("observations/species_counts", per_page=0, **base, **{f: "true"})["total_results"]
              for f in ("native", "introduced", "endemic")}
     thr = _inat("observations/species_counts", per_page=50, threatened="true", **base)["results"]
@@ -1582,7 +1585,7 @@ def _inat_group(iconic: str, n_top: int, n_photos: int) -> dict:
         **flags,
         "threatened": sorted(threatened, key=lambda s: s["name"]),
         "top": [{"name": common(r["taxon"]), "sci": r["taxon"]["name"], "count": r["count"]}
-                for r in sc["results"]],
+                for r in top],
         "photos": photos,
     }
     log.info(f"  iNaturalist {iconic}: {obs} obs, {out['species']} species "
