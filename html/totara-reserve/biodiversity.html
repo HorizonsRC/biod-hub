@@ -260,9 +260,9 @@
     /* ── iNATURALIST GROUP CARDS ── */
     .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
     .stats.three { grid-template-columns: repeat(3, 1fr); }
-    .stat { background: var(--bg); border-radius: 5px; padding: 4px 8px 5px; min-width: 0; }
-    .stat-val { font-size: 1.2rem; font-weight: 300; line-height: 1.1; font-variant-numeric: tabular-nums; }
-    .stat-lbl { font-size: 0.68rem; color: var(--muted); white-space: nowrap; }
+    .stat { background: var(--bg); border-radius: 5px; padding: 3px 8px 4px; min-width: 0; }
+    .stat-val { font-size: 1.05rem; font-weight: 300; line-height: 1.1; font-variant-numeric: tabular-nums; }
+    .stat-lbl { font-size: 0.66rem; color: var(--muted); white-space: nowrap; }
 
     .top-list { display: flex; flex-direction: column; gap: 3px; }
     .top {
@@ -290,10 +290,12 @@
     .threat em { font-style: normal; color: var(--unsafe); }
 
     .photos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; flex-shrink: 0; }
+    /* Fixed height, not an aspect ratio: on a wide screen the columns widen, and
+       photos that grew with them took the room the "Most recorded" lists need. */
     .photo {
       position: relative;
       display: block;
-      aspect-ratio: 1.25;
+      height: 66px;
       border-radius: 5px;
       overflow: hidden;
       background: var(--bg);
