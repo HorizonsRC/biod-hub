@@ -811,18 +811,25 @@ const PCO_DATA = {
 
     const TTI_CHART_FROM = "2020-01-01";   // earliest survey drawn on the TTI chart
 
-    function ttiClass(v) {
-      if (v === null || v === undefined) return "";
-      if (v < 5)  return "low";
-      if (v < 25) return "medium";
-      return "high";
+    // Rat TTI targets (Tōtara Reserve Annual Report 2025-26): below 5% in the bird
+    // breeding season, November to February, and below 10% the rest of the year.
+    // There is no target for mice.
+    const RAT_TTI_BREEDING = 5, RAT_TTI_OTHER = 10;
+    function ratTarget(date) {
+      const m = new Date(date).getMonth();
+      return (m >= 10 || m <= 1) ? RAT_TTI_BREEDING : RAT_TTI_OTHER;
     }
 
-    function ttiGrade(v) {
+    function ttiClass(v, target) {
+      if (v === null || v === undefined || !target) return "";
+      return v < target ? "low" : "high";
+    }
+
+    function ttiGrade(v, target) {
       if (v === null || v === undefined) return "—";
-      if (v < 5)  return "Low pressure";
-      if (v < 25) return "Moderate pressure";
-      return "High pressure";
+      if (!target) return "No target set";
+      const season = target === RAT_TTI_BREEDING ? "breeding season" : "rest of year";
+      return `${v < target ? 'Target met' : 'Above target'} &middot; &lt;${target}% ${season}`;
     }
 
     // ── Trap type horizontal bars ─────────────────────────────────────────────
@@ -978,7 +985,7 @@ const PCO_DATA = {
       const cw = W - ml - mr, ch = H - mt - mb;
 
       const allV   = [...ratVals, ...mouVals].filter(v => v !== null && v !== undefined);
-      const maxVal = Math.max(...allV, 5) * 1.1;
+      const maxVal = Math.max(...allV, RAT_TTI_OTHER) * 1.1;
       // Spaced by date, so gaps between surveys show as gaps
       const t0 = dates[0].getTime(), span = Math.max(dates[n - 1].getTime() - t0, 1);
       const xAt = t => ml + ((t - t0) / span) * cw;
@@ -993,6 +1000,14 @@ const PCO_DATA = {
         const y = yOf(t);
         return `<line x1="${ml}" y1="${y}" x2="${W - mr}" y2="${y}" stroke="var(--border)" stroke-width="1"/>
                 <text x="${ml - 5}" y="${y + 3.5}" text-anchor="end" font-size="10" fill="var(--caption)">${t}%</text>`;
+      }).join('');
+
+      // Rat targets as dashed lines, labelled at the right-hand end
+      const targets = [[RAT_TTI_BREEDING, '5% Nov–Feb'], [RAT_TTI_OTHER, '10% rest of year']].map(([v, lbl]) => {
+        const y = yOf(v);
+        return `<line x1="${ml}" y1="${y}" x2="${W - mr}" y2="${y}" stroke="var(--c0)" stroke-width="1"
+                      stroke-dasharray="4 3" opacity="0.6"/>
+                <text x="${W - mr}" y="${y - 3}" text-anchor="end" font-size="9" fill="var(--c0)" opacity="0.8">Rat target ${lbl}</text>`;
       }).join('');
 
       function makeLine(vals, col) {
@@ -1028,6 +1043,7 @@ const PCO_DATA = {
 
       return `<svg viewBox="0 0 ${W} ${H}">
         ${yGrids}
+        ${targets}
         ${makeLine(ratVals, 'var(--c0)')}
         ${makeLine(mouVals, 'var(--c3)')}
         ${makeDots(ratVals, 'var(--c0)', 'Rat TTI')}
@@ -1116,16 +1132,17 @@ const PCO_DATA = {
           </div>
 
           <div class="programme-card">
-            <!-- Hand-entered from the ICC reports (Nov 2025, Feb 2026, Jul 2026) and the
-                 contractor's Deer Control Operational Report 2026 (3 Jul 2026). No data feed. -->
+            <!-- Hand-entered from the Tōtara Reserve Annual Report 2025-26, Table 4
+                 (77 hrs, 19 deer); the June sighting note is from the contractor's Deer
+                 Control Operational Report 2026. No data feed. -->
             <div class="prog-badge">Deer Control &middot; 2025-26</div>
             <div class="deer-stats-row">
               <div class="deer-stat">
-                <div class="deer-stat-val">16</div>
+                <div class="deer-stat-val">19</div>
                 <div class="deer-stat-label">Deer culled</div>
               </div>
               <div class="deer-stat">
-                <div class="deer-stat-val">15</div>
+                <div class="deer-stat-val">18</div>
                 <div class="deer-stat-label">Fallow</div>
               </div>
               <div class="deer-stat">
@@ -1134,9 +1151,9 @@ const PCO_DATA = {
               </div>
             </div>
             <div class="deer-log">
-              <span class="deer-when">Oct 2025</span>
-              <span>Horizons staff &middot; 3 morning hunts, 9 hrs</span>
-              <span class="deer-n">4</span>
+              <span class="deer-when">2025-26</span>
+              <span>Horizons staff &middot; 7 hrs</span>
+              <span class="deer-n">7</span>
               <span class="deer-when">Jun 2026</span>
               <span>Contractor &middot; night shooting + day hunt, 70 hrs</span>
               <span class="deer-n">12</span>
@@ -1155,20 +1172,21 @@ const PCO_DATA = {
               if (!t || !t.latest) return '<div class="chart-note" style="font-style:italic">Tracking tunnel data not yet loaded — run script to update.</div>';
               const rPct  = t.latest.rat   !== null && t.latest.rat   !== undefined ? t.latest.rat   : null;
               const mPct  = t.latest.mouse !== null && t.latest.mouse !== undefined ? t.latest.mouse : null;
-              const rCls  = ttiClass(rPct);
-              const mCls  = ttiClass(mPct);
+              const rTgt  = t.latest.date ? ratTarget(t.latest.date) : null;
+              const rCls  = ttiClass(rPct, rTgt);
+              const mCls  = ttiClass(mPct, null);
               const lDate = t.latest.date ? new Date(t.latest.date).toLocaleDateString('en-NZ', { month: 'short', year: 'numeric' }) : '';
               return `
                 <div class="rtci-row">
                   <div class="rtci-card">
                     <div class="rtci-label">Rat TTI &middot; ${lDate}</div>
                     <div class="rtci-val ${rCls}">${rPct !== null ? rPct + '%' : '—'}</div>
-                    <div class="rtci-grade ${rCls}">${ttiGrade(rPct)}</div>
+                    <div class="rtci-grade ${rCls}">${ttiGrade(rPct, rTgt)}</div>
                   </div>
                   <div class="rtci-card">
                     <div class="rtci-label">Mouse TTI &middot; ${lDate}</div>
                     <div class="rtci-val ${mCls}">${mPct !== null ? mPct + '%' : '—'}</div>
-                    <div class="rtci-grade ${mCls}">${ttiGrade(mPct)}</div>
+                    <div class="rtci-grade ${mCls}">${ttiGrade(mPct, null)}</div>
                   </div>
                 </div>
                 <div class="catches-legend" style="margin-bottom:0">
@@ -1181,9 +1199,8 @@ const PCO_DATA = {
               <strong style="color:var(--navy)">What is TTI?</strong>
               The Tracking Tunnel Index measures rodent activity — the percentage of tracking tunnels
               showing rat or mouse footprints after a 24-hour exposure.
-              <strong style="color:var(--safe)">&lt;5%</strong> = low pressure &nbsp;·&nbsp;
-              <strong style="color:var(--caution)">5–25%</strong> = moderate &nbsp;·&nbsp;
-              <strong style="color:var(--unsafe)">&gt;25%</strong> = high pressure.
+              Rat targets: <strong style="color:var(--navy)">below 5%</strong> in the bird breeding
+              season (Nov–Feb) and <strong style="color:var(--navy)">below 10%</strong> the rest of the year.
             </div>
           </div>
           </div>

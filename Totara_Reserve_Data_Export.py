@@ -1637,8 +1637,9 @@ def extract_5mbc_data() -> dict | None:
 
     A count is one station on one date. Figures are means per count, so years
     with more stations or repeat visits stay comparable. A year whose stations
-    mostly differ from the year before starts a new series: the page draws a
-    break there rather than joining two different sets of stations.
+    mostly differ from the year before starts a new series, and only the latest
+    series is kept: the 2017–19 counts used different stations, observers and
+    visits, and the reserve's annual report leaves them out for the same reason.
     """
     path = HERE / FIVE_MBC_XLSX
     if not path.exists():
@@ -1686,6 +1687,10 @@ def extract_5mbc_data() -> dict | None:
     if not years:
         log.warning("  5MBC spreadsheet has no counts")
         return None
+    dropped = [y["year"] for y in years if y["series"] != series]
+    if dropped:
+        log.info(f"  5MBC: left out {dropped[0]}–{dropped[-1]}, counted at different stations")
+    years = [y for y in years if y["series"] == series]
 
     latest = years[-1]["year"]
     dl = df[(df["Year"] == latest) & (df["status"] == "native")]
@@ -1694,7 +1699,7 @@ def extract_5mbc_data() -> dict | None:
             "perCount": round(float(v), 2), "watch": k in FIVE_MBC_WATCH}
            for k, v in per.sort_values(ascending=False).items() if v > 0]
     log.info(f"  5MBC: {len(years)} years {years[0]['year']}–{latest}, "
-             f"{sum(y['counts'] for y in years)} counts, {series + 1} station series; "
+             f"{sum(y['counts'] for y in years)} counts; "
              f"{latest}: {years[-1]['native']} native birds per count")
     return {"years": years, "top": top}
 

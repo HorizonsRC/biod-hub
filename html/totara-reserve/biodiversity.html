@@ -250,7 +250,6 @@
 
     .mbc-chart { display: flex; align-items: stretch; gap: 4px; height: 112px; flex-shrink: 0; }
     .mbc-year { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
-    .mbc-year.break { border-left: 1px dashed var(--caption); padding-left: 4px; }
     .mbc-val { font-size: 0.68rem; font-weight: 600; font-variant-numeric: tabular-nums; }
     .mbc-bar { flex: 1; width: 70%; display: flex; flex-direction: column; justify-content: flex-end; }
     .mbc-bar i { display: block; width: 100%; }
@@ -1083,39 +1082,6 @@ const BIO_DATA = {
   "fiveMbc": {
     "years": [
       {
-        "year": 2017,
-        "series": 0,
-        "counts": 233,
-        "stations": 60,
-        "from": "2017-12-11",
-        "to": "2017-12-17",
-        "native": 7.7,
-        "introduced": 4.8,
-        "nativeSpecies": 4.6
-      },
-      {
-        "year": 2018,
-        "series": 0,
-        "counts": 227,
-        "stations": 60,
-        "from": "2018-11-27",
-        "to": "2018-12-06",
-        "native": 7.3,
-        "introduced": 6.3,
-        "nativeSpecies": 4.2
-      },
-      {
-        "year": 2019,
-        "series": 0,
-        "counts": 240,
-        "stations": 60,
-        "from": "2019-11-25",
-        "to": "2019-12-05",
-        "native": 11.9,
-        "introduced": 10.0,
-        "nativeSpecies": 4.0
-      },
-      {
         "year": 2021,
         "series": 1,
         "counts": 40,
@@ -1332,13 +1298,13 @@ const BIO_DATA = {
     }
 
     // Five-minute bird counts: birds per count each spring, native under introduced.
-    // A dashed line marks where the counts moved to a different set of stations.
+    // Only the current set of stations (2021 on) comes through from the export.
     function mbcCard(m) {
       const ys = m.years;
       const last = ys[ys.length - 1];
       const max = Math.max(...ys.map(y => y.native + y.introduced), 1);
-      const cols = ys.map((y, i) => `
-        <div class="mbc-year${i && y.series !== ys[i - 1].series ? ' break' : ''}"
+      const cols = ys.map(y => `
+        <div class="mbc-year"
              title="Spring ${y.year}: ${y.native} native + ${y.introduced} introduced birds per count · ${y.counts} counts at ${y.stations} stations">
           <span class="mbc-val">${y.native}</span>
           <span class="mbc-bar">
@@ -1347,16 +1313,6 @@ const BIO_DATA = {
           </span>
           <span class="mbc-lbl">'${String(y.year).slice(2)}</span>
         </div>`).join('');
-
-      // One line per station series, e.g. "2017–19: 60 stations, about 4 counts each"
-      const series = [...new Set(ys.map(y => y.series))].map(s => {
-        const g = ys.filter(y => y.series === s);
-        const st = g.map(y => y.stations);
-        const lo = Math.min(...st), hi = Math.max(...st);
-        const visits = Math.round(g.reduce((a, y) => a + y.counts / y.stations, 0) / g.length);
-        const yrs = g.length > 1 ? `${g[0].year}–${String(g[g.length - 1].year).slice(2)}` : `${g[0].year}`;
-        return `${yrs}: ${lo === hi ? lo : lo + '–' + hi} stations, ${visits > 1 ? 'about ' + visits + ' counts' : 'one count'} each`;
-      });
 
       const top = m.top || [];
       const tmax = Math.max(...top.map(t => t.perCount), 0.01);
@@ -1385,8 +1341,8 @@ const BIO_DATA = {
               <span class="bar"><i style="width:${t.perCount / tmax * 100}%"></i></span>
               <span class="num">${t.perCount.toFixed(1)}</span>
             </div>`).join('')}</div>
-          <div class="note">Every bird seen or heard in five minutes at a fixed station.
-            ${series.join('; ')}. The stations changed at the dashed line, so compare years within each period.</div>
+          <div class="note">Every bird seen or heard in five minutes at a fixed station,
+            each spring since ${ys[0].year}.</div>
         </div>`;
     }
 
@@ -1498,7 +1454,9 @@ const BIO_DATA = {
               <div class="bat-big"><b>${fmt(s.passes)}</b><span>bat passes recorded</span></div>
               <div class="bat-sp">${lt ? 'Pekapeka-tou-roa <i>long-tailed bat</i>' : esc(species.join(', '))}</div>
               <div class="bat-facts">
-                ${s.recorders.length} recorders &middot; bats on ${s.nightsWithBats} of ${s.nights} nights
+                ${s.recorders.length} recorders &middot; bats on ${s.nightsWithBats} of ${s.nights} nights<br>
+                <!-- Milestone from the Tōtara Reserve Annual Report 2025-26 (Bats / Pekapeka) -->
+                First confirmed in the reserve in January 2026.
               </div>
             </div>
           </div>
