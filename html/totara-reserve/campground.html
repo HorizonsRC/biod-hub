@@ -155,6 +155,25 @@
     }
 
     .card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+    .head-right { display: flex; align-items: center; gap: 14px; }
+
+    /* Same idea as the Pressure Management charts' Export PNG button */
+    .export-btn {
+      font: inherit;
+      font-size: 0.72rem;
+      color: var(--muted);
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 7px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+      align-self: center;
+    }
+    .export-btn:hover { border-color: var(--forest); color: var(--forest); }
     .card-sub { font-size: 0.74rem; color: var(--caption); }
 
     .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; }
@@ -1642,6 +1661,10 @@ const CAMP_DATA = {
     ];
 
     let SEL = null;   // selected season label
+    let EXPORTS = {}; // chart host id → title, file name and legend for its PNG
+
+    const EXPORT_ICON = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
+    const exportBtn = id => `<button class="export-btn" data-export="${id}" title="Download as PNG">${EXPORT_ICON}Export PNG</button>`;
 
     const fmt = n => Number(n).toLocaleString('en-NZ');
     const day = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
@@ -1965,6 +1988,25 @@ const CAMP_DATA = {
         </div>`).join('');
 
       const soFar = s.inProgress ? ' so far' : '';
+      EXPORTS = {
+        'daily-host': {
+          title: `Guests each night · ${s.season}${soFar}`,
+          file: `Guests_each_night_${s.season}`,
+          legend: [{ label: s.season, colour: 'var(--forest)', line: true },
+                   ...(prev ? [{ label: prev.season, colour: 'var(--prev)', line: true }] : [])],
+        },
+        'monthly-host': {
+          title: 'Guest nights by month',
+          file: 'Guest_nights_by_month',
+          legend: seasons.map((x, i) => ({ label: x.season + (x.inProgress ? ' (so far)' : ''),
+                                           colour: seasonColour(i, seasons.length), line: true })),
+        },
+        'ages-host': {
+          title: 'Guest nights by age group',
+          file: 'Guest_nights_by_age_group',
+          legend: AGES.map(([, label, colour]) => ({ label, colour })),
+        },
+      };
       root.innerHTML = `
         <div class="head">
           <div class="title-block">
@@ -1990,9 +2032,12 @@ const CAMP_DATA = {
           <div class="card">
             <div class="card-head">
               <span class="badge">Guests each night &middot; ${s.season}${soFar}</span>
-              <div class="legend">
-                <span class="legend-item on"><span class="swatch line" style="background:var(--forest)"></span>${s.season}</span>
-                ${prev ? `<span class="legend-item"><span class="swatch line" style="background:var(--prev)"></span>${prev.season}</span>` : ''}
+              <div class="head-right">
+                <div class="legend">
+                  <span class="legend-item on"><span class="swatch line" style="background:var(--forest)"></span>${s.season}</span>
+                  ${prev ? `<span class="legend-item"><span class="swatch line" style="background:var(--prev)"></span>${prev.season}</span>` : ''}
+                </div>
+                ${exportBtn('daily-host')}
               </div>
             </div>
             <div class="chart-host" id="daily-host"></div>
@@ -2008,9 +2053,12 @@ const CAMP_DATA = {
           <div class="card">
             <div class="card-head">
               <span class="badge">Guest nights by month</span>
-              <div class="legend">${seasons.map((x, i) => `
-                <span class="legend-item${x.season === SEL ? ' on' : ''}" data-season="${x.season}">
-                  <span class="swatch line" style="background:${seasonColour(i, seasons.length)}"></span>${x.season}</span>`).join('')}
+              <div class="head-right">
+                <div class="legend">${seasons.map((x, i) => `
+                  <span class="legend-item${x.season === SEL ? ' on' : ''}" data-season="${x.season}">
+                    <span class="swatch line" style="background:${seasonColour(i, seasons.length)}"></span>${x.season}</span>`).join('')}
+                </div>
+                ${exportBtn('monthly-host')}
               </div>
             </div>
             <div class="chart-host" id="monthly-host"></div>
@@ -2019,6 +2067,7 @@ const CAMP_DATA = {
           <div class="card">
             <div class="card-head">
               <span class="badge">Guest nights by age group</span>
+              ${exportBtn('ages-host')}
             </div>
             <div class="legend">${AGES.map(([, label, col]) =>
               `<span class="legend-item"><span class="swatch" style="background:${col}"></span>${label}</span>`).join('')}</div>
@@ -2031,6 +2080,102 @@ const CAMP_DATA = {
           <span>Updated ${gen}</span>
         </div>`;
       drawCharts();
+    }
+
+    // ── Export PNG ────────────────────────────────────────────────────────────
+    // The chart SVG is copied with its colour variables filled in (a stand-alone
+    // image can't see the page's CSS), drawn on a canvas under a title and
+    // legend, and opened in a new tab with a download link. ExB blocks
+    // downloads straight from an embed, so this is how the Pressure Management
+    // charts do it too.
+    const cssVar = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    const resolveVars = s => s.replace(/var\((--[\w-]+)\)/g, (_, n) => cssVar(n) || '#000');
+
+    async function exportChart(id) {
+      const host = document.getElementById(id), meta = EXPORTS[id];
+      const svg = host && host.querySelector('svg');
+      if (!svg || !meta) return;
+      hideTip();
+      // Opened on the click itself: pop-up blockers allow that, but may not
+      // once the image has loaded
+      const win = window.open('', '_blank');
+      if (!win) { alert('Allow pop-ups for this site to export the chart.'); return; }
+      const W = host.clientWidth, H = host.clientHeight;
+
+      const clone = svg.cloneNode(true);
+      clone.querySelectorAll('.xh, .xd, .hit').forEach(n => n.remove());
+      clone.querySelectorAll('[data-tip]').forEach(n => n.removeAttribute('data-tip'));
+      clone.setAttribute('width', W);
+      clone.setAttribute('height', H);
+      clone.setAttribute('font-family', "'Source Sans 3', Arial, sans-serif");
+      const src = resolveVars(new XMLSerializer().serializeToString(clone));
+      const img = new Image();
+      try {
+        await new Promise((ok, fail) => {
+          img.onload = ok; img.onerror = fail;
+          img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(src);
+        });
+      } catch (e) {
+        win.close();
+        alert('Sorry, the chart could not be turned into an image.');
+        return;
+      }
+
+      // Layout in CSS px, drawn at 2× so the PNG is sharp
+      const S = 2, pad = 20, chartY = 86, footH = 46;
+      const w = Math.max(W + pad * 2, 520), h = chartY + H + footH;
+      const out = document.createElement('canvas');
+      out.width = w * S; out.height = h * S;
+      const ctx = out.getContext('2d');
+      ctx.scale(S, S);
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.fillStyle = cssVar('--forest');
+      ctx.font = "700 10px 'Source Sans 3', Arial, sans-serif";
+      if ('letterSpacing' in ctx) ctx.letterSpacing = '1.5px';
+      ctx.fillText('TŌTARA RESERVE · CAMPGROUND', pad, 30);
+      if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+
+      ctx.fillStyle = cssVar('--navy');
+      ctx.font = "600 19px 'Source Serif 4', Georgia, serif";
+      ctx.fillText(meta.title, pad, 54);
+
+      // Legend: line or box swatch, then the label
+      let x = pad;
+      ctx.font = "13px 'Source Sans 3', Arial, sans-serif";
+      ctx.textBaseline = 'middle';
+      for (const item of meta.legend) {
+        ctx.fillStyle = resolveVars(item.colour);
+        if (item.line) ctx.fillRect(x, 70, 14, 3);
+        else ctx.fillRect(x + 2, 66, 10, 10);
+        ctx.fillStyle = cssVar('--muted');
+        ctx.fillText(item.label, x + 19, 72);
+        x += 19 + ctx.measureText(item.label).width + 16;
+      }
+      ctx.textBaseline = 'alphabetic';
+
+      ctx.drawImage(img, pad, chartY, W, H);
+
+      const gd = new Date(CAMP_DATA.generated);
+      ctx.fillStyle = cssVar('--caption');
+      ctx.font = "11px 'Source Sans 3', Arial, sans-serif";
+      // Two lines, so it fits under the narrow age-group chart too
+      ctx.fillText('Data: Tōtara Reserve campground bookings (Newbook)', pad, chartY + H + 20);
+      ctx.fillText(`A guest night is one person staying one night · Updated ${gd.getDate()} ${MONTHS[gd.getMonth()]} ${gd.getFullYear()}`,
+                   pad, chartY + H + 36);
+
+      const safe = meta.file.replace(/[^a-zA-Z0-9_-]/g, '');
+      const dataUrl = out.toDataURL('image/png');
+      win.document.write(`<!DOCTYPE html><html><head><title>${safe}</title></head>
+<body style="margin:0;background:#222;display:flex;flex-direction:column;align-items:center;padding:24px;font-family:sans-serif;gap:16px;">
+  <a href="${dataUrl}" download="${safe}.png"
+     style="background:#047f67;color:#fff;padding:10px 22px;border-radius:6px;text-decoration:none;font-size:15px;font-weight:600;">
+    &#8681; Download ${safe}.png
+  </a>
+  <img src="${dataUrl}" style="max-width:100%;border:1px solid #444;border-radius:4px;">
+</body></html>`);
+      win.document.close();
     }
 
     // Draw each chart at its box's real size. Skipped while the frame has no
@@ -2051,6 +2196,8 @@ const CAMP_DATA = {
     }
 
     document.addEventListener('click', e => {
+      const ex = e.target.closest('[data-export]');
+      if (ex) { exportChart(ex.dataset.export); return; }
       const b = e.target.closest('[data-season]');
       if (b && b.dataset.season !== SEL) { SEL = b.dataset.season; hideTip(); render(); }
     });
