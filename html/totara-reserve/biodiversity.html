@@ -277,14 +277,16 @@
     .bar { height: 7px; background: var(--bg); border-radius: 4px; overflow: hidden; }
     .bar i { display: block; height: 100%; background: var(--forest); opacity: 0.75; border-radius: 4px; }
 
-    .threat-list { display: flex; flex-wrap: wrap; gap: 4px; flex-shrink: 0; }
+    /* Small enough that six pills usually sit on one row */
+    .threat-list { display: flex; flex-wrap: wrap; gap: 3px; flex-shrink: 0; }
     .threat {
-      font-size: 0.7rem;
+      font-size: 0.62rem;
+      line-height: 1.3;
       border: 1px solid #e3c4c5;
       background: #fbf3f3;
       color: var(--navy);
-      border-radius: 10px;
-      padding: 1px 8px;
+      border-radius: 9px;
+      padding: 0 5px;
       white-space: nowrap;
     }
     .threat em { font-style: normal; color: var(--unsafe); }
