@@ -65,12 +65,19 @@
       flex: 1;
       min-width: 0;
       display: flex;
-      align-items: center;
+      flex-direction: column;
+      justify-content: center;
+      gap: 5px;
       font-size: 0.85rem;
       line-height: 1.4;
       color: var(--muted);
       max-width: 460px;
     }
+
+    /* Dated flood and slip events, from the reserve's 2025-26 annual report */
+    .events { display: grid; grid-template-columns: auto 1fr; gap: 1px 10px; font-size: 0.76rem; line-height: 1.35; }
+    .events dt { font-weight: 700; color: var(--forest); white-space: nowrap; }
+    .events dd { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     /* Left empty for the ExB Views Navigation widget, which sits on top of
        the embed. Only the label is drawn here. */
@@ -105,10 +112,16 @@
     <span class="period">Pohangina River</span>
   </div>
 
-  <p class="intro">
-    Live river levels and rainfall from Horizons' monitoring sites on the
-    Pohangina River, at the reserve and upstream at Piripiri.
-  </p>
+  <div class="intro">
+    <p>Live river levels and rainfall at the reserve and upstream at Piripiri.</p>
+    <!-- Hand-entered from the Tōtara Reserve Annual Report 2025-26 (Flood and Landslip events) -->
+    <dl class="events">
+      <dt>15 Feb 2026</dt>
+      <dd title="Flood peaked at 2.4 m at Piripiri (Cyclone Gabrielle: 2.77 m)">Flood peak 2.4 m at Piripiri (Gabrielle: 2.77 m)</dd>
+      <dt>2 Jul 2026</dt>
+      <dd title="Landslip briefly blocked the river; surge to 2.8 m at the bridge gauge">Landslip blocked the river; 2.8 m surge at the bridge</dd>
+    </dl>
+  </div>
 
   <div class="nav-slot">
     <span class="nav-label">Choose a monitoring site</span>
