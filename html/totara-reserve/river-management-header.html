@@ -75,10 +75,22 @@
     }
     .intro-inner { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 
-    /* Dated flood and slip events, from the reserve's 2025-26 annual report */
-    .events { display: grid; grid-template-columns: auto 1fr; gap: 1px 10px; font-size: 0.9em; line-height: 1.35; }
+    /* Events and the graph key side by side on a wide screen; stacked below
+       1300 px, where the intro sentence is dropped to keep the height down. */
+    .facts { display: flex; gap: 28px; min-width: 0; }
+    @media (max-width: 1300px) {
+      .intro-inner > p { display: none; }
+      .facts { flex-direction: column; gap: 4px; }
+    }
+
+    /* Dated flood and slip events, from the reserve's 2025-26 annual report,
+       and a key to reading the embedded graphs */
+    .events, .key { display: grid; grid-template-columns: auto 1fr; gap: 1px 10px; font-size: 0.9em; line-height: 1.35; min-width: 0; }
     .events dt { font-weight: 700; color: var(--forest); white-space: nowrap; }
-    .events dd { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .key dt { font-weight: 700; color: var(--navy); white-space: nowrap; }
+    .events dd, .key dd { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .key { border-left: 1px solid var(--border); padding-left: 14px; }
+    @media (max-width: 1300px) { .key { border-left: 0; padding-left: 0; } }
 
     /* Left empty for the ExB Views Navigation widget, which sits on top of
        the embed. Only the label is drawn here. */
@@ -115,7 +127,8 @@
 
   <div class="intro">
     <div class="intro-inner">
-    <p>Live river levels and rainfall at the reserve and upstream at Piripiri.</p>
+    <p>Live river levels at the reserve and upstream at Piripiri, and rainfall at Range View Farm.</p>
+    <div class="facts">
     <!-- Hand-entered from the Tōtara Reserve Annual Report 2025-26 (Flood and Landslip events) -->
     <dl class="events">
       <dt>15 Feb 2026</dt>
@@ -123,6 +136,13 @@
       <dt>2 Jul 2026</dt>
       <dd title="Landslip briefly blocked the river; surge to 2.8 m at the bridge gauge">Landslip blocked the river; 2.8 m surge at the bridge</dd>
     </dl>
+    <dl class="key">
+      <dt>River level</dt>
+      <dd title="Height of the river at the gauge, in millimetres (1,000 mm = 1 m). It rises after heavy rain and falls back over a day or two.">Gauge height in mm (1,000 mm = 1 m)</dd>
+      <dt>Rainfall</dt>
+      <dd title="Rain measured at Range View Farm: each bar is one day, in mm, with the period total at the top.">Daily rain in mm at Range View Farm</dd>
+    </dl>
+    </div>
     </div>
   </div>
 
