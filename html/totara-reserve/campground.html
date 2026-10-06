@@ -1,0 +1,2071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Campground · Tōtara Reserve</title>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;500;600;700&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* Same tokens as predator-control.html */
+    :root {
+      --navy:       #222222;
+      --bg:         #f0f0f0;
+      --surface:    #ffffff;
+      --border:     #dcdcdc;
+      --muted:      #515151;
+      --caption:    #8a8a8a;
+      --forest:     #047f67;
+      --forest-lt:  #e2f1ed;
+      --lime:       #86be3d;   /* the website's "Book online" green */
+
+      /* The campground's charging age groups */
+      --adults:     #047f67;
+      --children:   #86be3d;
+      --infants:    #e07b39;
+      --prev:       #b4b4b4;   /* the previous season, behind the selected one */
+    }
+
+    html, body { height: 100%; }
+
+    body {
+      font-family: 'Source Sans 3', sans-serif;
+      background: var(--bg);
+      color: var(--navy);
+      padding: 12px 16px 8px;
+      position: relative;
+    }
+
+    /* ── LAYOUT: one embed filling the whole ExB page, 1111 × 687 ── */
+    #root {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .head { display: flex; gap: 12px; flex: 0 0 92px; }
+
+    /* Grows with the season buttons so they stay on one line */
+    .title-block {
+      flex: 0 0 auto;
+      min-width: 230px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .eyebrow {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--forest);
+    }
+
+    /* Back link to the app's Main Page */
+    a.eyebrow { text-decoration: none; align-self: flex-start; }
+    a.eyebrow:hover { text-decoration: underline; }
+
+    h1 {
+      font-family: 'Source Serif 4', serif;
+      font-size: 1.55rem;
+      font-weight: 600;
+      line-height: 1.1;
+    }
+
+    /* Season picker: drives the tiles, the daily chart and the site categories */
+    .seasons { display: flex; flex-wrap: nowrap; gap: 4px; margin-top: 2px; }
+    .season-btn {
+      font: inherit;
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 6px;
+      cursor: pointer;
+      font-variant-numeric: tabular-nums;
+    }
+    .season-btn:hover { border-color: var(--forest); color: var(--forest); }
+    .season-btn.on { background: var(--forest); border-color: var(--forest); color: #fff; }
+
+    .tiles {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .tile, .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--forest);
+      border-radius: 6px;
+      min-width: 0;
+    }
+
+    .tile {
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 3px;
+    }
+
+    .tile-label, .badge {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .tile-label { color: var(--caption); }
+    .badge { color: var(--forest); }
+
+    .tile-val {
+      font-size: 1.75rem;
+      font-weight: 300;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .tile-sub { font-size: 0.72rem; color: var(--caption); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1.65fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 10px;
+      min-height: 0;
+    }
+
+    .card {
+      padding: 11px 16px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 0;
+    }
+
+    .card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+    .card-sub { font-size: 0.74rem; color: var(--caption); }
+
+    .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.76rem;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .legend-item[data-season] { cursor: pointer; }
+    .legend-item.on { color: var(--navy); font-weight: 600; }
+    .swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+    .swatch.line { height: 3px; width: 14px; border-radius: 2px; }
+
+    /* Charts are drawn to the pixel size of this box, so they fill the card */
+    .chart-host { flex: 1; min-height: 80px; position: relative; }
+    .chart-host > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+
+    /* ── SITE CATEGORIES ── */
+    .cat-list { flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; gap: 4px; min-height: 0; }
+    .cat-row { display: grid; grid-template-columns: 1fr auto; gap: 1px 10px; align-items: baseline; }
+    .cat-name { font-size: 0.8rem; font-weight: 600; }
+    .cat-val { font-size: 0.95rem; font-weight: 300; font-variant-numeric: tabular-nums; text-align: right; }
+    .cat-bar-wrap { grid-column: 1 / -1; height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; }
+    .cat-bar { height: 100%; background: var(--forest); border-radius: 4px; }
+    .cat-meta { grid-column: 1 / -1; font-size: 0.72rem; color: var(--caption); font-variant-numeric: tabular-nums; }
+
+    .dash-footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: var(--caption);
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    /* ── TOOLTIP ── */
+    #tip {
+      position: absolute;
+      z-index: 10;
+      pointer-events: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+      padding: 6px 9px;
+      font-size: 0.76rem;
+      color: var(--muted);
+      line-height: 1.45;
+      white-space: nowrap;
+      display: none;
+      font-variant-numeric: tabular-nums;
+    }
+    #tip b { color: var(--navy); font-weight: 600; }
+    #tip .row { display: flex; align-items: center; gap: 6px; }
+  </style>
+
+  <script>
+    /* CAMP_DATA_START */
+const CAMP_DATA = {
+  "generated": "2026-10-07T11:04:44.821108",
+  "categories": [
+    "Kahikatea non-powered",
+    "Kahikatea powered",
+    "Kererū non-powered",
+    "Kererū powered"
+  ],
+  "seasons": [
+    {
+      "season": "21-22",
+      "from": "2021-10-01",
+      "to": "2022-04-30",
+      "inProgress": false,
+      "guestNights": 7176,
+      "bookings": 1067,
+      "siteNights": 2229,
+      "adults": 4826,
+      "children": 1899,
+      "infants": 451,
+      "busiest": {
+        "date": "2022-01-01",
+        "guests": 389
+      },
+      "daily": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        3,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        30,
+        89,
+        60,
+        6,
+        0,
+        14,
+        0,
+        4,
+        2,
+        1,
+        4,
+        6,
+        2,
+        1,
+        1,
+        17,
+        3,
+        3,
+        4,
+        6,
+        5,
+        6,
+        6,
+        5,
+        7,
+        8,
+        5,
+        6,
+        51,
+        66,
+        5,
+        5,
+        3,
+        7,
+        8,
+        23,
+        37,
+        14,
+        7,
+        9,
+        6,
+        6,
+        15,
+        13,
+        6,
+        6,
+        6,
+        3,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        6,
+        23,
+        19,
+        17,
+        13,
+        22,
+        14,
+        55,
+        71,
+        85,
+        157,
+        146,
+        187,
+        325,
+        380,
+        389,
+        288,
+        256,
+        203,
+        163,
+        122,
+        184,
+        196,
+        89,
+        68,
+        65,
+        38,
+        56,
+        77,
+        77,
+        18,
+        20,
+        29,
+        28,
+        59,
+        188,
+        280,
+        237,
+        45,
+        14,
+        7,
+        22,
+        80,
+        70,
+        9,
+        15,
+        20,
+        20,
+        34,
+        123,
+        87,
+        34,
+        19,
+        15,
+        11,
+        4,
+        4,
+        0,
+        0,
+        0,
+        3,
+        3,
+        18,
+        32,
+        32,
+        13,
+        5,
+        9,
+        4,
+        8,
+        49,
+        88,
+        12,
+        2,
+        6,
+        6,
+        8,
+        79,
+        131,
+        8,
+        8,
+        5,
+        4,
+        10,
+        54,
+        91,
+        10,
+        1,
+        5,
+        7,
+        2,
+        33,
+        65,
+        8,
+        3,
+        1,
+        0,
+        0,
+        0,
+        7,
+        2,
+        4,
+        2,
+        3,
+        0,
+        19,
+        27,
+        3,
+        3,
+        4,
+        4,
+        4,
+        5,
+        21,
+        4,
+        4,
+        6,
+        0,
+        13,
+        68,
+        97,
+        78,
+        11,
+        1,
+        0,
+        0,
+        4,
+        21,
+        10,
+        6,
+        5,
+        5,
+        7,
+        6,
+        12
+      ],
+      "monthly": [
+        0,
+        0,
+        0,
+        209,
+        330,
+        1585,
+        3392,
+        649,
+        563,
+        448,
+        0,
+        0
+      ],
+      "byCategory": {
+        "Kahikatea non-powered": {
+          "guestNights": 1421,
+          "bookings": 315,
+          "siteNights": 517,
+          "adults": 1077,
+          "children": 281,
+          "infants": 63
+        },
+        "Kahikatea powered": {
+          "guestNights": 854,
+          "bookings": 114,
+          "siteNights": 301,
+          "adults": 639,
+          "children": 181,
+          "infants": 34
+        },
+        "Kererū non-powered": {
+          "guestNights": 2850,
+          "bookings": 448,
+          "siteNights": 845,
+          "adults": 1854,
+          "children": 799,
+          "infants": 197
+        },
+        "Kererū powered": {
+          "guestNights": 2051,
+          "bookings": 190,
+          "siteNights": 566,
+          "adults": 1256,
+          "children": 638,
+          "infants": 157
+        }
+      }
+    },
+    {
+      "season": "22-23",
+      "from": "2022-10-01",
+      "to": "2023-04-30",
+      "inProgress": false,
+      "guestNights": 5613,
+      "bookings": 774,
+      "siteNights": 1691,
+      "adults": 3454,
+      "children": 1701,
+      "infants": 458,
+      "busiest": {
+        "date": "2022-12-31",
+        "guests": 465
+      },
+      "daily": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        26,
+        61,
+        82,
+        0,
+        0,
+        0,
+        2,
+        7,
+        3,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        28,
+        4,
+        0,
+        0,
+        10,
+        2,
+        12,
+        12,
+        1,
+        0,
+        0,
+        0,
+        0,
+        14,
+        28,
+        2,
+        0,
+        0,
+        0,
+        2,
+        6,
+        18,
+        3,
+        5,
+        3,
+        3,
+        3,
+        12,
+        24,
+        3,
+        6,
+        55,
+        51,
+        6,
+        8,
+        7,
+        6,
+        4,
+        8,
+        6,
+        6,
+        17,
+        7,
+        1,
+        0,
+        5,
+        6,
+        5,
+        14,
+        46,
+        64,
+        114,
+        172,
+        231,
+        280,
+        401,
+        465,
+        412,
+        212,
+        193,
+        166,
+        53,
+        83,
+        52,
+        22,
+        25,
+        27,
+        27,
+        79,
+        103,
+        116,
+        45,
+        42,
+        40,
+        42,
+        96,
+        204,
+        272,
+        229,
+        29,
+        31,
+        15,
+        12,
+        43,
+        28,
+        6,
+        1,
+        4,
+        14,
+        18,
+        73,
+        130,
+        110,
+        14,
+        5,
+        5,
+        5,
+        58,
+        92,
+        12,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "monthly": [
+        0,
+        0,
+        0,
+        181,
+        154,
+        2033,
+        2709,
+        536,
+        0,
+        0,
+        0,
+        0
+      ],
+      "byCategory": {
+        "Kahikatea non-powered": {
+          "guestNights": 1050,
+          "bookings": 214,
+          "siteNights": 370,
+          "adults": 734,
+          "children": 245,
+          "infants": 71
+        },
+        "Kahikatea powered": {
+          "guestNights": 687,
+          "bookings": 88,
+          "siteNights": 219,
+          "adults": 438,
+          "children": 187,
+          "infants": 62
+        },
+        "Kererū non-powered": {
+          "guestNights": 2453,
+          "bookings": 348,
+          "siteNights": 715,
+          "adults": 1458,
+          "children": 764,
+          "infants": 231
+        },
+        "Kererū powered": {
+          "guestNights": 1423,
+          "bookings": 124,
+          "siteNights": 387,
+          "adults": 824,
+          "children": 505,
+          "infants": 94
+        }
+      }
+    },
+    {
+      "season": "23-24",
+      "from": "2023-10-01",
+      "to": "2024-04-30",
+      "inProgress": false,
+      "guestNights": 6661,
+      "bookings": 982,
+      "siteNights": 2057,
+      "adults": 4144,
+      "children": 2015,
+      "infants": 502,
+      "busiest": {
+        "date": "2023-12-31",
+        "guests": 335
+      },
+      "daily": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        70,
+        134,
+        113,
+        0,
+        0,
+        0,
+        0,
+        6,
+        20,
+        0,
+        0,
+        3,
+        0,
+        6,
+        11,
+        13,
+        2,
+        2,
+        0,
+        0,
+        2,
+        27,
+        33,
+        5,
+        7,
+        6,
+        2,
+        6,
+        0,
+        13,
+        0,
+        0,
+        3,
+        1,
+        2,
+        2,
+        2,
+        1,
+        0,
+        0,
+        0,
+        1,
+        1,
+        15,
+        7,
+        3,
+        3,
+        7,
+        7,
+        16,
+        16,
+        9,
+        1,
+        0,
+        4,
+        2,
+        15,
+        61,
+        38,
+        8,
+        11,
+        8,
+        7,
+        36,
+        59,
+        61,
+        45,
+        65,
+        152,
+        201,
+        193,
+        276,
+        335,
+        274,
+        226,
+        212,
+        188,
+        151,
+        101,
+        60,
+        89,
+        109,
+        80,
+        67,
+        102,
+        101,
+        43,
+        23,
+        14,
+        23,
+        64,
+        231,
+        290,
+        224,
+        26,
+        18,
+        14,
+        23,
+        36,
+        26,
+        9,
+        0,
+        4,
+        2,
+        4,
+        33,
+        113,
+        81,
+        60,
+        6,
+        7,
+        14,
+        43,
+        55,
+        4,
+        0,
+        7,
+        4,
+        2,
+        35,
+        60,
+        10,
+        7,
+        7,
+        18,
+        10,
+        41,
+        80,
+        9,
+        4,
+        8,
+        6,
+        8,
+        18,
+        21,
+        2,
+        2,
+        5,
+        14,
+        20,
+        30,
+        62,
+        2,
+        2,
+        3,
+        6,
+        2,
+        7,
+        16,
+        5,
+        4,
+        4,
+        12,
+        8,
+        16,
+        19,
+        2,
+        0,
+        36,
+        35,
+        29,
+        122,
+        148,
+        150,
+        18,
+        4,
+        1,
+        1,
+        3,
+        13,
+        3,
+        0,
+        1,
+        0,
+        0,
+        0,
+        2,
+        0,
+        4,
+        4,
+        2,
+        0,
+        4,
+        5,
+        0,
+        6,
+        2,
+        2,
+        22,
+        27,
+        14,
+        0,
+        0,
+        0
+      ],
+      "monthly": [
+        0,
+        0,
+        0,
+        346,
+        147,
+        1662,
+        2830,
+        736,
+        802,
+        138,
+        0,
+        0
+      ],
+      "byCategory": {
+        "Kahikatea non-powered": {
+          "guestNights": 1147,
+          "bookings": 278,
+          "siteNights": 439,
+          "adults": 886,
+          "children": 187,
+          "infants": 74
+        },
+        "Kahikatea powered": {
+          "guestNights": 535,
+          "bookings": 75,
+          "siteNights": 203,
+          "adults": 401,
+          "children": 108,
+          "infants": 26
+        },
+        "Kererū non-powered": {
+          "guestNights": 3070,
+          "bookings": 456,
+          "siteNights": 907,
+          "adults": 1818,
+          "children": 999,
+          "infants": 253
+        },
+        "Kererū powered": {
+          "guestNights": 1909,
+          "bookings": 173,
+          "siteNights": 508,
+          "adults": 1039,
+          "children": 721,
+          "infants": 149
+        }
+      }
+    },
+    {
+      "season": "24-25",
+      "from": "2024-10-01",
+      "to": "2025-04-30",
+      "inProgress": false,
+      "guestNights": 6404,
+      "bookings": 904,
+      "siteNights": 1893,
+      "adults": 4061,
+      "children": 1850,
+      "infants": 493,
+      "busiest": {
+        "date": "2024-12-29",
+        "guests": 326
+      },
+      "daily": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        8,
+        28,
+        48,
+        32,
+        0,
+        0,
+        0,
+        5,
+        9,
+        8,
+        6,
+        8,
+        0,
+        0,
+        4,
+        12,
+        18,
+        4,
+        0,
+        0,
+        0,
+        2,
+        15,
+        19,
+        0,
+        3,
+        2,
+        2,
+        0,
+        10,
+        27,
+        2,
+        3,
+        3,
+        3,
+        8,
+        28,
+        32,
+        2,
+        2,
+        3,
+        3,
+        3,
+        36,
+        58,
+        3,
+        3,
+        1,
+        4,
+        4,
+        41,
+        51,
+        22,
+        14,
+        4,
+        2,
+        0,
+        14,
+        27,
+        43,
+        34,
+        60,
+        74,
+        89,
+        195,
+        272,
+        326,
+        271,
+        303,
+        256,
+        140,
+        94,
+        42,
+        29,
+        48,
+        60,
+        65,
+        87,
+        58,
+        62,
+        26,
+        28,
+        30,
+        41,
+        64,
+        187,
+        278,
+        229,
+        23,
+        21,
+        11,
+        21,
+        44,
+        92,
+        16,
+        11,
+        24,
+        11,
+        2,
+        21,
+        27,
+        3,
+        2,
+        5,
+        34,
+        188,
+        266,
+        254,
+        4,
+        3,
+        6,
+        1,
+        15,
+        42,
+        65,
+        2,
+        0,
+        0,
+        0,
+        3,
+        31,
+        76,
+        6,
+        6,
+        12,
+        2,
+        2,
+        28,
+        90,
+        6,
+        2,
+        0,
+        2,
+        6,
+        18,
+        30,
+        10,
+        8,
+        0,
+        0,
+        0,
+        15,
+        33,
+        4,
+        2,
+        2,
+        2,
+        0,
+        14,
+        34,
+        0,
+        0,
+        38,
+        39,
+        0,
+        15,
+        36,
+        5,
+        5,
+        3,
+        3,
+        3,
+        3,
+        4,
+        3,
+        3,
+        0,
+        1,
+        3,
+        14,
+        14,
+        21,
+        18,
+        6,
+        1,
+        2,
+        86,
+        92,
+        87,
+        15,
+        8,
+        4,
+        14,
+        31,
+        29,
+        3,
+        0,
+        0,
+        0
+      ],
+      "monthly": [
+        0,
+        0,
+        0,
+        121,
+        228,
+        1964,
+        2121,
+        1083,
+        416,
+        471,
+        0,
+        0
+      ],
+      "byCategory": {
+        "Kahikatea non-powered": {
+          "guestNights": 933,
+          "bookings": 220,
+          "siteNights": 335,
+          "adults": 708,
+          "children": 153,
+          "infants": 72
+        },
+        "Kahikatea powered": {
+          "guestNights": 605,
+          "bookings": 74,
+          "siteNights": 205,
+          "adults": 443,
+          "children": 140,
+          "infants": 22
+        },
+        "Kererū non-powered": {
+          "guestNights": 2684,
+          "bookings": 406,
+          "siteNights": 780,
+          "adults": 1637,
+          "children": 790,
+          "infants": 257
+        },
+        "Kererū powered": {
+          "guestNights": 2182,
+          "bookings": 204,
+          "siteNights": 573,
+          "adults": 1273,
+          "children": 767,
+          "infants": 142
+        }
+      }
+    },
+    {
+      "season": "25-26",
+      "from": "2025-10-01",
+      "to": "2026-04-30",
+      "inProgress": false,
+      "guestNights": 4988,
+      "bookings": 763,
+      "siteNights": 1586,
+      "adults": 3194,
+      "children": 1384,
+      "infants": 410,
+      "busiest": {
+        "date": "2026-02-06",
+        "guests": 270
+      },
+      "daily": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        8,
+        39,
+        27,
+        0,
+        0,
+        0,
+        4,
+        14,
+        14,
+        0,
+        1,
+        4,
+        4,
+        2,
+        10,
+        15,
+        0,
+        1,
+        1,
+        0,
+        0,
+        6,
+        30,
+        4,
+        8,
+        4,
+        4,
+        0,
+        5,
+        15,
+        4,
+        5,
+        6,
+        6,
+        2,
+        8,
+        41,
+        11,
+        8,
+        8,
+        4,
+        4,
+        11,
+        33,
+        11,
+        6,
+        7,
+        2,
+        2,
+        41,
+        52,
+        8,
+        10,
+        7,
+        9,
+        2,
+        4,
+        31,
+        36,
+        41,
+        30,
+        70,
+        67,
+        99,
+        150,
+        139,
+        126,
+        154,
+        180,
+        202,
+        171,
+        117,
+        96,
+        105,
+        121,
+        102,
+        84,
+        51,
+        94,
+        24,
+        18,
+        19,
+        14,
+        41,
+        115,
+        166,
+        140,
+        31,
+        14,
+        16,
+        14,
+        38,
+        29,
+        8,
+        2,
+        7,
+        10,
+        18,
+        26,
+        40,
+        2,
+        0,
+        5,
+        5,
+        122,
+        270,
+        209,
+        12,
+        0,
+        2,
+        1,
+        8,
+        8,
+        18,
+        0,
+        0,
+        0,
+        0,
+        0,
+        3,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2,
+        2,
+        45,
+        43,
+        24,
+        33,
+        2,
+        4,
+        7,
+        6,
+        5,
+        6,
+        6,
+        4,
+        2,
+        1,
+        0,
+        2,
+        18,
+        25,
+        8,
+        3,
+        3,
+        3,
+        3,
+        7,
+        8,
+        0,
+        2,
+        8,
+        8,
+        10,
+        100,
+        120,
+        91,
+        10,
+        4,
+        4,
+        12,
+        11,
+        17,
+        0,
+        2,
+        4,
+        4,
+        2,
+        0,
+        2,
+        2,
+        0,
+        0,
+        0,
+        0,
+        3,
+        18,
+        21,
+        0,
+        0,
+        0,
+        0
+      ],
+      "monthly": [
+        0,
+        0,
+        0,
+        92,
+        211,
+        1352,
+        1933,
+        671,
+        284,
+        445,
+        0,
+        0
+      ],
+      "byCategory": {
+        "Kahikatea non-powered": {
+          "guestNights": 703,
+          "bookings": 154,
+          "siteNights": 264,
+          "adults": 526,
+          "children": 146,
+          "infants": 31
+        },
+        "Kahikatea powered": {
+          "guestNights": 463,
+          "bookings": 66,
+          "siteNights": 146,
+          "adults": 315,
+          "children": 116,
+          "infants": 32
+        },
+        "Kererū non-powered": {
+          "guestNights": 1965,
+          "bookings": 319,
+          "siteNights": 604,
+          "adults": 1210,
+          "children": 570,
+          "infants": 185
+        },
+        "Kererū powered": {
+          "guestNights": 1857,
+          "bookings": 224,
+          "siteNights": 572,
+          "adults": 1143,
+          "children": 552,
+          "infants": 162
+        }
+      }
+    }
+  ],
+  "sites": null
+};
+    /* CAMP_DATA_END */
+
+    const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    // Data's monthly arrays run July → June
+    const SEASON_MONTHS = ['Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun'];
+    const AGES = [
+      ['adults',   'Adults',            'var(--adults)'],
+      ['children', 'Children 5–18',     'var(--children)'],
+      ['infants',  'Children under 5',  'var(--infants)'],
+    ];
+    const DAY_MS = 864e5;
+
+    // Events marked on the daily chart, hand-entered. `until` (optional) shades
+    // the days the event affected. Shown when they fall in the selected season.
+    const EVENTS = [
+      { date: '2023-02-13', until: '2023-04-30', label: 'Cyclone Gabrielle',
+        note: 'No guests for the rest of the season' },
+      { date: '2026-02-15', until: '2026-02-21', label: 'Extreme weather',
+        note: 'Reserve closed for seven days; Kahikatea camping area shut for the rest of the season' },
+    ];
+
+    let SEL = null;   // selected season label
+
+    const fmt = n => Number(n).toLocaleString('en-NZ');
+    const day = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+    const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+    const diffDays = (a, b) => Math.round((a - b) / DAY_MS);
+    const longDate = d => `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+    const seasonYear = label => 2000 + Number(label.slice(0, 2));
+
+    // Older seasons light, newest darkest: one hue, so order reads as time
+    function seasonColour(i, n) {
+      if (n <= 1) return '#047f67';
+      const a = [127, 191, 172], b = [3, 79, 64];   // #7fbfac → #034f40
+      const t = i / (n - 1);
+      return `rgb(${a.map((v, k) => Math.round(v + (b[k] - v) * t)).join(',')})`;
+    }
+
+    // Round an axis maximum up to 1, 2, 2.5 or 5 × a power of ten
+    function niceStep(v) {
+      const p = Math.pow(10, Math.floor(Math.log10(Math.max(v, 1))));
+      return [1, 2, 2.5, 5, 10].map(m => m * p).find(s => s >= v);
+    }
+    function niceScale(max, ticks = 4) {
+      const step = niceStep(Math.max(max, 1) / ticks);
+      return { step, top: Math.ceil(Math.max(max, 1) / step) * step };
+    }
+
+    function yGrid(scale, yOf, ml, x2) {
+      let out = '';
+      for (let t = 0; t <= scale.top; t += scale.step) {
+        const y = yOf(t).toFixed(1);
+        out += `<line x1="${ml}" y1="${y}" x2="${x2}" y2="${y}" stroke="var(--border)" stroke-width="1"/>
+                <text x="${ml - 6}" y="${(+y + 3.5).toFixed(1)}" text-anchor="end" font-size="10" fill="var(--caption)">${fmt(t)}</text>`;
+      }
+      return out;
+    }
+
+    // ── Tooltip ───────────────────────────────────────────────────────────────
+    // The page is scaled by fit.js, so mouse coordinates are divided by its scale.
+    const scaleNow = () => (window.fitScale ? window.fitScale() : 1);
+    function showTip(e, html) {
+      const tip = document.getElementById('tip');
+      tip.innerHTML = html;
+      tip.style.display = 'block';
+      const s = scaleNow();
+      const bw = document.body.clientWidth, bh = document.body.clientHeight;
+      let x = e.clientX / s + 14, y = e.clientY / s + 12;
+      if (x + tip.offsetWidth > bw - 4) x = e.clientX / s - tip.offsetWidth - 14;
+      if (y + tip.offsetHeight > bh - 4) y = e.clientY / s - tip.offsetHeight - 12;
+      tip.style.left = x + 'px';
+      tip.style.top = y + 'px';
+    }
+    const hideTip = () => { document.getElementById('tip').style.display = 'none'; };
+    const localX = (e, el) => (e.clientX - el.getBoundingClientRect().left) / scaleNow();
+
+    // ── Daily guests, selected season over the one before ────────────────────
+    function dailyChart(host, s, prev) {
+      const W = host.clientWidth, H = host.clientHeight;
+      const ml = 42, mr = 10, mt = 8, mb = 22;
+      const cw = W - ml - mr, ch = H - mt - mb;
+      const oct1 = new Date(seasonYear(s.season), 9, 1);
+      const from = day(s.from);
+      // The previous season, shifted a year so the same calendar day lines up
+      const prevOct1 = prev ? new Date(seasonYear(prev.season), 9, 1) : null;
+      const shift = d => addDays(oct1, diffDays(d, prevOct1));
+
+      // Axis runs from the first night with guests to the last, in either
+      // season, so the closed weeks either side don't show as a flat line.
+      // A season under way keeps the previous season's end, so it shows how
+      // much of the season is still to come.
+      const busy = [];
+      s.daily.forEach((v, i) => { if (v > 0) busy.push(addDays(from, i)); });
+      if (prev) prev.daily.forEach((v, i) => { if (v > 0) busy.push(shift(addDays(day(prev.from), i))); });
+      const d0 = busy.length ? addDays(new Date(Math.min(...busy)), -1) : from;
+      const d1 = busy.length ? addDays(new Date(Math.max(...busy)), 1) : day(s.to);
+      const nDays = Math.max(diffDays(d1, d0), 1);
+      const xOf = d => ml + diffDays(d, d0) / nDays * cw;
+      const prevAt = d => {
+        if (!prev) return null;
+        const i = diffDays(addDays(prevOct1, diffDays(d, oct1)), day(prev.from));
+        return i >= 0 && i < prev.daily.length ? prev.daily[i] : null;
+      };
+      const curAt = d => {
+        const i = diffDays(d, from);
+        return i >= 0 && i < s.daily.length ? s.daily[i] : null;
+      };
+
+      const prevPts = [];
+      for (let k = 0; k <= nDays; k++) {
+        const d = addDays(d0, k), v = prevAt(d);
+        if (v !== null) prevPts.push([xOf(d), v]);
+      }
+      const max = Math.max(...s.daily, ...prevPts.map(p => p[1]), 1);
+      const sc = niceScale(max);
+      const yOf = v => mt + ch - v / sc.top * ch;
+
+      const path = pts => pts.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)},${yOf(p[1]).toFixed(1)}`).join('');
+      const cur = s.daily
+        .map((v, i) => [addDays(from, i), v])
+        .filter(([d]) => d >= d0 && d <= d1)
+        .map(([d, v]) => [xOf(d), v]);
+      const area = cur.length
+        ? `${path(cur)}L${cur[cur.length - 1][0].toFixed(1)},${yOf(0).toFixed(1)}L${cur[0][0].toFixed(1)},${yOf(0).toFixed(1)}Z`
+        : '';
+
+      // A tick at the first of each month, each label centred on its month.
+      // The axis starts mid-month, so the first month gets a label of its own.
+      let ticks = '';
+      const firstTick = new Date(d0.getFullYear(), d0.getMonth() + 1, 1);
+      if (Math.min(xOf(firstTick), xOf(d1)) - xOf(d0) > 22) {
+        ticks += `<text x="${((xOf(d0) + Math.min(xOf(firstTick), xOf(d1))) / 2).toFixed(1)}" y="${H - 6}" text-anchor="middle" font-size="10" fill="var(--caption)">${MONTHS[d0.getMonth()]}</text>`;
+      }
+      for (let m = new Date(d0.getFullYear(), d0.getMonth() + 1, 1); m <= d1; m = new Date(m.getFullYear(), m.getMonth() + 1, 1)) {
+        const x = xOf(m).toFixed(1), xn = Math.min(xOf(new Date(m.getFullYear(), m.getMonth() + 1, 1)), xOf(d1));
+        ticks += `<line x1="${x}" y1="${mt + ch}" x2="${x}" y2="${mt + ch + 4}" stroke="var(--caption)" stroke-width="1"/>`;
+        if (xn - xOf(m) > 22) {
+          ticks += `<text x="${((+x + xn) / 2).toFixed(1)}" y="${H - 6}" text-anchor="middle" font-size="10" fill="var(--caption)">${MONTHS[m.getMonth()]}</text>`;
+        }
+      }
+
+      // Events in this season: a line on the day, a shaded band for its effect
+      const events = EVENTS
+        .map(ev => ({ ...ev, d: day(ev.date), u: ev.until ? day(ev.until) : day(ev.date) }))
+        .filter(ev => ev.d >= d0 && ev.d <= d1);
+      const eventSvg = events.map(ev => {
+        const x = xOf(ev.d), xu = xOf(ev.u > d1 ? d1 : ev.u);
+        const flip = x > ml + cw * 0.8;
+        return `<rect x="${x.toFixed(1)}" y="${mt}" width="${Math.max(xu - x, 0).toFixed(1)}" height="${ch}" fill="var(--navy)" opacity="0.05"/>
+          <line x1="${x.toFixed(1)}" y1="${mt}" x2="${x.toFixed(1)}" y2="${mt + ch}" stroke="var(--navy)" stroke-width="1.25" opacity="0.6"/>
+          <text x="${(x + (flip ? -6 : 6)).toFixed(1)}" y="${mt + 11}" text-anchor="${flip ? 'end' : 'start'}" font-size="10.5"
+                font-weight="600" fill="var(--navy)" stroke="#fff" stroke-width="3" paint-order="stroke">${ev.label}</text>
+          <text x="${(x + (flip ? -6 : 6)).toFixed(1)}" y="${mt + 24}" text-anchor="${flip ? 'end' : 'start'}" font-size="10"
+                fill="var(--muted)" stroke="#fff" stroke-width="3" paint-order="stroke">${ev.d.getDate()} ${MONTHS[ev.d.getMonth()]} ${ev.d.getFullYear()}</text>`;
+      }).join('');
+
+      host.innerHTML = `<svg viewBox="0 0 ${W} ${H}">
+        ${yGrid(sc, yOf, ml, W - mr)}
+        ${eventSvg}
+        <line x1="${ml}" y1="${yOf(0)}" x2="${W - mr}" y2="${yOf(0)}" stroke="var(--caption)" stroke-width="1"/>
+        ${prevPts.length ? `<path d="${path(prevPts)}" fill="none" stroke="var(--prev)" stroke-width="1.5" stroke-linejoin="round"/>` : ''}
+        <path d="${area}" fill="var(--forest)" opacity="0.12"/>
+        <path d="${path(cur)}" fill="none" stroke="var(--forest)" stroke-width="2" stroke-linejoin="round"/>
+        ${ticks}
+        <line class="xh" x1="0" x2="0" y1="${mt}" y2="${mt + ch}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 3" visibility="hidden"/>
+        <circle class="xd" r="4" fill="var(--forest)" stroke="#fff" stroke-width="2" visibility="hidden"/>
+        <rect class="hit" x="${ml}" y="${mt}" width="${cw}" height="${ch}" fill="transparent"/>
+      </svg>`;
+
+      const svg = host.querySelector('svg'), xh = svg.querySelector('.xh'), xd = svg.querySelector('.xd');
+      const hit = svg.querySelector('.hit');
+      hit.addEventListener('mousemove', e => {
+        const k = Math.max(0, Math.min(nDays, Math.round((localX(e, host) - ml) / cw * nDays)));
+        const d = addDays(d0, k), x = xOf(d).toFixed(1);
+        const v = curAt(d), pv = prevAt(d);
+        xh.setAttribute('x1', x); xh.setAttribute('x2', x); xh.setAttribute('visibility', 'visible');
+        if (v !== null) {
+          xd.setAttribute('cx', x); xd.setAttribute('cy', yOf(v).toFixed(1)); xd.setAttribute('visibility', 'visible');
+        } else xd.setAttribute('visibility', 'hidden');
+        const pd = prev ? addDays(prevOct1, diffDays(d, oct1)) : null;
+        const ev = events.find(x => d >= x.d && d <= x.u);
+        showTip(e, `<b>${longDate(d)}</b><br>
+          ${ev ? `<div class="row"><b>${ev.label}</b>${ev.note ? `&nbsp;&middot; ${ev.note}` : ''}</div>` : ''}
+          ${v !== null ? `<div class="row"><span class="swatch line" style="background:var(--forest)"></span>${fmt(v)} guests</div>`
+                       : `<div class="row">Not counted yet</div>`}
+          ${pv !== null ? `<div class="row"><span class="swatch line" style="background:var(--prev)"></span>${fmt(pv)} on ${pd.getDate()} ${MONTHS[pd.getMonth()]} ${pd.getFullYear()}</div>` : ''}`);
+      });
+      hit.addEventListener('mouseleave', () => {
+        hideTip(); xh.setAttribute('visibility', 'hidden'); xd.setAttribute('visibility', 'hidden');
+      });
+    }
+
+    // ── Guest nights by month, one line per season ────────────────────────────
+    function monthlyChart(host, seasons) {
+      const W = host.clientWidth, H = host.clientHeight;
+      const ml = 42, mr = 14, mt = 8, mb = 22;
+      const cw = W - ml - mr, ch = H - mt - mb;
+
+      // Months any season has guests in, filled in between (normally Oct → Apr)
+      const used = [];
+      seasons.forEach(s => s.monthly.forEach((v, i) => { if (v > 0) used.push(i); }));
+      const first = Math.min(...used), last = Math.max(...used);
+      const idx = Array.from({ length: last - first + 1 }, (_, k) => first + k);
+      const n = idx.length;
+      const xOf = k => ml + (n > 1 ? k / (n - 1) * cw : cw / 2);
+
+      // A season still under way stops at the month it has reached
+      const vals = seasons.map(s => {
+        const t = day(s.to), reached = (t.getMonth() - 6 + 12) % 12;
+        return idx.map(i => (s.inProgress && i > reached) ? null : s.monthly[i]);
+      });
+      const sc = niceScale(Math.max(...vals.flat().filter(v => v !== null), 1));
+      const yOf = v => mt + ch - v / sc.top * ch;
+
+      const lines = seasons.map((s, si) => {
+        const on = s.season === SEL, col = seasonColour(si, seasons.length);
+        let d = '';
+        vals[si].forEach((v, k) => { if (v !== null) d += `${d ? 'L' : 'M'}${xOf(k).toFixed(1)},${yOf(v).toFixed(1)}`; });
+        const dots = vals[si].map((v, k) => v === null ? '' :
+          `<circle cx="${xOf(k).toFixed(1)}" cy="${yOf(v).toFixed(1)}" r="${on ? 3.5 : 2.5}" fill="${col}" stroke="#fff" stroke-width="1.5"/>`).join('');
+        return { on, svg: `<path d="${d}" fill="none" stroke="${col}" stroke-width="${on ? 3 : 1.75}" stroke-linejoin="round"/>${dots}` };
+      });
+      // Selected season drawn last, so it sits on top
+      const ordered = [...lines.filter(l => !l.on), ...lines.filter(l => l.on)].map(l => l.svg).join('');
+
+      const xLabels = idx.map((i, k) =>
+        `<text x="${xOf(k).toFixed(1)}" y="${H - 6}" text-anchor="middle" font-size="10" fill="var(--caption)">${SEASON_MONTHS[i]}</text>`).join('');
+
+      host.innerHTML = `<svg viewBox="0 0 ${W} ${H}">
+        ${yGrid(sc, yOf, ml, W - mr)}
+        <line x1="${ml}" y1="${yOf(0)}" x2="${W - mr}" y2="${yOf(0)}" stroke="var(--caption)" stroke-width="1"/>
+        <line class="xh" x1="0" x2="0" y1="${mt}" y2="${mt + ch}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 3" visibility="hidden"/>
+        ${ordered}
+        ${xLabels}
+        <rect class="hit" x="${ml - 10}" y="${mt}" width="${cw + 20}" height="${ch}" fill="transparent"/>
+      </svg>`;
+
+      const svg = host.querySelector('svg'), xh = svg.querySelector('.xh'), hit = svg.querySelector('.hit');
+      hit.addEventListener('mousemove', e => {
+        const k = Math.max(0, Math.min(n - 1, Math.round((localX(e, host) - ml) / (n > 1 ? cw / (n - 1) : 1))));
+        const x = xOf(k).toFixed(1);
+        xh.setAttribute('x1', x); xh.setAttribute('x2', x); xh.setAttribute('visibility', 'visible');
+        const rows = seasons.map((s, si) => {
+          const v = vals[si][k];
+          const txt = v === null ? 'not yet' : fmt(v);
+          const lbl = `${s.season}${s.inProgress && v !== null ? ' (so far)' : ''}`;
+          return `<div class="row"><span class="swatch line" style="background:${seasonColour(si, seasons.length)}"></span>
+            ${s.season === SEL ? `<b>${lbl}: ${txt}</b>` : `${lbl}: ${txt}`}</div>`;
+        }).reverse().join('');
+        showTip(e, `<b>${SEASON_MONTHS[idx[k]]} &middot; guest nights</b>${rows}`);
+      });
+      hit.addEventListener('mouseleave', () => { hideTip(); xh.setAttribute('visibility', 'hidden'); });
+    }
+
+    // ── Guest nights by age group, stacked, one bar per season ────────────────
+    function agesChart(host, seasons) {
+      const W = host.clientWidth, H = host.clientHeight;
+      const ml = 42, mr = 6, mt = 16, mb = 22;
+      const cw = W - ml - mr, ch = H - mt - mb;
+      const sc = niceScale(Math.max(...seasons.map(s => s.guestNights), 1));
+      const yOf = v => mt + ch - v / sc.top * ch;
+      const band = cw / seasons.length, bw = Math.min(band * 0.58, 46);
+
+      const bars = seasons.map((s, si) => {
+        const x = ml + si * band + (band - bw) / 2;
+        const on = s.season === SEL;
+        let cum = 0;
+        const segs = AGES.map(([key, label, col]) => {
+          const v = s[key];
+          if (!v) return '';
+          const y0 = yOf(cum), y1 = yOf(cum + v);
+          cum += v;
+          const pct = Math.round(v / s.guestNights * 100);
+          // 2px gap between segments
+          const h = Math.max(y0 - y1 - 2, 1);
+          return `<rect x="${x.toFixed(1)}" y="${y1.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}"
+                    fill="${col}" opacity="${on ? 1 : 0.55}" rx="2"
+                    data-tip="<b>${s.season}${s.inProgress ? ' (so far)' : ''}</b><br>${label}: ${fmt(v)} guest nights (${pct}%)"/>`;
+        }).join('');
+        const tx = (x + bw / 2).toFixed(1);
+        return `${segs}
+          <text x="${tx}" y="${(yOf(s.guestNights) - 5).toFixed(1)}" text-anchor="middle" font-size="10"
+                font-weight="${on ? 600 : 400}" fill="var(--muted)">${fmt(s.guestNights)}</text>
+          <text x="${tx}" y="${H - 6}" text-anchor="middle" font-size="10.5" font-weight="${on ? 700 : 400}"
+                fill="${on ? 'var(--navy)' : 'var(--caption)'}">${s.season}</text>`;
+      }).join('');
+
+      host.innerHTML = `<svg viewBox="0 0 ${W} ${H}">
+        ${yGrid(sc, yOf, ml, W - mr)}
+        ${bars}
+      </svg>`;
+      const svg = host.querySelector('svg');
+      svg.addEventListener('mousemove', e => {
+        const t = e.target.getAttribute && e.target.getAttribute('data-tip');
+        t ? showTip(e, t) : hideTip();
+      });
+      svg.addEventListener('mouseleave', hideTip);
+    }
+
+    // ── Tiles ─────────────────────────────────────────────────────────────────
+    function change(now, before, prevLabel, inProgress, digits = 0) {
+      if (before === null || before === undefined) return '';
+      const when = inProgress ? `at this point in ${prevLabel}` : `in ${prevLabel}`;
+      const r = x => digits ? x.toFixed(digits) : fmt(x);
+      if (r(now) === r(before)) return `same as ${when.replace(/^in /, '')}`;
+      return now > before ? `▲ up from ${r(before)} ${when}` : `▼ down from ${r(before)} ${when}`;
+    }
+
+    function render() {
+      const root = document.getElementById('root');
+      const d = CAMP_DATA;
+      if (!d || !d.seasons || !d.seasons.length) {
+        root.innerHTML = '<p class="card-sub">No data yet — run the export script with --only camp.</p>';
+        return;
+      }
+      const seasons = d.seasons;
+      if (!SEL || !seasons.some(s => s.season === SEL)) SEL = seasons[seasons.length - 1].season;
+      const si = seasons.findIndex(s => s.season === SEL);
+      const s = seasons[si], prev = si > 0 ? seasons[si - 1] : null;
+      // A season under way is compared with the one before at the same point
+      const base = prev ? (s.inProgress && s.prevToDate ? s.prevToDate : prev) : null;
+      const stay = x => x.bookings ? x.siteNights / x.bookings : 0;
+      const busy = day(s.busiest.date);
+      const gd = new Date(d.generated);
+      const gen = `${gd.getDate()} ${MONTHS[gd.getMonth()]} ${gd.getFullYear()}`;
+      const first = 'First season in Newbook';
+      const tile = (label, val, sub) => `
+        <div class="tile">
+          <div class="tile-label">${label}</div>
+          <div class="tile-val">${val}</div>
+          <div class="tile-sub" title="${sub}">${sub}</div>
+        </div>`;
+
+      // Site categories for the selected season
+      const cats = Object.entries(s.byCategory).sort((a, b) => a[0].localeCompare(b[0]));
+      const catMax = Math.max(...cats.map(([, c]) => c.guestNights), 1);
+      const catRows = cats.map(([name, c]) => `
+        <div class="cat-row">
+          <span class="cat-name">${name}</span>
+          <span class="cat-val">${fmt(c.guestNights)}</span>
+          <div class="cat-bar-wrap"><div class="cat-bar" style="width:${(c.guestNights / catMax * 100).toFixed(1)}%"></div></div>
+          <span class="cat-meta">${fmt(c.siteNights)} site nights &middot; ${fmt(c.bookings)} bookings &middot; ${Math.round(c.guestNights / s.guestNights * 100)}% of guests</span>
+        </div>`).join('');
+
+      const soFar = s.inProgress ? ' so far' : '';
+      root.innerHTML = `
+        <div class="head">
+          <div class="title-block">
+            <a class="eyebrow" href="https://experience.arcgis.com/experience/0b02dc0ca9c545f7bf31fe3ea20ace1a?draft=true" target="_blank" rel="noopener">← Tōtara Reserve</a>
+            <h1>Campground</h1>
+            <div class="seasons">${seasons.map(x =>
+              `<button class="season-btn${x.season === SEL ? ' on' : ''}" data-season="${x.season}">${x.season}</button>`).join('')}</div>
+          </div>
+          <div class="tiles">
+            ${tile(`Guest nights &middot; ${s.season}`, fmt(s.guestNights),
+                base ? change(s.guestNights, base.guestNights, prev.season, s.inProgress) : first)}
+            ${tile('Bookings', fmt(s.bookings),
+                base ? change(s.bookings, base.bookings, prev.season, s.inProgress) : first)}
+            ${tile('Site nights booked', fmt(s.siteNights),
+                base ? change(s.siteNights, base.siteNights, prev.season, s.inProgress) : first)}
+            ${tile('Average stay', `${stay(s).toFixed(1)}<span style="font-size:0.9rem"> nights</span>`,
+                base ? change(stay(s), stay(base), prev.season, s.inProgress, 1) : first)}
+            ${tile(`Busiest night${soFar}`, `${fmt(s.busiest.guests)}<span style="font-size:0.9rem"> guests</span>`, longDate(busy))}
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="card">
+            <div class="card-head">
+              <span class="badge">Guests each night &middot; ${s.season}${soFar}</span>
+              <div class="legend">
+                <span class="legend-item on"><span class="swatch line" style="background:var(--forest)"></span>${s.season}</span>
+                ${prev ? `<span class="legend-item"><span class="swatch line" style="background:var(--prev)"></span>${prev.season}</span>` : ''}
+              </div>
+            </div>
+            <div class="chart-host" id="daily-host"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <span class="badge">Guest nights by site type &middot; ${s.season}${soFar}</span>
+            </div>
+            <div class="cat-list">${catRows}</div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <span class="badge">Guest nights by month</span>
+              <div class="legend">${seasons.map((x, i) => `
+                <span class="legend-item${x.season === SEL ? ' on' : ''}" data-season="${x.season}">
+                  <span class="swatch line" style="background:${seasonColour(i, seasons.length)}"></span>${x.season}</span>`).join('')}
+              </div>
+            </div>
+            <div class="chart-host" id="monthly-host"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <span class="badge">Guest nights by age group</span>
+            </div>
+            <div class="legend">${AGES.map(([, label, col]) =>
+              `<span class="legend-item"><span class="swatch" style="background:${col}"></span>${label}</span>`).join('')}</div>
+            <div class="chart-host" id="ages-host"></div>
+          </div>
+        </div>
+
+        <div class="dash-footer">
+          <span>Data: Tōtara Reserve campground bookings (Newbook) &middot; A guest night is one person staying one night</span>
+          <span>Updated ${gen}</span>
+        </div>`;
+      drawCharts();
+    }
+
+    // Draw each chart at its box's real size. Skipped while the frame has no
+    // size yet (ExB can mount embeds hidden); the ResizeObserver draws again.
+    function drawCharts() {
+      const d = CAMP_DATA;
+      if (!d || !d.seasons || !d.seasons.length) return;
+      const si = d.seasons.findIndex(s => s.season === SEL);
+      const hosts = {
+        'daily-host':   h => dailyChart(h, d.seasons[si], si > 0 ? d.seasons[si - 1] : null),
+        'monthly-host': h => monthlyChart(h, d.seasons),
+        'ages-host':    h => agesChart(h, d.seasons),
+      };
+      for (const [id, draw] of Object.entries(hosts)) {
+        const h = document.getElementById(id);
+        if (h && h.clientWidth > 0 && h.clientHeight > 0) draw(h);
+      }
+    }
+
+    document.addEventListener('click', e => {
+      const b = e.target.closest('[data-season]');
+      if (b && b.dataset.season !== SEL) { SEL = b.dataset.season; hideTip(); render(); }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      render();
+      new ResizeObserver(drawCharts).observe(document.getElementById('root'));
+      document.fonts.ready.then(drawCharts);
+    });
+    window.addEventListener('load', drawCharts);
+  </script>
+</head>
+<body data-base-w="1111" data-base-h="687">
+  <script src="fit.js?v=1"></script>
+  <div id="root"></div>
+  <div id="tip"></div>
+</body>
+</html>
