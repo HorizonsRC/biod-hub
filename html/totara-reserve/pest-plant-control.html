@@ -1024,7 +1024,7 @@ const PEST_PLANT_DATA = {
     </div>
     <div class="card species-card">
       <div class="card-head">
-        <span class="card-title" id="species-title">Weed records by species</span>
+        <span class="card-title" id="species-title">Pest plant records by species</span>
         <span class="card-sub" id="species-sub"></span>
       </div>
       <div class="species-list" id="species-list"></div>
@@ -1042,7 +1042,7 @@ const PEST_PLANT_DATA = {
     <div class="card">
       <div class="card-head">
         <span class="card-title">Control outcome</span>
-        <span class="card-sub">share of weed records, by year</span>
+        <span class="card-sub">share of pest plant records, by year</span>
       </div>
       <div class="legend" id="outcome-legend"></div>
       <div class="stack-rows" id="outcome-rows"></div>
@@ -1055,7 +1055,7 @@ const PEST_PLANT_DATA = {
     <div class="card">
       <div class="card-head">
         <span class="card-title">Age class</span>
-        <span class="card-sub">share of weed records, by year</span>
+        <span class="card-sub">share of pest plant records, by year</span>
       </div>
       <div class="legend" id="age-legend"></div>
       <div class="stack-rows" id="age-rows"></div>
@@ -1141,7 +1141,7 @@ const PEST_PLANT_DATA = {
     const unit = spMetric === 'records' ? '' : ' m²';
 
     document.getElementById('species-title').textContent =
-      spMetric === 'records' ? 'Weed records by species' : 'Area of weed recorded by species';
+      spMetric === 'records' ? 'Pest plant records by species' : 'Pest plant area by species';
     document.getElementById('species-sub').textContent =
       `${rows.length} species · ${spFy === 'all' ? D.fys[0] + ' to ' + D.fys[D.fys.length - 1] : 'FY ' + fyLong(spFy)}`;
 
@@ -1164,8 +1164,8 @@ const PEST_PLANT_DATA = {
 
   // ── Over time: small multiples, one measure each ─────────────────────────
   const MINIS = [
-    { key: 'records', title: 'Weed records',     unit: '' },
-    { key: 'areaSqm', title: 'Area of weed',     unit: 'm²' },
+    { key: 'records', title: 'Pest plant records', unit: '' },
+    { key: 'areaSqm', title: 'Pest plant area',    unit: 'm²' },
     { key: 'km',      title: 'Tracks walked',    unit: 'km' },
     { key: 'days',    title: 'Field days',       unit: '' },
   ];
