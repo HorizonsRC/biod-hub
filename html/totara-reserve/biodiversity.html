@@ -348,7 +348,7 @@
   <script>
     /* BIO_DATA_START */
 const BIO_DATA = {
-  "generated": "2026-10-06T11:26:15.731556",
+  "generated": "2026-10-06T14:02:29.052923",
   "birds": {
     "species": [
       {
@@ -793,14 +793,9 @@ const BIO_DATA = {
     ],
     "top": [
       {
-        "name": "Krauss's spikemoss",
-        "sci": "Selaginella kraussiana",
-        "count": 18
-      },
-      {
         "name": "Tōtara",
         "sci": "Podocarpus totara",
-        "count": 16
+        "count": 15
       },
       {
         "name": "Long-leaved lacebark",
@@ -818,8 +813,13 @@ const BIO_DATA = {
         "count": 12
       },
       {
-        "name": "Tradescantia",
-        "sci": "Tradescantia fluminensis",
+        "name": "Sickle Spleenwort",
+        "sci": "Asplenium polyodon",
+        "count": 10
+      },
+      {
+        "name": "Poataniwha",
+        "sci": "Melicope simplex",
         "count": 10
       }
     ],
@@ -1365,7 +1365,7 @@ const BIO_DATA = {
       if (!top || !top.length) return '';
       const max = Math.max(...top.map(t => t.count), 1);
       return `
-        <div class="sub-label">Most recorded</div>
+        <div class="sub-label">Most recorded native species</div>
         <div class="top-list fill" data-trim>${top.map(t => `
           <div class="top" title="${esc(t.name)}${t.sci !== t.name ? ' (' + esc(t.sci) + ')' : ''}: ${t.count} sightings">
             <span class="top-name${t.name === t.sci ? ' sci' : ''}">${esc(t.name)}</span>
