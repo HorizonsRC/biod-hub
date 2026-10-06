@@ -24,6 +24,10 @@ Pulls data for two Tōtara Reserve dashboards:
        Five-minute bird count spreadsheet (FIVE_MBC_XLSX) — spring surveys.
        No ArcGIS needed.
 
+  5. campground.html — guest numbers from Newbook bookings (--only camp)
+       Counts only: dates, site category and age group are kept from each
+       booking; guest details and money are dropped on arrival. No ArcGIS needed.
+
 Marker comments in river-management.html:
     /* SWIM_DATA_START */  /* SWIM_DATA_END */
     /* RIVER_DATA_START */ /* RIVER_DATA_END */
@@ -238,6 +242,21 @@ FIVE_MBC_WATCH = ["whitehead", "kaka"]
 # Counted in the sheet but not identified to a species — left out of the split.
 FIVE_MBC_UNIDENTIFIED = {"unknown", "unidentified", "unknown identification",
                          "finch sp.", "duck, (grey or mallard)"}
+
+# Campground page — guest numbers from the Newbook booking system (REST API).
+# The credentials file is gitignored and its values are never logged. Bookings
+# arrive with guest names, contact details and money; only CAMP_KEEP survives.
+CAMP_HTML_PATH    = HERE / "html" / "totara-reserve" / "campground.html"
+NEWBOOK_CREDS     = HERE / "Data" / "Totara-Reserve" / "newbook_credentials.json"
+NEWBOOK_URL       = "https://api.newbook.cloud/rest/"
+CAMP_FIRST_SEASON = 2021   # 21-22, the first season in Newbook
+CAMP_KEEP = ("booking_id", "booking_status", "booking_arrival", "booking_departure",
+             "category_name", "booking_adults", "booking_children", "booking_infants")
+# Newbook's three guest counts are the campground's charging age groups:
+# adults, children 5-18 and children under 5. Matched to the manual export.
+CAMP_AGES = {"adults": "booking_adults", "children": "booking_children",
+             "infants": "booking_infants"}
+CAMP_SKIP_STATUS = ("cancel", "no show", "no_show", "quote", "waitlist")
 
 SESSION = requests.Session()
 SESSION.headers.update({"User-Agent": "BioD-Hub/1.0 (HorizonsRC; internal dashboard)"})
@@ -1732,6 +1751,140 @@ def extract_biodiversity_data() -> dict | None:
     }
 
 
+# ── Campground (Newbook) ──────────────────────────────────────────────────────
+
+def _camp_season_year(d: datetime.date) -> int:
+    """Seasons run late October to late April; July starts the next one."""
+    return d.year if d.month >= 7 else d.year - 1
+
+
+def _camp_label(year: int) -> str:
+    return f"{year % 100:02d}-{(year + 1) % 100:02d}"
+
+
+def _newbook_bookings(creds: dict, auth: tuple, start: datetime.date, end: datetime.date) -> list[dict]:
+    """Bookings with a night between start and end, each cut down to CAMP_KEEP."""
+    rows, seen, offset = [], set(), 0
+    while True:
+        body = {"region": creds["region"], "api_key": creds["api_key"],
+                "period_from": f"{start} 00:00:00", "period_to": f"{end} 23:59:59",
+                "list_type": "staying", "data_offset": offset, "data_limit": 1000}
+        try:
+            resp = SESSION.post(NEWBOOK_URL + "bookings_list", json=body, auth=auth, timeout=300)
+        except requests.RequestException as e:
+            # Type only: the message could quote the request.
+            raise RuntimeError(f"Newbook request failed: {type(e).__name__}") from None
+        reply = resp.json()
+        if str(reply.get("success")).lower() != "true":
+            raise RuntimeError(f"Newbook bookings_list: HTTP {resp.status_code} {reply.get('message')}")
+        batch = [{k: b.get(k) for k in CAMP_KEEP} for b in reply.get("data") or []]
+        reply = None
+        # Guard against the offset being ignored: stop when a page adds nothing new
+        new = [b for b in batch if b["booking_id"] not in seen]
+        seen.update(b["booking_id"] for b in new)
+        rows += new
+        if len(batch) < 1000 or not new:
+            return rows
+        offset += len(batch)
+
+
+def _camp_totals(nights: pd.DataFrame) -> dict:
+    return {
+        "guestNights": int(nights["guests"].sum()),
+        "bookings": int(nights["booking"].nunique()),
+        "siteNights": len(nights),
+        **{age: int(nights[age].sum()) for age in CAMP_AGES},
+    }
+
+
+def extract_campground_data() -> dict | None:
+    """Guest numbers per season, month, day, site category and age group.
+
+    A guest night is one person on site for one night, so a family of four
+    staying two nights is eight. Nights from today on are not counted yet.
+    None keeps the page's last good data.
+    """
+    if not NEWBOOK_CREDS.exists():
+        log.warning(f"  No Newbook credentials at {NEWBOOK_CREDS.relative_to(HERE)}")
+        return None
+    creds = json.loads(NEWBOOK_CREDS.read_text(encoding="utf-8"))
+    # UTF-8 bytes: requests defaults to latin-1, which can't encode the macron in the username
+    auth = (creds["username"].encode("utf-8"), creds["password"].encode("utf-8"))
+    today = datetime.date.today()
+
+    bookings = {}
+    try:
+        for y in range(CAMP_FIRST_SEASON, _camp_season_year(today) + 1):
+            for b in _newbook_bookings(creds, auth, datetime.date(y, 7, 1), datetime.date(y + 1, 6, 30)):
+                bookings[b["booking_id"]] = b
+    except Exception:
+        log.exception("  Newbook fetch failed — campground.html left as it was")
+        return None
+    log.info(f"  Newbook: {len(bookings)} bookings, statuses "
+             f"{dict(Counter(str(b['booking_status']) for b in bookings.values()))}")
+
+    rows = []
+    for b in bookings.values():
+        if any(s in str(b["booking_status"]).lower() for s in CAMP_SKIP_STATUS):
+            continue
+        try:
+            arr = datetime.date.fromisoformat(str(b["booking_arrival"])[:10])
+            dep = datetime.date.fromisoformat(str(b["booking_departure"])[:10])
+        except ValueError:
+            log.warning(f"  Booking {b['booking_id']} has unreadable dates — skipped")
+            continue
+        ages = {age: int(b[field] or 0) for age, field in CAMP_AGES.items()}
+        n = arr
+        while n < dep and n < today:
+            rows.append({"date": n, "booking": b["booking_id"],
+                         "category": b["category_name"] or "Unknown", **ages})
+            n += datetime.timedelta(days=1)
+    # An empty answer from a feed is not the same as nothing being there.
+    if not rows:
+        log.warning("  Newbook returned no occupied nights — campground.html left as it was")
+        return None
+    df = pd.DataFrame(rows)
+    df["guests"] = df[list(CAMP_AGES)].sum(axis=1)
+    df["year"] = df["date"].map(_camp_season_year)
+
+    seasons = []
+    for y, ds in df.groupby("year"):
+        start = min(datetime.date(y, 10, 1), ds["date"].min())
+        end = max(datetime.date(y + 1, 4, 30), ds["date"].max())
+        to = min(end, today - datetime.timedelta(days=1))
+        days = [start + datetime.timedelta(days=i) for i in range((to - start).days + 1)]
+        daily = ds.groupby("date")["guests"].sum().reindex(days, fill_value=0)
+        monthly = ds.groupby(ds["date"].map(lambda d: (d.month - 7) % 12))["guests"].sum()
+        s = {
+            "season": _camp_label(int(y)),
+            "from": start.isoformat(),
+            "to": to.isoformat(),
+            "inProgress": to < end,
+            **_camp_totals(ds),
+            "busiest": {"date": daily.idxmax().isoformat(), "guests": int(daily.max())},
+            "daily": [int(v) for v in daily],
+            # Jul → Jun
+            "monthly": [int(monthly.get(i, 0)) for i in range(12)],
+            "byCategory": {cat: _camp_totals(dc) for cat, dc in ds.groupby("category")},
+        }
+        # A season still under way is compared with the last one at the same point
+        prev = df[df["year"] == y - 1]
+        if s["inProgress"] and not prev.empty:
+            cut = datetime.date(y - 1, 10, 1) + (to - datetime.date(y, 10, 1))
+            s["prevToDate"] = _camp_totals(prev[prev["date"] <= cut])
+        seasons.append(s)
+        log.info(f"  {s['season']}: {s['guestNights']} guest nights, {s['bookings']} bookings, "
+                 f"{s['siteNights']} site nights{' (so far)' if s['inProgress'] else ''}")
+
+    return {
+        "generated": datetime.datetime.now().isoformat(),
+        "categories": sorted(df["category"].unique().tolist()),
+        "seasons": seasons,
+        # Occupancy % needs sites per category: waiting on Newbook to enable sites_list
+        "sites": None,
+    }
+
+
 # ── HTML injection ─────────────────────────────────────────────────────────────
 
 def _replace_block(html: str, start_marker: str, end_marker: str, new_content: str) -> str:
@@ -1799,14 +1952,25 @@ def inject_into_bio_html(data: dict) -> None:
     log.info(f"Updated {BIO_HTML_PATH}")
 
 
+def inject_into_camp_html(data: dict) -> None:
+    if not CAMP_HTML_PATH.exists():
+        log.warning(f"{CAMP_HTML_PATH} does not exist — skipping.")
+        return
+    block = f"const CAMP_DATA = {json.dumps(data, indent=2, ensure_ascii=False)};"
+    html = CAMP_HTML_PATH.read_text(encoding="utf-8")
+    html = _replace_block(html, "CAMP_DATA_START", "CAMP_DATA_END", block)
+    CAMP_HTML_PATH.write_text(html, encoding="utf-8")
+    log.info(f"Updated {CAMP_HTML_PATH}")
+
+
 # ── Main ───────────────────────────────────────────────────────────────────────
 
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Tōtara Reserve dashboard data export")
     parser.add_argument(
-        "--only", choices=["river", "pco", "plants", "bio"],
-        help="Run one section only. Default runs all four.",
+        "--only", choices=["river", "pco", "plants", "bio", "camp"],
+        help="Run one section only. Default runs all five.",
     )
     only = parser.parse_args().only
 
@@ -1849,6 +2013,12 @@ def main():
         bio = extract_biodiversity_data()
         if bio:
             inject_into_bio_html(bio)
+
+    if only in (None, "camp"):
+        log.info("--- Campground (Newbook) ---")
+        camp = extract_campground_data()
+        if camp:
+            inject_into_camp_html(camp)
 
     log.info("=== Done ===")
 
