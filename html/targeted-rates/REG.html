@@ -340,11 +340,15 @@ const REG_DATA = {
       return { fy, src, isReport, series, totals };
     }
 
+    // Scale to the frame's width, then stretch the page's height to fill the
+    // frame so no blank band is left under it; the bar chart takes up the slack.
+    // MIN_H stops a short, wide frame squashing the layout.
     (function scaleToFit() {
-      const BASE_W = 879, BASE_H = 866;
+      const BASE_W = 879, MIN_H = 760;
       const el = document.querySelector('.wrapper');
       function resize() {
-        const scale = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
+        const scale = Math.min(window.innerWidth / BASE_W, window.innerHeight / MIN_H);
+        el.style.height = `${window.innerHeight / scale}px`;
         el.style.transform = `scale(${scale})`;
       }
       resize();
