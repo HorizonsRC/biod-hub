@@ -38,7 +38,8 @@
       color: var(--navy);
       padding: 14px 16px;
       display: grid;
-      grid-template-rows: 42px 1fr 1fr;
+      /* Top row never shorter than the All Seasons Summary card needs */
+      grid-template-rows: 42px minmax(385px, 1fr) 1fr;
       gap: 10px;
     }
 
