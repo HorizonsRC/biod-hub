@@ -250,41 +250,8 @@
     <div class="stats-card">
       <div class="stats-title">All Seasons Summary</div>
 
-      <!-- Tree Lupin -->
-      <div class="stat-block">
-        <div class="stat-label" style="color:var(--teal); font-size:11px;">Tree Lupin</div>
-        <div class="stat-row"><span class="stat-val">413</span><span class="stat-unit">plants</span></div>
-        <div class="stat-row"><span class="stat-val">33,455</span><span class="stat-unit">m² treated</span></div>
-        <div class="stat-pills">
-          <span class="pill pill-dark">Seedling/Juv: 83</span>
-          <span class="pill pill-mid">Adult: 330</span>
-        </div>
-      </div>
-
-      <div class="stat-divider"></div>
-
-      <!-- Sydney Golden Wattle -->
-      <div class="stat-block">
-        <div class="stat-label" style="color:var(--sand); font-size:11px;">Sydney Golden Wattle</div>
-        <div class="stat-row"><span class="stat-val">77</span><span class="stat-unit">plants</span></div>
-        <div class="stat-row"><span class="stat-val">4,863</span><span class="stat-unit">m² treated</span></div>
-        <div class="stat-pills">
-          <span class="pill pill-dark">Juv: 13</span>
-          <span class="pill pill-mid">Adult: 64</span>
-        </div>
-      </div>
-
-      <div class="stat-divider"></div>
-
-      <!-- Other species -->
-      <div class="stat-block">
-        <div class="stat-label" style="color:#5f6962; font-size:11px;">Other Species</div>
-        <div class="stat-row"><span class="stat-val">12</span><span class="stat-unit">plants</span></div>
-        <div class="stat-row"><span class="stat-val">272</span><span class="stat-unit">m² treated</span></div>
-        <div class="stat-note">Climbing Dock · Boneseed · Periwinkle · Boxthorn · Pampas Grass</div>
-      </div>
-
-      <div class="stat-divider"></div>
+      <!-- One block per species group, filled from WBP_DATA.summary -->
+      <div id="statsBlocks" style="display: contents;"></div>
 
       <div class="stat-block">
         <div class="stat-label">Pest Control Contractor</div>
@@ -301,7 +268,7 @@
     <!-- Age class by species (24-25 + 25-26) -->
     <div class="card">
       <div class="card-title">Life Stage by Species</div>
-      <div class="card-sub">Combined 23-24, 24-25 & 25-26 seasons</div>
+      <div class="card-sub" id="ageSub">All seasons combined</div>
       <div class="chart-wrap">
         <canvas id="ageChart"></canvas>
       </div>
@@ -328,6 +295,87 @@
   </div>
 
   <script>
+    // Rewritten by Targeted_Rates_Data_Export.py from the contractor data on AGOL.
+    // Edit the script, not the numbers here.
+    /* WBP_DATA_START */
+const WBP_DATA = {
+  "seasons": [
+    "23-24",
+    "24-25",
+    "25-26"
+  ],
+  "groups": [
+    "Tree Lupin",
+    "Sydney Golden Wattle",
+    "Other"
+  ],
+  "bySeason": {
+    "Tree Lupin": [
+      41,
+      159,
+      270
+    ],
+    "Sydney Golden Wattle": [
+      0,
+      49,
+      43
+    ],
+    "Other": [
+      0,
+      2,
+      11
+    ]
+  },
+  "control": {
+    "controlled": [
+      41,
+      172,
+      311
+    ],
+    "partial": [
+      0,
+      3,
+      2
+    ],
+    "notControlled": [
+      0,
+      35,
+      11
+    ]
+  },
+  "summary": [
+    {
+      "name": "Tree Lupin",
+      "plants": 470,
+      "sqm": 34448,
+      "seedJuv": 95,
+      "adult": 375
+    },
+    {
+      "name": "Sydney Golden Wattle",
+      "plants": 92,
+      "sqm": 6117,
+      "seedJuv": 15,
+      "adult": 77
+    },
+    {
+      "name": "Other",
+      "plants": 13,
+      "sqm": 292,
+      "seedJuv": 2,
+      "adult": 11,
+      "species": [
+        "Boneseed",
+        "Climbing Dock",
+        "Periwinkle",
+        "Pampas",
+        "Boxthorn"
+      ]
+    }
+  ]
+};
+    /* WBP_DATA_END */
+
     (function scaleToFit() {
       const BASE_W = 969, BASE_H = 870;
       const el = document.querySelector('.wrapper');
@@ -352,16 +400,41 @@
 
     const gridColor = '#eeeee9';
 
+    const fmt = n => n.toLocaleString('en-NZ');
+    const seasons = WBP_DATA.seasons;
+    const summary = Object.fromEntries(WBP_DATA.summary.map(s => [s.name, s]));
+    const groupColour = { 'Tree Lupin': teal, 'Sydney Golden Wattle': sand, 'Other': sage };
+
+    // ── ALL SEASONS SUMMARY ──
+    const statLabel = { 'Tree Lupin': ['Tree Lupin', 'var(--teal)'],
+                        'Sydney Golden Wattle': ['Sydney Golden Wattle', 'var(--sand)'],
+                        'Other': ['Other Species', '#5f6962'] };
+    document.getElementById('statsBlocks').innerHTML = WBP_DATA.summary.map(s => `
+      <div class="stat-block">
+        <div class="stat-label" style="color:${statLabel[s.name][1]}; font-size:11px;">${statLabel[s.name][0]}</div>
+        <div class="stat-row"><span class="stat-val">${fmt(s.plants)}</span><span class="stat-unit">plants</span></div>
+        <div class="stat-row"><span class="stat-val">${fmt(s.sqm)}</span><span class="stat-unit">m² treated</span></div>
+        ${s.name === 'Other'
+          ? `<div class="stat-note">${s.species.join(' · ')}</div>`
+          : `<div class="stat-pills">
+               <span class="pill pill-dark">Seedling/Juv: ${fmt(s.seedJuv)}</span>
+               <span class="pill pill-mid">Adult: ${fmt(s.adult)}</span>
+             </div>`}
+      </div>
+      <div class="stat-divider"></div>`).join('');
+
+    document.getElementById('ageSub').textContent = seasons.length > 1
+      ? `Combined ${seasons.slice(0, -1).join(', ')} & ${seasons[seasons.length - 1]} seasons`
+      : `${seasons[0]} season`;
+
     // ── SPECIES CHART ──
     new Chart(document.getElementById('speciesChart'), {
       type: 'bar',
       data: {
-        labels: ['23-24', '24-25', '25-26'],
-        datasets: [
-          { label: 'Tree Lupin',          data: [41, 159, 213], backgroundColor: teal, borderColor: '#aaa', borderWidth: 1, borderRadius: 3 },
-          { label: 'Sydney Golden Wattle', data: [0,  49,  28],  backgroundColor: sand, borderColor: '#aaa', borderWidth: 1, borderRadius: 3 },
-          { label: 'Other',               data: [0,   2,   10],  backgroundColor: sage, borderColor: '#aaa', borderWidth: 1, borderRadius: 3 }
-        ]
+        labels: seasons,
+        datasets: WBP_DATA.groups.map(g => (
+          { label: g, data: WBP_DATA.bySeason[g], backgroundColor: groupColour[g], borderColor: '#aaa', borderWidth: 1, borderRadius: 3 }
+        ))
       },
       options: {
         responsive: true, maintainAspectRatio: false,
@@ -378,17 +451,15 @@
     });
 
     // ── AGE / LIFE STAGE CHART ──
-    // Species on x-axis, juvenile vs adult stacked
-    // Tree Lupin: J=47+13=60, S/Seedling=19+4=23, A/Mature=134+196=330
-    // SGW: J=6+7=13, A=43+21=64
-    // Other (23-24 Climbing Dock A=2, 25-26 Boneseed J=2/M=4, Periwinkle M=2, Boxthorn M=1, Pampas M=1)
+    // Species on x-axis, seedling + juvenile vs adult stacked, all seasons
+    const ageLabel = { 'Tree Lupin': 'Tree Lupin', 'Sydney Golden Wattle': 'Syd. Golden Wattle', 'Other': 'Other Species' };
     new Chart(document.getElementById('ageChart'), {
       type: 'bar',
       data: {
-        labels: ['Tree Lupin', 'Syd. Golden Wattle', 'Other Species'],
+        labels: WBP_DATA.groups.map(g => ageLabel[g]),
         datasets: [
-          { label: 'Seedling / Juvenile', data: [83, 13, 2],   backgroundColor: '#4a9b8e', borderRadius: 3 },
-          { label: 'Adult / Mature',      data: [330, 64, 10], backgroundColor: '#2e6e6e', borderRadius: 3 }
+          { label: 'Seedling / Juvenile', data: WBP_DATA.groups.map(g => summary[g].seedJuv), backgroundColor: '#4a9b8e', borderRadius: 3 },
+          { label: 'Adult / Mature',      data: WBP_DATA.groups.map(g => summary[g].adult),   backgroundColor: '#2e6e6e', borderRadius: 3 }
         ]
       },
       options: {
@@ -406,21 +477,15 @@
     });
 
     // ── CONTROL STATUS CHART ──
-    // 23-24: all 41 were Controlled (from the data - all Tree Lupin)
-    // 24-25: Controlled=172 (213 - 38 not/partial), Not controlled=34, Partial=3... 
-    // Let me use: 23-24 C=41,NC=0,PC=0; 24-25 C=172,PC=3,NC=38 wait let me recalc
-    // From analysis: Controlled=213 total in processed, NC=37 (20+9+3+1+1+1+1+1), PC=3
-    // But 23-24 had 41 plants all controlled. So 24-25: C=213-41=172, NC=37, PC=3? that's 212 not 210
-    // Actually total processed = 251: 23-24=41, 24-25=210. C=213 means 41+172=213 ✓. NC=35, PC=3 = 210 ✓
-    // 25-26: C=240, NC=9, PC=2
+    // Outcome read from Control_notes: "Partially controlled" / "Not controlled" / "Controlled"
     new Chart(document.getElementById('controlChart'), {
       type: 'bar',
       data: {
-        labels: ['23-24', '24-25', '25-26'],
+        labels: seasons,
         datasets: [
-          { label: 'Controlled',          data: [41, 172, 240], backgroundColor: '#2e6e6e', borderRadius: 3 },
-          { label: 'Partially controlled', data: [0,   3,   2],  backgroundColor: sand, borderRadius: 3 },
-          { label: 'Not controlled',       data: [0,  35,   9],  backgroundColor: rust, borderRadius: 3 }
+          { label: 'Controlled',           data: WBP_DATA.control.controlled,    backgroundColor: '#2e6e6e', borderRadius: 3 },
+          { label: 'Partially controlled', data: WBP_DATA.control.partial,       backgroundColor: sand, borderRadius: 3 },
+          { label: 'Not controlled',       data: WBP_DATA.control.notControlled, backgroundColor: rust, borderRadius: 3 }
         ]
       },
       options: {
