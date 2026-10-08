@@ -14,7 +14,7 @@
       --surface: #ffffff;
       --border:  #ddddd8;
       --muted:   #5a5a52;
-      --caption: #888880;
+      --caption: #6b6b63;
       --green:   #3a6b3a;
     }
 
@@ -106,7 +106,7 @@
 
     .dot-legend { display: flex; flex-direction: column; gap: 5px; flex-shrink: 0; }
     .dot-row    { display: flex; gap: 16px; flex-shrink: 0; }
-    .dot-item   { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+    .dot-item   { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #3f3f3a; }
     .dot        { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 
     .note {
@@ -310,7 +310,7 @@ const REG_DATA = {
     ];
 
     const tickFont  = { family: "'Source Sans 3', sans-serif", size: 11.5 };
-    const tickColor = '#888880';
+    const tickColor = '#45453f';
     const fmt = n => n.toLocaleString('en-NZ');
     const fyKey = fy => parseInt(fy.slice(0, 2), 10);
     const fyLong = fy => `20${fy.slice(0, 2)}–${fy.slice(3)}`;
