@@ -376,11 +376,15 @@ const WBP_DATA = {
 };
     /* WBP_DATA_END */
 
+    // Scale to the frame's width, then stretch the page's height to fill the
+    // frame so no blank band is left under it; both chart rows take up the slack.
+    // MIN_H stops a short, wide frame squashing the layout.
     (function scaleToFit() {
-      const BASE_W = 969, BASE_H = 870;
+      const BASE_W = 969, MIN_H = 760;
       const el = document.querySelector('.wrapper');
       function resize() {
-        const scale = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
+        const scale = Math.min(window.innerWidth / BASE_W, window.innerHeight / MIN_H);
+        el.style.height = `${window.innerHeight / scale}px`;
         el.style.transform = `scale(${scale})`;
       }
       resize();
