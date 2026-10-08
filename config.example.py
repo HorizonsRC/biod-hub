@@ -95,3 +95,8 @@ TOTARA_TTI_XLSX = r"C:\path\to\your\Rodent tracking indices ALL.xlsx"
 # Columns: Date / Line / Tunnel / Mouse / Rat / ... with 1 = tracked. The TTI
 # for these dates is calculated from this file and replaces the summary above.
 TOTARA_TTI_RAW_XLSX = r"C:\path\to\your\Totara Reserve Tracking Tunnel Monitoring raw data.xlsx"
+
+# ── Targeted Rates ────────────────────────────────────────────────────────────
+
+# Biodiversity Targeted Rates contractor data view (layer 1 waypoints, 2 tracks)
+TARGETED_RATES_CONTRACTOR_URL = "https://services1.arcgis.com/your-org-id/arcgis/rest/services/your-targeted-rates-contractor-view/FeatureServer"
