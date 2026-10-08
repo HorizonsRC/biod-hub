@@ -257,6 +257,16 @@ CAMP_KEEP = ("booking_id", "booking_status", "booking_arrival", "booking_departu
 CAMP_AGES = {"adults": "booking_adults", "children": "booking_children",
              "infants": "booking_infants"}
 CAMP_SKIP_STATUS = ("cancel", "no show", "no_show", "quote", "waitlist")
+# sites_list only returns the sites there now, so sites since taken out are
+# added back for the nights they were open: (category, count, open from, closed on).
+# 6 Kahikatea non-powered removed 6 Aug 2026 after flood damage and slips (26 → 20).
+CAMP_REMOVED_SITES = [("Kahikatea non-powered", 6, "2021-07-01", "2026-08-06")]
+# Nights sites could not be booked, left out of occupancy: (from, to inclusive,
+# categories or None for all). Same events as EVENTS in campground.html.
+CAMP_CLOSURES = [
+    ("2026-02-15", "2026-02-21", None),   # extreme weather, reserve closed seven days
+    ("2026-02-22", "2026-06-30", ("Kahikatea non-powered", "Kahikatea powered")),  # Kahikatea shut rest of season
+]
 
 SESSION = requests.Session()
 SESSION.headers.update({"User-Agent": "BioD-Hub/1.0 (HorizonsRC; internal dashboard)"})
@@ -1788,6 +1798,77 @@ def _newbook_bookings(creds: dict, auth: tuple, start: datetime.date, end: datet
         offset += len(batch)
 
 
+def _newbook_sites(creds: dict, auth: tuple) -> list[dict]:
+    """Every site's category and the nights it was open, removed sites included."""
+    body = {"region": creds["region"], "api_key": creds["api_key"], "data_limit": 1000}
+    try:
+        resp = SESSION.post(NEWBOOK_URL + "sites_list", json=body, auth=auth, timeout=120)
+    except requests.RequestException as e:
+        raise RuntimeError(f"Newbook request failed: {type(e).__name__}") from None
+    reply = resp.json()
+    if str(reply.get("success")).lower() != "true":
+        raise RuntimeError(f"Newbook sites_list: HTTP {resp.status_code} {reply.get('message')}")
+    day = lambda v, default: datetime.date.fromisoformat(str(v)[:10]) if v else default
+    sites = [{"category": s.get("category_name") or "Unknown",
+              "from": day(s.get("opened_on"), datetime.date.min),
+              "to": day(s.get("closed_on"), datetime.date.max)}
+             for s in reply.get("data") or []]
+    for cat, n, opened, closed in CAMP_REMOVED_SITES:
+        sites += [{"category": cat, "from": day(opened, None), "to": day(closed, None)}] * n
+    return sites
+
+
+def _camp_open_sites(sites: list[dict], d: datetime.date) -> Counter:
+    """Sites open for booking on night d, by category, after closures."""
+    c = Counter(s["category"] for s in sites if s["from"] <= d < s["to"])
+    for a, b, cats in CAMP_CLOSURES:
+        if datetime.date.fromisoformat(a) <= d <= datetime.date.fromisoformat(b):
+            for k in c:
+                if cats is None or k in cats:
+                    c[k] = 0
+    return c
+
+
+def _camp_occupancy(nights: pd.DataFrame, sites: list[dict],
+                    start: datetime.date, end: datetime.date) -> dict:
+    """Site nights booked against site nights open, start to end inclusive.
+
+    Same sum as Newbook's Occupancy Report: sites × nights, less closures.
+    Monthly arrays run July → June. Weekend = Friday and Saturday nights.
+    `nightly` has sites booked and open for each night from start, all sites.
+    """
+    days = [start + datetime.timedelta(days=i) for i in range((end - start).days + 1)]
+    cap = {d: _camp_open_sites(sites, d) for d in days}
+    occ = nights[(nights["date"] >= start) & (nights["date"] <= end)]
+    weekend = lambda d: d.weekday() in (4, 5)
+
+    def block(cat=None):
+        sel = occ if cat is None else occ[occ["category"] == cat]
+        open_on = lambda d: sum(cap[d].values()) if cat is None else cap[d][cat]
+        avail, booked = [0] * 12, [0] * 12
+        for d in days:
+            avail[(d.month - 7) % 12] += open_on(d)
+        for m, n in sel.groupby(sel["date"].map(lambda d: (d.month - 7) % 12)).size().items():
+            booked[int(m)] = int(n)
+        return {"siteNights": sum(booked), "available": sum(avail),
+                "monthlySiteNights": booked, "monthlyAvailable": avail,
+                "weekendSiteNights": int(sel["date"].map(weekend).sum()),
+                "weekendAvailable": sum(open_on(d) for d in days if weekend(d))}
+
+    # More sites booked than open on a night means a site count or closure is off
+    over = [(d, c, n) for (d, c), n in occ.groupby(["date", "category"]).size().items()
+            if n > cap[d][c]]
+    if over:
+        log.warning(f"  {len(over)} nights with more sites booked than open, e.g. "
+                    + ", ".join(f"{d} {c} {n} > {cap[d][c]}" for d, c, n in over[:3]))
+    cats = sorted(set().union(*cap.values()) | set(occ["category"]))
+    booked = occ.groupby("date").size()
+    return {"all": block(), "byCategory": {c: block(c) for c in cats},
+            "nightly": {"from": start.isoformat(),
+                        "booked": [int(booked.get(d, 0)) for d in days],
+                        "open": [sum(cap[d].values()) for d in days]}}
+
+
 def _camp_totals(nights: pd.DataFrame) -> dict:
     return {
         "guestNights": int(nights["guests"].sum()),
@@ -1822,6 +1903,13 @@ def extract_campground_data() -> dict | None:
         return None
     log.info(f"  Newbook: {len(bookings)} bookings, statuses "
              f"{dict(Counter(str(b['booking_status']) for b in bookings.values()))}")
+    # Occupancy is left out rather than the page kept back if this fails
+    try:
+        sites = _newbook_sites(creds, auth)
+        log.info(f"  Newbook: sites now {dict(_camp_open_sites(sites, today))}")
+    except Exception:
+        log.exception("  Newbook sites_list failed — occupancy left out")
+        sites = None
 
     rows = []
     for b in bookings.values():
@@ -1868,20 +1956,31 @@ def extract_campground_data() -> dict | None:
             "byCategory": {cat: _camp_totals(dc) for cat, dc in ds.groupby("category")},
         }
         # A season still under way is compared with the last one at the same point
+        # Open from the first night with guests to the last (or yesterday, for a
+        # season under way): the closed months either side aren't counted
+        if sites:
+            s["occupancy"] = _camp_occupancy(ds, sites, ds["date"].min(),
+                                             to if s["inProgress"] else ds["date"].max())
         prev = df[df["year"] == y - 1]
         if s["inProgress"] and not prev.empty:
             cut = datetime.date(y - 1, 10, 1) + (to - datetime.date(y, 10, 1))
             s["prevToDate"] = _camp_totals(prev[prev["date"] <= cut])
+            if sites and prev["date"].min() <= cut:
+                s["prevToDate"]["occupancy"] = _camp_occupancy(
+                    prev, sites, prev["date"].min(), min(cut, prev["date"].max()))["all"]
         seasons.append(s)
+        occ = s.get("occupancy", {}).get("all")
         log.info(f"  {s['season']}: {s['guestNights']} guest nights, {s['bookings']} bookings, "
-                 f"{s['siteNights']} site nights{' (so far)' if s['inProgress'] else ''}")
+                 f"{s['siteNights']} site nights"
+                 + (f", {occ['siteNights'] / occ['available']:.2%} occupied" if occ and occ["available"] else "")
+                 + (" (so far)" if s["inProgress"] else ""))
 
     return {
         "generated": datetime.datetime.now().isoformat(),
         "categories": sorted(df["category"].unique().tolist()),
         "seasons": seasons,
-        # Occupancy % needs sites per category: waiting on Newbook to enable sites_list
-        "sites": None,
+        # Sites open today, by category (None if sites_list failed)
+        "sites": dict(sorted(_camp_open_sites(sites, today).items())) if sites else None,
     }
 
 
