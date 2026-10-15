@@ -67,7 +67,11 @@
   </div>
 
   <div class="chart-wrap"><canvas id="chart"></canvas></div>
-  <p class="caption">Priority Habitat sites only (excludes Icon Sites and Tōtara Reserve). Each site's score is its combined weighted pressure management score out of 100.</p>
+  <!-- Both lines are also drawn into the exported PNG, so the context travels with a static copy -->
+  <div class="caption">
+    <p>Priority Habitat sites only (excludes Icon Sites and Tōtara Reserve). Each site's score is its combined weighted pressure management score out of 100.</p>
+    <p id="siteNote"></p>
+  </div>
   <p class="updated" id="updated"></p>
 </div>
 <script>
@@ -166,6 +170,7 @@
       });
 
       updateTitle();
+      updateNote();
     })
     .catch(() => {
       document.querySelector('.chart-wrap').innerHTML =
@@ -177,9 +182,15 @@
     const region = regionSelect.value;
     const rows = region === 'All Districts' ? rawData : rawData.filter(d => d.Region === region);
     const fys = [...new Set(rows.map(d => String(d.FY)))].sort();
+    // A site is "added" in the first FY it appears in (not counted for the first FY shown)
+    const seen = new Set();
     yearStats = fys.map(fy => {
-      const totals = rows.filter(d => String(d.FY) === fy).map(rowTotal);
-      return { fy, n: totals.length, avg: totals.reduce((a, b) => a + b, 0) / totals.length };
+      const yr = rows.filter(d => String(d.FY) === fy);
+      const totals = yr.map(rowTotal);
+      const ids = new Set(yr.map(d => d.SiteID));
+      const added = seen.size ? [...ids].filter(id => !seen.has(id)).length : 0;
+      ids.forEach(id => seen.add(id));
+      return { fy, n: totals.length, added, avg: totals.reduce((a, b) => a + b, 0) / totals.length };
     });
     return {
       labels: yearStats.map(s => s.fy.replace('-', '/')),
@@ -194,6 +205,18 @@
     chart.data.datasets[0].data = values;
     chart.update();
     updateTitle();
+    updateNote();
+  }
+
+  // Site counts per FY, plus any sites added to the programme, so a reader of an
+  // exported copy knows each year's average covers a different set of sites.
+  function updateNote() {
+    const fyLabel = fy => fy.replace('-', '/');
+    const counts = yearStats.map(s => `${fyLabel(s.fy)}: ${s.n}`).join(', ');
+    const added = yearStats.filter(s => s.added > 0)
+      .map(s => `${s.added} site${s.added === 1 ? ' was' : 's were'} added to the programme in ${fyLabel(s.fy)}`);
+    document.getElementById('siteNote').textContent = `Number of sites scored: ${counts}.` +
+      (added.length ? ` ${added.join('; ')}. Each year's average includes all sites in the programme that year.` : '');
   }
 
   const REGION_NAMES = {
@@ -214,13 +237,25 @@
     const dpr = window.devicePixelRatio || 1;
     const hdrH = Math.round(54 * dpr), padX = Math.round(18 * dpr);
     const out = document.createElement('canvas');
-    out.width = src.width; out.height = src.height + hdrH;
     const ctx = out.getContext('2d');
+    // Caption lines go under the chart in the PNG, wrapped to the image width
+    const noteFont = `${Math.round(12 * dpr)}px Arial, sans-serif`;
+    const lineH = Math.round(17 * dpr);
+    out.width = src.width;
+    ctx.font = noteFont;
+    const notes = [...document.querySelectorAll('.caption p')].map(p => p.textContent).filter(Boolean);
+    const noteLines = notes.flatMap(t => wrapText(ctx, t, out.width - padX * 2));
+    const ftrH = noteLines.length * lineH + Math.round(14 * dpr);
+    out.height = src.height + hdrH + ftrH;   // resizing resets ctx state, so fonts are set again below
     ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, out.width, out.height);
     ctx.fillStyle = '#1a1a2e';
     ctx.font = `600 ${Math.round(14 * dpr)}px Arial, sans-serif`;
     ctx.fillText(title, padX, Math.round(22 * dpr));
     ctx.drawImage(src, 0, hdrH);
+    ctx.fillStyle = '#444';
+    ctx.font = noteFont;
+    noteLines.forEach((line, i) =>
+      ctx.fillText(line, padX, hdrH + src.height + Math.round(4 * dpr) + (i + 1) * lineH));
     const safe = title.normalize('NFD').replace(/[̀-ͯ]/g, '')
                       .replace(/[^a-zA-Z0-9\s-]/g, '').trim().replace(/\s+/g, '_');
     const dataUrl = out.toDataURL('image/png');
@@ -228,6 +263,18 @@
     if (!w) { alert('Allow pop-ups for this site to export the chart.'); return; }
     w.document.write(`<!DOCTYPE html><html><head><title>${safe}</title></head><body style="margin:0;background:#1a1a2e;display:flex;flex-direction:column;align-items:center;padding:24px;font-family:sans-serif;gap:16px;"><a href="${dataUrl}" download="${safe}.png" style="background:#2d6a4f;color:#fff;padding:10px 22px;border-radius:6px;text-decoration:none;font-size:15px;font-weight:600;">&#8681; Download ${safe}.png</a><img src="${dataUrl}" style="max-width:100%;border:1px solid #333;border-radius:4px;"></body></html>`);
     w.document.close();
+  }
+
+  function wrapText(ctx, text, maxW) {
+    const lines = [];
+    let line = '';
+    text.split(' ').forEach(word => {
+      const test = line ? line + ' ' + word : word;
+      if (line && ctx.measureText(test).width > maxW) { lines.push(line); line = word; }
+      else line = test;
+    });
+    if (line) lines.push(line);
+    return lines;
   }
 
   function togglePanel() { document.getElementById('panel').classList.toggle('open'); }
