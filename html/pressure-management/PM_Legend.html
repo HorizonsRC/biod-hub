@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Environmental Pressure Management Legend</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;overflow:hidden}
+    body{font-family:'DM Sans',sans-serif;background:#fff;color:#1a1a2e}
+
+    .wrap{height:100%;padding:14px 16px 10px;display:flex;flex-direction:column;gap:10px}
+    .title{font-size:1rem;font-weight:600;line-height:1.3;flex-shrink:0}
+
+    .sec{flex-shrink:0}
+    .sec-l{font-size:.66rem;font-weight:500;letter-spacing:.04em;text-transform:uppercase;
+           color:#6b7280;margin-bottom:6px}
+    .sub-l{font-size:.68rem;color:#4b5563;line-height:1.35;margin-bottom:6px}
+
+    .classes{display:flex;flex-direction:column;gap:4px}
+    .row{display:flex;align-items:center;gap:8px;min-width:0}
+    /* Drawn the way the map draws a polygon: 60% opacity fill, solid outline */
+    .swatch{width:20px;height:14px;flex-shrink:0;border-radius:2px;border:1.5px solid}
+    .name{font-size:.74rem;line-height:1.3;white-space:nowrap}
+
+    .note{font-size:.66rem;color:#4b5563;line-height:1.4}
+
+    .rule{height:1px;background:#e8e8e8;flex-shrink:0}
+
+    /* Short panels: tighter chrome and smaller type, same breakpoint as the KKT legend */
+    body.compact .wrap{padding:9px 11px 7px;gap:7px}
+    body.compact .title{font-size:.84rem}
+    body.compact .sec-l{font-size:.6rem;margin-bottom:4px}
+    body.compact .sub-l{font-size:.62rem;margin-bottom:4px}
+    body.compact .classes{gap:2px}
+    body.compact .swatch{width:16px;height:11px}
+    body.compact .name{font-size:.66rem}
+    body.compact .note{font-size:.6rem}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="title">Environmental Pressure Management</div>
+
+  <div class="sec">
+    <div class="sec-l">Total Site Score</div>
+    <div class="classes" id="total"></div>
+  </div>
+
+  <div class="rule"></div>
+
+  <div class="sec">
+    <div class="sec-l">Individual pressure scores</div>
+    <div class="sub-l">Ungulates, Pest Plants, Possum Browse, Predation, Fragmentation, Rabbits/Hares</div>
+    <div class="classes" id="pressures"></div>
+  </div>
+
+  <div class="rule"></div>
+
+  <div class="note">Higher scores mean pressures are better managed. Management threshold: 55%.</div>
+</div>
+
+<script>
+  // Colours and class breaks are copied from the layer renderers in the web map
+  // (Priority Habitats Pressure Management Map). If the map symbology is ever
+  // restyled, these must be updated to match or the legend quietly starts lying.
+  // Order matches the map's own legend (ascending values).
+
+  // Total score layer (field total_score)
+  const TOTAL = [
+    ['0–15%',   '#F50000'],
+    ['15–30%',  '#FC7200'],
+    ['30–45%',  '#FCC04F'],
+    ['45–60%',  '#FFF700'],
+    ['60–75%',  '#AEF702'],
+    ['75–100%', '#00FF37']
+  ];
+
+  // The six single-pressure layers (Raw_* fields) all share these classes
+  const PRESSURES = [
+    ['0–25%',   '#FF0000'],
+    ['25–50%',  '#FCC04F'],
+    ['50–75%',  '#FFF700'],
+    ['75–100%', '#00FF0D']
+  ];
+
+  // Hex colour to rgba at the map's fill opacity
+  const fill = hex => {
+    const n = parseInt(hex.slice(1), 16);
+    return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},0.6)`;
+  };
+
+  function drawClasses(el, classes) {
+    classes.forEach(([label, colour]) => {
+      const row = document.createElement('div');
+      row.className = 'row';
+      const sw = document.createElement('span');
+      sw.className = 'swatch';
+      sw.style.background = fill(colour);
+      sw.style.borderColor = colour;
+      const name = document.createElement('span');
+      name.className = 'name';
+      name.textContent = label;
+      row.append(sw, name);
+      el.append(row);
+    });
+  }
+
+  drawClasses(document.getElementById('total'), TOTAL);
+  drawClasses(document.getElementById('pressures'), PRESSURES);
+
+  function setCompact() {
+    document.body.classList.toggle('compact', window.innerHeight < 460);
+  }
+  setCompact();
+  window.addEventListener('resize', setCompact);
+</script>
+</body>
+</html>
