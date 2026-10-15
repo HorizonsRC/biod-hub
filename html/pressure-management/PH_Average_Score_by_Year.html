@@ -31,7 +31,8 @@
     select{width:100%;border:1px solid #ddd;border-radius:6px;padding:8px 28px 8px 10px;font-size:0.85rem;color:#1a1a2e;font-family:inherit;appearance:none;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 10px center;cursor:pointer}
     select:focus{outline:none;border-color:#273747}
     .caption{font-size:0.75rem;color:#555;text-align:center;padding:6px 0 2px}
-    .updated{color:#aaa;font-size:.62em;position:absolute;bottom:4px;right:8px;margin:0}
+    /* In normal flow under the caption (not pinned to the corner) so the wrapped caption can't run into it */
+    .updated{color:#aaa;font-size:.62em;text-align:right;margin:8px 0 0}
     .hd-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
     .print-btn{background:none;border:1px solid #ccc;border-radius:6px;padding:7px 10px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:0.78rem;font-family:inherit;color:#555;white-space:nowrap;flex-shrink:0}
     .print-btn:hover{background:#f5f5f5;border-color:#aaa}
