@@ -226,9 +226,9 @@
 
   function updateTitle() {
     const region = regionSelect.value;
-    const location = region === 'All Districts' ? 'All Districts' : (REGION_NAMES[region] || region);
+    const location = region === 'All Districts' ? 'all districts' : (REGION_NAMES[region] || region);
     document.getElementById('chartTitle').textContent =
-      'Average Environmental Pressure Management Score by Financial Year — ' + location + ' — Priority Habitats';
+      'Average Environmental Pressure Management Score by Financial Year for ' + location;
   }
 
   function exportChart() {
