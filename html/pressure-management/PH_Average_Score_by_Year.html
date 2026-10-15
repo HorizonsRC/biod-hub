@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Average Pressure Score by Year</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;overflow:hidden}
+    body{font-family:'DM Sans',sans-serif;background:#fff}
+    .wrap{background:#fff;padding:16px 20px 8px;position:relative;height:100%;display:flex;flex-direction:column}
+    .chart-wrap{flex:1;min-height:0;position:relative}
+    .hd{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:16px}
+    .title{font-size:1rem;font-weight:600;color:#1a1a2e;line-height:1.4}
+    .filter-btn{background:#273747;color:#fff;border:none;border-radius:6px;padding:7px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:0.78rem;font-family:inherit;white-space:nowrap;flex-shrink:0}
+    .filter-btn:hover{background:#3a4f63}
+    .panel{display:none;position:absolute;right:24px;top:64px;background:#fff;border-radius:8px;box-shadow:0 4px 24px rgba(0,0,0,.18);z-index:100;min-width:240px;overflow:hidden}
+    .panel.open{display:block}
+    .panel-hd{background:#273747;color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
+    .panel-hd span{font-weight:600;font-size:0.9rem}
+    .panel-close{background:none;border:none;color:#fff;cursor:pointer;font-size:1.1rem;line-height:1;opacity:.8}
+    .panel-close:hover{opacity:1}
+    .panel-body{padding:16px}
+    .fg{margin-bottom:14px}
+    .fg:last-child{margin-bottom:0}
+    .fl{font-size:0.78rem;color:#555;font-weight:500;margin-bottom:6px}
+    select{width:100%;border:1px solid #ddd;border-radius:6px;padding:8px 28px 8px 10px;font-size:0.85rem;color:#1a1a2e;font-family:inherit;appearance:none;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 10px center;cursor:pointer}
+    select:focus{outline:none;border-color:#273747}
+    .caption{font-size:0.75rem;color:#555;text-align:center;padding:6px 0 2px}
+    .updated{color:#aaa;font-size:.62em;position:absolute;bottom:4px;right:8px;margin:0}
+    .hd-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+    .print-btn{background:none;border:1px solid #ccc;border-radius:6px;padding:7px 10px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:0.78rem;font-family:inherit;color:#555;white-space:nowrap;flex-shrink:0}
+    .print-btn:hover{background:#f5f5f5;border-color:#aaa}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hd">
+    <div class="title" id="chartTitle">Average Environmental Pressure Management Score by Financial Year</div>
+    <div class="hd-actions">
+      <button class="print-btn" onclick="exportChart()" title="Download as PNG">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export PNG
+      </button>
+      <button class="filter-btn" onclick="togglePanel()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        Filter
+      </button>
+    </div>
+  </div>
+
+  <div class="panel" id="panel">
+    <div class="panel-hd">
+      <span>Filter</span>
+      <button class="panel-close" onclick="togglePanel()">&#x2715;</button>
+    </div>
+    <div class="panel-body">
+      <div class="fg">
+        <div class="fl">District is</div>
+        <select id="regionSelect" onchange="updateChart()"></select>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-wrap"><canvas id="chart"></canvas></div>
+  <p class="caption">Priority Habitat sites only (excludes Icon Sites and Tōtara Reserve). Each site's score is its combined weighted pressure management score out of 100.</p>
+  <p class="updated" id="updated"></p>
+</div>
+<script>
+  let rawData = [];
+  let chart;
+  let yearStats = [];
+
+  const BAR_COLOR = '#273747';
+  const scoreColumns = ['Weighted_Ungulates', 'Weighted_PestPlants', 'Weighted_PossumBrowse',
+                        'Weighted_Predation', 'Weighted_Environmental', 'Weighted_Rabbits'];
+  const rowTotal = d => scoreColumns.reduce((sum, col) => sum + (d[col] || 0), 0);
+
+  const regionSelect = document.getElementById('regionSelect');
+
+  // Plugin: average value printed above each bar
+  const valueLabels = {
+    id: 'valueLabels',
+    afterDatasetsDraw(chart) {
+      const { ctx } = chart;
+      const meta = chart.getDatasetMeta(0);
+      ctx.save();
+      ctx.font = "600 14px 'DM Sans', sans-serif";
+      ctx.fillStyle = '#1a1a2e';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      meta.data.forEach((bar, i) => {
+        const s = yearStats[i];
+        if (!s) return;
+        ctx.fillText(s.avg.toFixed(1) + '%', bar.x, bar.y - 6);
+      });
+      ctx.restore();
+    }
+  };
+
+  Chart.register(valueLabels);
+
+  fetch('./dashboard_data.json')
+    .then(r => r.json())
+    .then(data => {
+      rawData = data.scores_overview.filter(d => d.site_programme === 'Priority Habitat');
+      document.getElementById('updated').textContent = 'Generated: ' + data.generated_at;
+
+      const regions = [...new Set(rawData.map(d => d.Region).filter(r => r))].sort();
+      [{ v: 'All Districts', t: 'All Districts' }, ...regions.map(r => ({ v: r, t: REGION_NAMES[r] || r }))]
+        .forEach(({ v, t }) => {
+          const o = document.createElement('option');
+          o.value = v; o.textContent = t;
+          regionSelect.appendChild(o);
+        });
+
+      const { labels, values } = buildChartData();
+
+      chart = new Chart(document.getElementById('chart'), {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            data: values,
+            backgroundColor: BAR_COLOR,
+            borderRadius: 3,
+            maxBarThickness: 120
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          layout: { padding: { top: 24 } },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                title: items => 'Financial year ' + items[0].label,
+                label: items => {
+                  const s = yearStats[items.dataIndex];
+                  return [`Average score: ${s.avg.toFixed(2)}%`, `Sites scored: ${s.n}`];
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              title: { display: true, text: 'Financial year', color: '#1a1a2e',
+                       font: { family: "'DM Sans', sans-serif", size: 12 } },
+              ticks: { color: '#1a1a2e', font: { family: "'DM Sans', sans-serif", size: 13, weight: '600' } }
+            },
+            y: {
+              min: 0, max: 100,
+              title: { display: true, text: 'Average pressure management score (%)', color: '#1a1a2e',
+                       font: { family: "'DM Sans', sans-serif", size: 12 } },
+              grid: { color: '#e8e8e8' },
+              ticks: { color: '#1a1a2e', font: { family: "'DM Sans', sans-serif" }, stepSize: 20 }
+            }
+          }
+        }
+      });
+
+      updateTitle();
+    })
+    .catch(() => {
+      document.querySelector('.chart-wrap').innerHTML =
+        '<p style="padding:20px;color:#c00">Failed to load dashboard data.</p>';
+    });
+
+  // Average combined score per financial year for the selected district.
+  function buildChartData() {
+    const region = regionSelect.value;
+    const rows = region === 'All Districts' ? rawData : rawData.filter(d => d.Region === region);
+    const fys = [...new Set(rows.map(d => String(d.FY)))].sort();
+    yearStats = fys.map(fy => {
+      const totals = rows.filter(d => String(d.FY) === fy).map(rowTotal);
+      return { fy, n: totals.length, avg: totals.reduce((a, b) => a + b, 0) / totals.length };
+    });
+    return {
+      labels: yearStats.map(s => s.fy.replace('-', '/')),
+      values: yearStats.map(s => Math.round(s.avg * 100) / 100)
+    };
+  }
+
+  function updateChart() {
+    if (!chart) return;
+    const { labels, values } = buildChartData();
+    chart.data.labels           = labels;
+    chart.data.datasets[0].data = values;
+    chart.update();
+    updateTitle();
+  }
+
+  const REGION_NAMES = {
+    'Horo': 'Horowhenua', 'Rang': 'Rangitīkei', 'Whan': 'Whanganui',
+    'Man': 'Manawatū', 'Rua': 'Ruapehu', 'Tara': 'Tararua', 'Palm': 'Palmerston North',
+  };
+
+  function updateTitle() {
+    const region = regionSelect.value;
+    const location = region === 'All Districts' ? 'All Districts' : (REGION_NAMES[region] || region);
+    document.getElementById('chartTitle').textContent =
+      'Average Environmental Pressure Management Score by Financial Year — ' + location + ' — Priority Habitats';
+  }
+
+  function exportChart() {
+    const src = document.getElementById('chart');
+    const title = document.getElementById('chartTitle').textContent;
+    const dpr = window.devicePixelRatio || 1;
+    const hdrH = Math.round(54 * dpr), padX = Math.round(18 * dpr);
+    const out = document.createElement('canvas');
+    out.width = src.width; out.height = src.height + hdrH;
+    const ctx = out.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, out.width, out.height);
+    ctx.fillStyle = '#1a1a2e';
+    ctx.font = `600 ${Math.round(14 * dpr)}px Arial, sans-serif`;
+    ctx.fillText(title, padX, Math.round(22 * dpr));
+    ctx.drawImage(src, 0, hdrH);
+    const safe = title.normalize('NFD').replace(/[̀-ͯ]/g, '')
+                      .replace(/[^a-zA-Z0-9\s-]/g, '').trim().replace(/\s+/g, '_');
+    const dataUrl = out.toDataURL('image/png');
+    const w = window.open('', '_blank');
+    if (!w) { alert('Allow pop-ups for this site to export the chart.'); return; }
+    w.document.write(`<!DOCTYPE html><html><head><title>${safe}</title></head><body style="margin:0;background:#1a1a2e;display:flex;flex-direction:column;align-items:center;padding:24px;font-family:sans-serif;gap:16px;"><a href="${dataUrl}" download="${safe}.png" style="background:#2d6a4f;color:#fff;padding:10px 22px;border-radius:6px;text-decoration:none;font-size:15px;font-weight:600;">&#8681; Download ${safe}.png</a><img src="${dataUrl}" style="max-width:100%;border:1px solid #333;border-radius:4px;"></body></html>`);
+    w.document.close();
+  }
+
+  function togglePanel() { document.getElementById('panel').classList.toggle('open'); }
+</script>
+</body>
+</html>
