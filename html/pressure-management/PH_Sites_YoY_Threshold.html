@@ -417,7 +417,7 @@
     const region = regionSelect.value;
     const regionFull = (region === 'All Districts') ? null : (REGION_NAMES[region] || region);
     const location = regionFull ? regionFull : 'All Districts';
-    const note = document.getElementById('excludeIcon').checked ? ' — Priority Habitats' : '';
+    const note = document.getElementById('excludeIcon').checked ? ' (Priority Habitats)' : '';
     const view = viewSelect.value;
     const viewNote = view === 'district' ? ' — Ecosystems Combined'
                    : view === 'eco'      ? ' — By Ecosystem'

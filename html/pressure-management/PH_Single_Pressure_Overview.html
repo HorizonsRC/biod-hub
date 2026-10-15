@@ -240,7 +240,7 @@
     const pressureLabel = def ? def.label : 'Pressure';
     const regionFull = (region === 'All Regions') ? null : (REGION_NAMES[region] || region);
     const location = regionFull ? regionFull + ' Sites' : 'All Sites';
-    const note = document.getElementById('excludeIcon').checked ? ' — Priority Habitats' : '';
+    const note = document.getElementById('excludeIcon').checked ? ' (Priority Habitats)' : '';
     document.getElementById('chartTitle').textContent =
       pressureLabel + ' Pressure at ' + location + ' for ' + fy + note;
   }
