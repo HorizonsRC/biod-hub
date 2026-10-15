@@ -9,6 +9,7 @@ __pycache__/
 *.pyo
 .env
 .claude/
+.vscode/
 html/icon-sites/backups/
 
 # Local-only AGOL maintenance scripts — not backed up to GitHub; keep a copy elsewhere

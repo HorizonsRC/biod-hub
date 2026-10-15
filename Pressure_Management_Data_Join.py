@@ -1,4 +1,5 @@
 import os
+import re
 import logging
 from datetime import datetime as dt
 
@@ -46,8 +47,46 @@ LAYER0_FIELD_MAP = {
     'Management': 'management', 'Protection': 'protection',
     'Total_Score': 'total_score', 'Above_55_Threshold': 'above_55_threshold',
     'FY': 'fy', 'District': 'District', 'site_programme': 'site_programme',
+    'site_label': 'site_label',
 }
 # The related table kept its original field names — columns map 1:1 to AGOL.
+
+# ============================================================
+# SPECIAL SITES — Icon Sites + the Regional Park (single source of truth).
+# The team's spreadsheet now uses the full friendly name as the Site Code, so each
+# entry maps that full name back to the canonical (short) site_id used as the join
+# key everywhere downstream. All the previously-scattered special-site config
+# (geometry source, programme, name normalisation) is derived from this one dict.
+#   full        : the spreadsheet's full name (appears in Site Code AND Site Name)
+#   programme   : site_programme classification
+#   geom        : 'ph'   geometry comes from the Priority Habitats source layer
+#                 'icon' geometry comes from the HRC Icon Sites layer
+#   icon_name   : (geom='icon' only) SiteName to query in the Icon Sites layer
+#                 (a pure geometry lookup key — never shown to users)
+#   extra_parts : (optional) extra Icon Sites SiteNames merged into one multipart polygon
+#   display_name: (optional) the name users SEE — overrides both the row's site_name
+#                 (else icon_name) and site_label (else `full`). Used for Te Āpiti so the
+#                 popup/label reads 'Te Āpiti Manawatū', not the verbose Icon-layer name.
+# ============================================================
+SPECIAL_SITES = {
+    'Horo34W': dict(full='Icon - Manawatū Estuary',      programme='Icon Site',     geom='ph'),
+    'Palm05':  dict(full='Icon - Te Āpiti Manawatū',     programme='Icon Site',     geom='icon', icon_name='Te Āpiti – Manawatū Gorge', display_name='Te Āpiti Manawatū'),
+    'Rua01':   dict(full='Icon - Kia Wharite',           programme='Icon Site',     geom='icon', icon_name='Kia Whārite'),
+    'Whan35':  dict(full='Icon - Bushy Park',            programme='Icon Site',     geom='ph'),
+    'Tara326': dict(full='Icon - Pukaha Mt Bruce',       programme='Icon Site',     geom='icon', icon_name='Pūkaha Mt Bruce', extra_parts=['Pūkaha Mt Bruce Northern Buffer']),
+    'Man240':  dict(full='Regional Park Tōtara Reserve', programme='Regional Park', geom='ph'),
+}
+
+# Derived lookups
+_PROGRAMME_MAP      = {sid: d['programme'] for sid, d in SPECIAL_SITES.items()}
+_FULLNAME_TO_SITEID = {d['full']: sid for sid, d in SPECIAL_SITES.items()}
+_PREFIX_RE = re.compile(r'^(Icon - |Regional Park )')
+
+
+def _chart_label_for(site_id):
+    """Short chart label: icon/park names with their prefix stripped, else the site_id."""
+    sp = SPECIAL_SITES.get(site_id)
+    return _PREFIX_RE.sub('', sp['full']) if sp else site_id
 
 log.info(f"Feature Service URL: {FEATURE_SERVICE_URL}")
 log.info(f"CSV Path: {CSV_PATH}")
@@ -73,6 +112,80 @@ features = feature_layer.query(
 spatial_data = features.sdf
 
 log.info(f"Retrieved {len(spatial_data)} features")
+
+# ============================================================
+# SUPPLEMENTARY GEOMETRY: Icon Sites sourced from the HRC Icon Sites layer.
+# Sites flagged geom='icon' in SPECIAL_SITES take their boundary from the Icon Sites
+# layer rather than Priority Habitats:
+#   - Kia Whārite (Rua01) and Pūkaha Mt Bruce (Tara326) have no geometry in Priority
+#     Habitats at all — they only exist here.
+#   - Te Āpiti / Palm05 DOES exist in Priority Habitats (the actively-managed boundary),
+#     but should use the larger Icon Sites boundary — its Priority Habitats row is
+#     dropped below before the Icon Sites geometry is appended.
+# extra_parts (e.g. Pūkaha + Northern Buffer) are merged into one multipart polygon.
+# ============================================================
+from arcgis.geometry import Geometry as _Geometry
+
+_ICON_SITES_URL = "https://services1.arcgis.com/VuN78wcRdq1Oj69W/arcgis/rest/services/HRC_Icon_Sites_Projects/FeatureServer/0"
+
+# Map every Icon Sites SiteName (incl. extra parts) -> canonical site_id
+_ICON_GEOM_SITES = {sid: d for sid, d in SPECIAL_SITES.items() if d['geom'] == 'icon'}
+_ICON_NAME_TO_SITEID = {}
+for _sid, _d in _ICON_GEOM_SITES.items():
+    _ICON_NAME_TO_SITEID[_d['icon_name']] = _sid
+    for _part in _d.get('extra_parts', []):
+        _ICON_NAME_TO_SITEID[_part] = _sid
+
+log.info(f"Fetching Icon Site geometry for: {sorted(_ICON_GEOM_SITES)} "
+         f"(SiteNames: {sorted(_ICON_NAME_TO_SITEID)})")
+_icon_fl = FeatureLayer(_ICON_SITES_URL, gis=gis)
+_names_sql = ", ".join(f"'{n}'" for n in _ICON_NAME_TO_SITEID)
+_icon_sdf = _icon_fl.query(
+    where=f"SiteName IN ({_names_sql})",
+    out_fields="SiteName",
+    return_geometry=True,
+).sdf
+log.info(f"  Retrieved {len(_icon_sdf)} Icon Site feature(s): {_icon_sdf['SiteName'].tolist()}")
+
+if len(_icon_sdf) == 0:
+    log.warning("  No Icon Site features returned — check that the SiteName field and spelling match the layer")
+else:
+    _icon_sdf['SiteID'] = _icon_sdf['SiteName'].map(_ICON_NAME_TO_SITEID)
+
+    def _merge_polygons(geom_series):
+        """Combine multiple Polygon Geometry objects into one multipart polygon."""
+        geoms = geom_series.tolist()
+        all_rings = []
+        for g in geoms:
+            all_rings.extend(g['rings'])
+        return _Geometry({'rings': all_rings, 'spatialReference': geoms[0]['spatialReference']})
+
+    _icon_rows = []
+    for _site_id, _group in _icon_sdf.groupby('SiteID'):
+        # Shown name for the row: display_name override if set, else the primary icon_name
+        # (not an extra_parts buffer name). icon_name is only a geometry lookup key — for
+        # Te Āpiti it's the verbose 'Te Āpiti – Manawatū Gorge' layer name we don't want shown.
+        _site_name = _ICON_GEOM_SITES[_site_id].get('display_name') or _ICON_GEOM_SITES[_site_id]['icon_name']
+        _geom = _merge_polygons(_group['SHAPE']) if len(_group) > 1 else _group['SHAPE'].iloc[0]
+        _icon_rows.append({'SiteID': _site_id, 'SiteName': _site_name, 'SHAPE': _geom})
+        log.info(f"  {_site_id} ({_site_name}) — {len(_group)} polygon part(s)")
+
+    _icon_append = pd.DataFrame(_icon_rows)
+    for _col in ['Actual_EcoSystem_s_', 'AreaHa', 'HRCLevel', 'HRCStaff', 'Management', 'Protection']:
+        _icon_append[_col] = None
+    _icon_append['Actual_EcoSystem_s_'] = 'F'
+
+    # Drop any Priority Habitats geometry for these sites (e.g. Palm05) so the Icon
+    # Sites boundary is used instead — otherwise the site would appear twice.
+    _replaced = spatial_data['SiteID'].isin(_icon_append['SiteID'])
+    if _replaced.any():
+        log.info("Replacing Priority Habitats geometry with Icon Sites geometry for: "
+                 f"{sorted(spatial_data.loc[_replaced, 'SiteID'])}")
+        spatial_data = spatial_data[~_replaced]
+
+    spatial_data = pd.concat([spatial_data, _icon_append], ignore_index=True)
+    log.info(f"Spatial data after appending Icon Sites: {len(spatial_data)} features")
+
 log.info(f"Spatial data shape: {spatial_data.shape}")
 log.info(f"First few rows:\n{spatial_data[['SiteID', 'SiteName', 'Actual_EcoSystem_s_', 'AreaHa']].head().to_string()}")
 
@@ -92,11 +205,16 @@ right_side.columns = ['SiteID_check', 'Weighted_Ungulates', 'Weighted_PestPlants
                       'Weighted_Predation', 'Weighted_Environmental', 'Weighted_Rabbits',
                       'Total_Score', 'Average_Score', 'Pct_Above_Threshold']
 
-# Remove empty rows
-left_clean = left_side[left_side['SiteID'].notna()].copy()
-right_clean = right_side[right_side['SiteID_check'].notna()].copy()
+# Keep rows where the left Site Code is present, and take the right-side (weighted)
+# columns from those SAME rows by index. Filtering each half independently on its own
+# Site Code and then joining positionally misaligns every subsequent row as soon as one
+# half has a value the other lacks — the new export has raw-only rows with blank
+# weighted/Total columns, which would silently corrupt the whole join.
+keep = left_side['SiteID'].notna()
+left_clean  = left_side[keep].copy()
+right_clean = right_side[keep].copy()
 
-# Join left and right sides
+# Join left and right sides (aligned by the shared row index)
 pressure_data = left_clean.reset_index(drop=True).join(right_clean.reset_index(drop=True))
 pressure_data = pressure_data.drop('SiteID_check', axis=1)
 
@@ -109,11 +227,16 @@ numeric_cols = ['Raw_Ungulates', 'Raw_PestPlants', 'Raw_PossumBrowse', 'Raw_Pred
 for col in numeric_cols:
     pressure_data[col] = pd.to_numeric(pressure_data[col], errors='coerce')
 
-# Fix case sensitivity issues
-pressure_data['SiteID'] = pressure_data['SiteID'].replace({
+# Normalise SiteIDs from the pressure CSV to match the spatial layer's authoritative
+# IDs. The spreadsheet now uses the full friendly name as the Site Code for icon/park
+# sites — map those back to the canonical site_id (from SPECIAL_SITES) — plus a couple
+# of case fixes for ordinary sites.
+_SITEID_NORMALISE = {
     'Rang187A': 'Rang187a',
-    'Rang72a': 'Rang72A'
-})
+    'Rang72a':  'Rang72A',
+    **_FULLNAME_TO_SITEID,
+}
+pressure_data['SiteID'] = pressure_data['SiteID'].replace(_SITEID_NORMALISE)
 
 # Calculate threshold flag
 pressure_data['Above_55_Threshold'] = (pressure_data['Total_Score'] >= 55).astype(int)
@@ -158,15 +281,20 @@ main_fc_data = spatial_data[[
 
 main_fc_data = main_fc_data.rename(columns={'Actual_EcoSystem_s_': 'Ecosystem'})
 
-# Hardcoded site programme classification (not in spreadsheet)
-_PROGRAMME_MAP = {
-    'Palm05':  'Icon Site',
-    'Horo34W': 'Icon Site',
-    'Whan35':  'Icon Site',
-    'Man240':  'Regional Park',
-}
+# site_programme classification comes from SPECIAL_SITES (defined near the top)
 main_fc_data['site_programme'] = main_fc_data['SiteID'].map(_PROGRAMME_MAP).fillna('Priority Habitat')
 log.info(f"Site programme counts:\n{main_fc_data['site_programme'].value_counts().to_string()}")
+
+# Display names:
+#   site_label  — full official name pushed to AGOL layer 0 and used for map labels.
+#                 Icon/park sites use their full friendly name; others keep their SiteName.
+#   chart_label — short label for dashboard charts: icon/park names with the
+#                 'Icon - ' / 'Regional Park ' prefix stripped; others keep the site_id.
+main_fc_data['site_label'] = main_fc_data.apply(
+    lambda r: (SPECIAL_SITES[r['SiteID']].get('display_name') or SPECIAL_SITES[r['SiteID']]['full'])
+              if r['SiteID'] in SPECIAL_SITES else r['SiteName'],
+    axis=1)
+main_fc_data['chart_label'] = main_fc_data['SiteID'].map(_chart_label_for)
 
 log.info("Adding latest pressure scores to main feature class...")
 
@@ -210,6 +338,7 @@ related_table_data = pressure_data[[
 ]].copy()
 
 related_table_data['site_programme'] = related_table_data['SiteID'].map(_PROGRAMME_MAP).fillna('Priority Habitat')
+related_table_data['chart_label'] = related_table_data['SiteID'].map(_chart_label_for)
 
 log.info(f"Related table — Shape: {related_table_data.shape}, Unique sites: {related_table_data['SiteID'].nunique()}, Financial years: {sorted(related_table_data['FY'].unique())}")
 
@@ -326,7 +455,7 @@ threshold_csv = os.path.join(NETWORK_DIR, "PH_Sites_Threshold_Status.csv")
 threshold_by_region.to_csv(threshold_csv, index=False)
 log.info(f"Saved: {threshold_csv}")
 
-scores_overview_cols = ['SiteID', 'FY', 'Region', 'site_programme',
+scores_overview_cols = ['SiteID', 'chart_label', 'FY', 'Region', 'site_programme',
                         'Raw_Ungulates', 'Raw_PestPlants', 'Raw_PossumBrowse',
                         'Raw_Predation', 'Raw_Environmental', 'Raw_Rabbits',
                         'Weighted_Ungulates', 'Weighted_PestPlants', 'Weighted_PossumBrowse',
