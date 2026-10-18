@@ -167,6 +167,20 @@
   .score-100 { background: var(--green-light); }
   .score-100 td:first-child { color: var(--green); }
 
+  /* Ungulates is the only pressure with a 90 tier, so it sits as a small boxed
+     note inside the Ungulates 100 cell rather than as a row of its own */
+  .sub-tier {
+    margin-top: 6px;
+    padding: 4px 8px;
+    background: rgba(255,255,255,0.65);
+    border-left: 3px solid var(--green);
+    border-radius: 4px;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    color: #2d4a3a;
+  }
+  .sub-tier strong { color: var(--green); margin-right: 6px; }
+
   .score-75 { background: #f0faf4; }
   .score-75 td:first-child { color: #3d8b5e; }
 
@@ -209,17 +223,17 @@
 
   <div class="intro">
     <h1>Environmental Pressure Management System Scoring</h1>
-    <p>The Environmental Pressure Management System measures how well environmental pressures are managed across Priority Habitats<span id="countPH"></span>, Icon Sites<span id="countIcon"></span>, and the Totara Reserve Regional Park<span id="countRP"></span>. Each site is scored on six key pressures — ungulates, pest plants, possum browse, predation, habitat fragmentation, and rabbits/hares — and receives an overall score (0–100%).</p>
+    <p>The Environmental Pressure Management System measures how well environmental pressures are managed across Priority Habitats<span id="countPH"></span>, Icon Sites<span id="countIcon"></span>, and the Totara Reserve Regional Park<span id="countRP"></span>. Each site is scored on six key pressures (ungulates, pest plants, possum browse, predation, habitat fragmentation, and rabbits/hares) and receives an overall score (0–100%).</p>
   </div>
 
   <div class="threshold-bar">
     <div class="threshold-item">
       <div class="threshold-dot" style="background:#2d6a4f"></div>
-      <span><strong>Above 55%</strong> — Adequate management, ecosystems likely to improve</span>
+      <span><strong>Above 55%:</strong> Adequate management, ecosystems likely to improve</span>
     </div>
     <div class="threshold-item">
       <div class="threshold-dot" style="background:#c05621"></div>
-      <span><strong>Below 55%</strong> — Greater management effort required to prevent degradation</span>
+      <span><strong>Below 55%:</strong> Greater management effort required to prevent degradation</span>
     </div>
   </div>
 
@@ -239,20 +253,24 @@
         </tr>
       </thead>
       <tbody>
+        <!-- Wording from the team's "Pressure Management Reporting System Scoring sheet 2025"
+             (punctuation tidied). The pop-up descriptions in the web map use the same text. -->
         <tr class="score-100">
           <td>100</td>
-          <td>Fully fenced (deer fence or no ungulates present), pressure fully managed</td>
+          <td>Fully fenced (with deer fence or no ungulates present), pressure fully managed
+            <div class="sub-tier"><strong>90</strong>Very low pressure from ungulates (might be one or two, but no impact on regeneration)</div>
+          </td>
           <td>No mature problem plants seeding or present, pressure fully managed</td>
-          <td>No possums in site, pressure fully managed, no browse — or no suitable habitat</td>
+          <td>No possums in site, pressure fully managed, no browse, or no suitable habitat for them</td>
           <td>No predators, or eliminated, no predation pressure</td>
-          <td>Integrity and natural diversity of site fully represented, no further planting required</td>
-          <td>No rabbits, pressure fully managed or no suitable habitat</td>
+          <td>Integrity and natural diversity of site is fully represented, pressure fully managed, no further planting required</td>
+          <td>No rabbits, pressure fully managed or no suitable habitat for them</td>
         </tr>
         <tr class="score-75">
           <td>75</td>
-          <td>Fully stock fenced, low pressure from ungulates in landscape</td>
+          <td>Fully stock fenced and low pressure from ungulates in landscape</td>
           <td>Problem weed management is reducing pressure</td>
-          <td>Minimal possum sign, pressure seems minimal or well managed</td>
+          <td>Minimal possum sign, possum pressure seems minimal or well managed</td>
           <td>Effective control network per best practice, predation pressure managed to low levels</td>
           <td>Very small areas open, minimal infill planting required</td>
           <td>Low pressure from rabbits/hares, control effectively manages them to low numbers</td>
@@ -260,10 +278,10 @@
         <tr class="score-50">
           <td>50</td>
           <td>Partially fenced, or fenced from stock but with some ungulates in landscape / regular culling</td>
-          <td>Occasional problem weeds, not spreading — management holding pressure</td>
+          <td>Occasional problem weeds, not spreading, management holding pressure</td>
           <td>Some possum sign and damage but canopy/vegetation relatively intact</td>
           <td>Some trapping but not enough or serviced often enough, reducing predation pressure</td>
-          <td>Moderate open areas, some infill planting required</td>
+          <td>Moderate open areas and some infill planting required</td>
           <td>Some browse damage evident, some control, plants still surviving</td>
         </tr>
         <tr class="score-25">
@@ -272,7 +290,7 @@
           <td>Common problem weeds and spreading, inadequately managed, likely to deteriorate</td>
           <td>Pressure minimally managed, some control but clear vegetation damage</td>
           <td>Visible sign of predators, minimal traps or bait, or trap servicing frequency inadequate</td>
-          <td>Large open areas, though core of site reasonably intact with reasonable species composition</td>
+          <td>Large open areas, though core of site is reasonably intact with reasonable species composition</td>
           <td>Pressure managed minimally, high numbers of rabbits/hares</td>
         </tr>
         <tr class="score-0">
@@ -290,11 +308,10 @@
 
   <div class="legend">
     <span>Score colour guide:</span>
-    <div class="legend-item"><div class="legend-swatch" style="background:var(--green-light);border:1px solid #aaa"></div> 100 — Fully managed</div>
-    <div class="legend-item"><div class="legend-swatch" style="background:#f0faf4;border:1px solid #aaa"></div> 75 — Well managed</div>
-    <div class="legend-item"><div class="legend-swatch" style="background:var(--yellow-light);border:1px solid #aaa"></div> 50 — Partially managed</div>
-    <div class="legend-item"><div class="legend-swatch" style="background:var(--orange-light);border:1px solid #aaa"></div> 25 — Inadequately managed</div>
-    <div class="legend-item"><div class="legend-swatch" style="background:var(--red-light);border:1px solid #aaa"></div> 0 — Unmanaged</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--green-light);border:1px solid #aaa"></div> 100: Fully managed</div>    <div class="legend-item"><div class="legend-swatch" style="background:#f0faf4;border:1px solid #aaa"></div> 75: Well managed</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--yellow-light);border:1px solid #aaa"></div> 50: Partially managed</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--orange-light);border:1px solid #aaa"></div> 25: Inadequately managed</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--red-light);border:1px solid #aaa"></div> 0: Unmanaged</div>
   </div>
 
 </div>
