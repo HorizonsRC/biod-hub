@@ -340,6 +340,14 @@ related_table_data = pressure_data[[
 related_table_data['site_programme'] = related_table_data['SiteID'].map(_PROGRAMME_MAP).fillna('Priority Habitat')
 related_table_data['chart_label'] = related_table_data['SiteID'].map(_chart_label_for)
 
+# Latest FY first within each site. The joined view keeps ONE scores row per site via
+# its top filter (lowest OBJECTID per SiteID), and AGOL assigns OBJECTIDs in the order
+# rows are added in the push below, so this order decides which year the six pressure
+# layers symbolise. Without it they showed whichever year came first in the spreadsheet.
+related_table_data = (related_table_data
+                      .sort_values(['SiteID', 'FY'], ascending=[True, False])
+                      .reset_index(drop=True))
+
 log.info(f"Related table — Shape: {related_table_data.shape}, Unique sites: {related_table_data['SiteID'].nunique()}, Financial years: {sorted(related_table_data['FY'].unique())}")
 
 # Summary table - breakdown by District AND Financial Year
