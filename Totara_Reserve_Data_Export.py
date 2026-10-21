@@ -185,6 +185,11 @@ FIVE_MBC_SHEET  = getattr(config, "TOTARA_5MBC_SHEET", 0) if config else 0
 # read, and a year the master already has is skipped, so once a season is merged
 # into the master the extra file quietly stops contributing.
 FIVE_MBC_EXTRA_XLSX = (getattr(config, "TOTARA_5MBC_EXTRA", None) if config else None) or []
+# Baiting operations and events marked along the foot of the trend charts.
+PEST_OPS_XLSX  = getattr(config, "TOTARA_PEST_OPS_XLSX", None) if config else None
+PEST_OPS_SHEET = getattr(config, "TOTARA_PEST_OPS_SHEET", 0) if config else 0
+# Anything else in the treatment column is taken to be a baiting operation.
+PEST_EVENT_WORDS = ("cyclone", "flood", "storm", "slip", "fire", "drought", "closure")
 # Transect comes from the station code. The counts are reported per transect, so a
 # station that matches none of these is left out of the trend figures with a warning.
 FIVE_MBC_TRANSECTS = {"FW": "Fern Walk", "PF": "Petifar Walk",
@@ -1930,7 +1935,46 @@ def _5mbc_trend(df: pd.DataFrame, raw: pd.DataFrame, years: list[int],
 
     return {"years": years,
             "transects": list(FIVE_MBC_TRANSECTS.values()),
-            "species": species, "groups": groups, "tti": rat}
+            "species": species, "groups": groups, "tti": rat,
+            "events": _pest_operations(years[0] - 1)}
+
+
+def _pest_operations(from_year: int) -> list[dict]:
+    """Baiting operations and notable events, for the markers along the foot of
+    the trend charts.
+
+    Column A is the date and column B the treatment. The four header rows carry
+    no date, so they drop out on their own. Hand maintained, so an absent or
+    unreadable file is not an error: the charts simply carry no markers.
+    """
+    if not PEST_OPS_XLSX:
+        log.info("  Baiting operations not set in config.py — no markers on the trends")
+        return []
+    path = Path(PEST_OPS_XLSX)
+    if not path.exists():
+        log.info(f"  Baiting operations file not found, no markers on the trends: {path.name}")
+        return []
+    try:
+        df = pd.read_excel(path, sheet_name=PEST_OPS_SHEET, header=None,
+                           usecols=[0, 1], names=["Date", "Treatment"])
+        df = df.dropna(subset=["Treatment"])
+        df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
+        df = df.dropna(subset=["Date"])
+        df = df[df["Date"] >= pd.Timestamp(f"{from_year}-07-01")].sort_values("Date")
+        out = []
+        for r in df.itertuples():
+            label = str(r.Treatment).strip()
+            kind = ("event" if any(w in label.lower() for w in PEST_EVENT_WORDS)
+                    else "control")
+            out.append({"date": r.Date.strftime("%Y-%m-%d"), "label": label, "kind": kind})
+        kinds = Counter(e["kind"] for e in out)
+        log.info(f"  Baiting operations on the trends: {kinds.get('control', 0)} operations, "
+                 f"{kinds.get('event', 0)} events from {from_year} — "
+                 f"{sorted({e['label'] for e in out})}")
+        return out
+    except Exception:
+        log.exception("  Baiting operations could not be read — no markers on the trends")
+        return []
 
 
 def extract_biodiversity_data() -> dict | None:

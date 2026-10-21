@@ -376,7 +376,7 @@
   <script>
     /* BIO_DATA_START */
 const BIO_DATA = {
-  "generated": "2026-10-21T16:17:59.117821",
+  "generated": "2026-10-22T09:47:21.739833",
   "birds": {
     "species": [
       {
@@ -3681,7 +3681,79 @@ const BIO_DATA = {
           0.0,
           2.0
         ]
-      }
+      },
+      "events": [
+        {
+          "date": "2021-06-01",
+          "label": "Double-tapp",
+          "kind": "control"
+        },
+        {
+          "date": "2021-11-01",
+          "label": "D-Block Extreme",
+          "kind": "control"
+        },
+        {
+          "date": "2022-06-01",
+          "label": "D-Block Extreme",
+          "kind": "control"
+        },
+        {
+          "date": "2022-09-01",
+          "label": "Ditrac All-weather",
+          "kind": "control"
+        },
+        {
+          "date": "2022-12-01",
+          "label": "Ditrac All-weather",
+          "kind": "control"
+        },
+        {
+          "date": "2023-02-01",
+          "label": "CYCLONE",
+          "kind": "event"
+        },
+        {
+          "date": "2023-08-01",
+          "label": "Pestoff Brodifacoum",
+          "kind": "control"
+        },
+        {
+          "date": "2023-11-01",
+          "label": "Pestoff Brodifacoum",
+          "kind": "control"
+        },
+        {
+          "date": "2024-01-01",
+          "label": "Pestoff Brodifacoum",
+          "kind": "control"
+        },
+        {
+          "date": "2024-08-01",
+          "label": "Pestoff Brodifacoum",
+          "kind": "control"
+        },
+        {
+          "date": "2025-06-01",
+          "label": "Pestoff Brodifacoum",
+          "kind": "control"
+        },
+        {
+          "date": "2025-09-01",
+          "label": "Pestoff Brodifacoum",
+          "kind": "control"
+        },
+        {
+          "date": "2026-05-01",
+          "label": "Pestoff Brodifacoum",
+          "kind": "control"
+        },
+        {
+          "date": "2026-10-01",
+          "label": "Pindone P&R",
+          "kind": "control"
+        }
+      ]
     }
   }
 };
@@ -3822,6 +3894,7 @@ const BIO_DATA = {
     const TR_COLOURS = ['var(--forest)', '#b3581f', '#6a4c93'];
     const TR_STATUS  = { Native: 'var(--forest)', Introduced: '#b3581f' };
     const TR_TOP = 6;                       // fixed axis: 0-6 birds against 0-100%
+    const TR_OPERATION = '#4f7f22';         // toxin operations; events are grey
     let trendSel = null;                    // null shows the grid of all species
 
     const trFind = k => TREND.species.concat(TREND.groups).find(s => s.key === k);
@@ -3924,7 +3997,15 @@ const BIO_DATA = {
       const mt = big ? 12 : 8, mb = big ? 34 : 18;
       const fs = big ? 11 : 8.5;
       const cw = W - ml - mr, ch = H - mt - mb;
-      const yrs = TREND.years, x0 = yrs[0] - 0.45, x1 = yrs[yrs.length - 1] + 0.45;
+      const yrs = TREND.years, lastYear = yrs[yrs.length - 1];
+      const x0 = yrs[0] - 0.45;
+      // Counts sit on their year, but rat surveys and baiting operations sit on
+      // their actual date, so the newest of those can fall beyond the last count.
+      // The axis stretches to take them in, up to a year past the last count.
+      const x1 = Math.min(lastYear + 1.1, Math.max(lastYear + 0.45, 0.08 + Math.max(
+        lastYear,
+        ...(TREND.tti.dates || []).map(trYearFrac),
+        ...(TREND.events || []).map(e => trYearFrac(e.date)))));
       const xOf = y => ml + (y - x0) / (x1 - x0) * cw;
       const yOf = v => mt + ch - (Math.min(v, TR_TOP) / TR_TOP) * ch;
       const tOf = v => mt + ch - (v / 100) * ch;
@@ -3945,6 +4026,23 @@ const BIO_DATA = {
       yrs.forEach(y => { s += `<text x="${xOf(y).toFixed(1)}" y="${(mt + ch + (big ? 20 : 12)).toFixed(1)}"
               text-anchor="middle" font-size="${fs}" fill="var(--caption)">${
               big ? y : "'" + String(y).slice(2)}</text>`; });
+
+      // Toxin operations and notable events, as arrows along the foot of the plot.
+      // Labelled on the export only: the dashboard card has no room for the text.
+      (TREND.events || []).forEach((ev, n) => {
+        const xf = trYearFrac(ev.date);
+        if (xf < x0 || xf > x1) return;
+        const X = xOf(xf), foot = mt + ch;
+        const col = ev.kind === 'event' ? 'var(--caption)' : TR_OPERATION;
+        s += `<line x1="${X.toFixed(1)}" y1="${(foot - (big ? 13 : 8)).toFixed(1)}"
+                x2="${X.toFixed(1)}" y2="${(foot - 1).toFixed(1)}" stroke="${col}"
+                stroke-width="${big ? 1.6 : 1.2}"/>`;
+        // labels alternate between two lines so neighbouring operations do not collide
+        if (big) {
+          s += `<text x="${X.toFixed(1)}" y="${(foot - (n % 2 ? 29 : 17)).toFixed(1)}"
+                  text-anchor="middle" font-size="9" fill="${col}">${esc(ev.label)}</text>`;
+        }
+      });
 
       if (big) {
         s += `<rect x="${ml}" y="${mt}" width="${cw}" height="${ch}" fill="none"

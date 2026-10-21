@@ -112,6 +112,12 @@ TOTARA_5MBC_EXTRA = [
 # Bat detector exports, one file per survey. The newest survey is the one shown.
 TOTARA_BAT_CSV_GLOB = r"C:\path\to\your\bat data\*.csv"
 
+# Baiting operations and notable events, marked along the foot of the bird count
+# trend charts. Column A is the date and column B the treatment, with the header
+# in the first four rows. Hand maintained; markers are left off if this is unset.
+TOTARA_PEST_OPS_XLSX  = r"C:\path\to\your\pest animal data and graphs.xlsx"
+TOTARA_PEST_OPS_SHEET = "name of the sheet holding the baiting operations"
+
 # ── Targeted Rates ────────────────────────────────────────────────────────────
 
 # Biodiversity Targeted Rates contractor data view (layer 1 waypoints, 2 tracks)
