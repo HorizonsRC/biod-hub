@@ -127,6 +127,10 @@
       gap: 10px;
       min-height: 0;
     }
+    /* A single species' trend chart takes the plants and fungi column as well.
+       No transition: the chart redraws on every resize step, so sliding the
+       columns would redraw it dozens of times on the way. */
+    .cols.bird-wide { grid-template-columns: 2.12fr 1fr; }
 
     .col { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
 
@@ -4429,6 +4433,10 @@ const BIO_DATA = {
 
       const birds  = d.birds.species;
       const native = birds.filter(s => s.status !== 'introduced').length;
+      // One species' trend chart needs width more than anything else on the page,
+      // so it borrows the plants and fungi column while it is open. The grid view
+      // and the other tabs keep the normal three columns.
+      const birdWide = !!(TREND && birdTab === 'trend' && trendSel);
       const bat = d.bats && d.bats.surveys && d.bats.surveys[d.bats.surveys.length - 1];
       const gd = new Date(d.generated);
       const gen = `${gd.getDate()} ${MONTHS[gd.getMonth()]} ${gd.getFullYear()}`;
@@ -4456,12 +4464,13 @@ const BIO_DATA = {
           </div>
         </div>
 
-        <div class="cols">
+        <div class="cols${birdWide ? ' bird-wide' : ''}">
           <div class="col">${birdCard(d.birds, d.fiveMbc)}</div>
+          ${birdWide ? '' : `
           <div class="col">
             ${groupCard('Plants', d.plants, true)}
             ${groupCard('Fungi', d.fungi, false)}
-          </div>
+          </div>`}
           <div class="col">
             ${groupCard('Insects', d.insects, true)}
             ${batCard(d.bats)}
