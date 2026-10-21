@@ -276,6 +276,8 @@
     .export-btn:hover { border-color: var(--forest); color: var(--forest); }
     .legend .sw.dash { width: 13px; height: 0; border: 0; border-top: 2px dashed var(--caption);
       border-radius: 0; align-self: center; }
+    .legend .sw.tick { width: 0; height: 10px; border: 0; border-left: 2px solid currentColor;
+      border-radius: 0; align-self: center; }
     .tr-host { flex: 1; min-height: 90px; position: relative; }
     .tr-host > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
     #tip { position: fixed; display: none; z-index: 40; background: var(--surface);
@@ -3902,6 +3904,10 @@ const BIO_DATA = {
       const d = new Date(iso + 'T00:00:00'), y = d.getFullYear();
       return y + (d - new Date(y, 0, 1)) / (new Date(y + 1, 0, 1) - new Date(y, 0, 1));
     };
+    const monthLabel = iso => {
+      const d = new Date(iso + 'T00:00:00');
+      return `${MONTHS[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`;
+    };
 
     function trSpark(series, w, h) {
       const max = Math.max(...series.flatMap(s => s.ys.filter(v => v !== null)), 0.3);
@@ -3971,6 +3977,10 @@ const BIO_DATA = {
         <div class="legend">
           ${legend.map(([t, c]) => `<span><i class="sw" style="background:${c}"></i>${esc(t)}</span>`).join('')}
           <span><i class="sw dash"></i>rat index</span>
+          ${(TREND.events || []).some(e => e.kind !== 'event')
+            ? `<span><i class="sw tick" style="border-color:${TR_OPERATION}"></i>baiting</span>` : ''}
+          ${(TREND.events || []).some(e => e.kind === 'event')
+            ? '<span><i class="sw tick" style="border-color:var(--caption)"></i>cyclone or flood</span>' : ''}
         </div>
         <div class="tr-host" id="tr-host"></div>
         <div class="note">${empty
@@ -3994,7 +4004,8 @@ const BIO_DATA = {
         : [{ sp: trFind(trendSel), label: null, col: null }];
 
       const ml = big ? 58 : 24, mr = big ? 64 : 26;
-      const mt = big ? 12 : 8, mb = big ? 34 : 18;
+      // the foot carries the year labels and, below them, a lane of baiting markers
+      const mt = big ? 12 : 8, mb = big ? 42 : 26;
       const fs = big ? 11 : 8.5;
       const cw = W - ml - mr, ch = H - mt - mb;
       const yrs = TREND.years, lastYear = yrs[yrs.length - 1];
@@ -4027,21 +4038,25 @@ const BIO_DATA = {
               text-anchor="middle" font-size="${fs}" fill="var(--caption)">${
               big ? y : "'" + String(y).slice(2)}</text>`; });
 
-      // Toxin operations and notable events, as arrows along the foot of the plot.
-      // Labelled on the export only: the dashboard card has no room for the text.
-      (TREND.events || []).forEach((ev, n) => {
+      // Baiting operations and notable events, in a lane below the year labels.
+      // No text against each one: fourteen markers share only five toxin names, so
+      // labelling every occurrence just stacks the same words on top of each other.
+      // The toxin is in the legend, on hover, and in the key under the PNG export.
+      const laneTop = mt + ch + (big ? 26 : 16);
+      const laneH = big ? 10 : 7;
+      (TREND.events || []).forEach(ev => {
         const xf = trYearFrac(ev.date);
         if (xf < x0 || xf > x1) return;
-        const X = xOf(xf), foot = mt + ch;
+        const X = xOf(xf);
         const col = ev.kind === 'event' ? 'var(--caption)' : TR_OPERATION;
-        s += `<line x1="${X.toFixed(1)}" y1="${(foot - (big ? 13 : 8)).toFixed(1)}"
-                x2="${X.toFixed(1)}" y2="${(foot - 1).toFixed(1)}" stroke="${col}"
-                stroke-width="${big ? 1.6 : 1.2}"/>`;
-        // labels alternate between two lines so neighbouring operations do not collide
-        if (big) {
-          s += `<text x="${X.toFixed(1)}" y="${(foot - (n % 2 ? 29 : 17)).toFixed(1)}"
-                  text-anchor="middle" font-size="9" fill="${col}">${esc(ev.label)}</text>`;
-        }
+        s += `<line x1="${X.toFixed(1)}" y1="${laneTop.toFixed(1)}" x2="${X.toFixed(1)}"
+                y2="${(laneTop + laneH).toFixed(1)}" stroke="${col}"
+                stroke-width="${big ? 2 : 1.6}"/>`;
+        // a wider invisible target, or a 2px rule is near impossible to hover
+        s += `<rect class="tr-ev" x="${(X - 4.5).toFixed(1)}" y="${(laneTop - 2).toFixed(1)}"
+                width="9" height="${laneH + 4}" fill="transparent"
+                data-label="${esc(ev.label)}" data-when="${esc(monthLabel(ev.date))}"
+                data-kind="${ev.kind}"/>`;
       });
 
       if (big) {
@@ -4098,6 +4113,17 @@ const BIO_DATA = {
       const yrs = TREND.years;
       host.innerHTML = `<svg viewBox="0 0 ${W} ${H}">${s}
         <rect class="tr-hit" x="${ml}" y="${mt}" width="${cw}" height="${ch}" fill="transparent"/></svg>`;
+
+      // the marker lane sits outside .tr-hit, so each marker can take the pointer
+      host.querySelectorAll('.tr-ev').forEach(node => {
+        node.addEventListener('mousemove', e => {
+          const kind = node.dataset.kind === 'event' ? 'var(--caption)' : TR_OPERATION;
+          trShowTip(e, `<div class="th">${esc(node.dataset.label)}</div>
+            <div class="tr"><i class="sw" style="background:${kind}"></i>${
+            node.dataset.kind === 'event' ? 'Recorded' : 'Baiting'}<i>${esc(node.dataset.when)}</i></div>`);
+        });
+        node.addEventListener('mouseleave', trHideTip);
+      });
 
       const hit = host.querySelector('.tr-hit');
       hit.addEventListener('mousemove', e => {
@@ -4156,7 +4182,10 @@ const BIO_DATA = {
       const legend = (isStatus
         ? TREND.groups.map(g => [g.mi, resolveVars(TR_STATUS[g.mi])])
         : TREND.transects.map((t, i) => [t, resolveVars(TR_COLOURS[i])]))
-        .concat([['Rat tracking tunnel index', cssVar('--caption'), true]]);
+        .concat([['Rat tracking tunnel index', cssVar('--caption'), 'dash']]);
+      const evs = TREND.events || [];
+      if (evs.some(e => e.kind !== 'event')) legend.push(['Baiting', TR_OPERATION, 'tick']);
+      if (evs.some(e => e.kind === 'event')) legend.push(['Cyclone or flood', cssVar('--caption'), 'tick']);
 
       // drawn at its own size, not the card's: room for a frame and axis titles
       const W = 760, H = 430;
@@ -4170,8 +4199,41 @@ const BIO_DATA = {
         img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(src);
       });
 
-      const S = 2, pad = 22, chartY = 92, footH = 44;   // laid out in CSS px, drawn at 2x
+      // A PNG has no hover, so the operations are listed underneath instead —
+      // grouped by toxin in first-use order, each with the months it was used.
+      const keyLines = (() => {
+        const groups = new Map();
+        evs.forEach(e => {
+          const bucket = e.kind === 'event' ? 'EVENT' : 'BAIT';
+          const k = bucket + '|' + e.label;
+          if (!groups.has(k)) groups.set(k, { bucket, label: e.label, when: [] });
+          groups.get(k).when.push(monthLabel(e.date));
+        });
+        const phrase = g => `${g.label} ${g.when.join(', ')}`;
+        const out = [];
+        const bait = [...groups.values()].filter(g => g.bucket === 'BAIT');
+        const events = [...groups.values()].filter(g => g.bucket === 'EVENT');
+        if (bait.length) out.push('Baiting: ' + bait.map(phrase).join(' · ') + '.');
+        if (events.length) out.push('Recorded: ' + events.map(phrase).join(' · ') + '.');
+        return out;
+      })();
+
+      const S = 2, pad = 22, chartY = 92;   // laid out in CSS px, drawn at 2x
       const cv = document.createElement('canvas');
+      const probe = cv.getContext('2d');
+      probe.font = "11px 'Source Sans 3', Arial, sans-serif";
+      // wrap the key to the canvas width before the height is fixed
+      const wrapped = [];
+      keyLines.forEach(line => {
+        let current = '';
+        line.split(' ').forEach(word => {
+          const next = current ? current + ' ' + word : word;
+          if (current && probe.measureText(next).width > W) { wrapped.push(current); current = word; }
+          else current = next;
+        });
+        if (current) wrapped.push(current);
+      });
+      const footH = 44 + wrapped.length * 14 + (wrapped.length ? 6 : 0);
       cv.width = (W + pad * 2) * S;
       cv.height = (chartY + H + footH) * S;
       const c = cv.getContext('2d');
@@ -4190,12 +4252,16 @@ const BIO_DATA = {
 
       let x = pad;
       c.font = "12px 'Source Sans 3', Arial, sans-serif";
-      legend.forEach(([label, colour, dashed]) => {
+      legend.forEach(([label, colour, mark]) => {
         c.strokeStyle = c.fillStyle = colour;
-        if (dashed) {
+        if (mark === 'dash') {
           c.setLineDash([4, 3]); c.lineWidth = 2;
           c.beginPath(); c.moveTo(x, 72); c.lineTo(x + 15, 72); c.stroke();
           c.setLineDash([]); x += 20;
+        } else if (mark === 'tick') {
+          c.lineWidth = 2;
+          c.beginPath(); c.moveTo(x + 3, 66); c.lineTo(x + 3, 77); c.stroke();
+          x += 9;
         } else {
           c.beginPath(); c.arc(x + 5, 72, 5, 0, Math.PI * 2); c.fill(); x += 15;
         }
@@ -4215,6 +4281,9 @@ const BIO_DATA = {
       c.fillText('Horizons Regional Council five-minute bird counts · Updated '
                  + `${gd.getDate()} ${MONTHS[gd.getMonth()]} ${gd.getFullYear()}`,
                  pad, chartY + H + 33);
+      wrapped.forEach((line, i) => {
+        c.fillText(line, pad, chartY + H + 53 + i * 14);
+      });
 
       const url = cv.toDataURL('image/png');
       const file = ('5MBC ' + title).replace(/[^a-zA-Z0-9 _-]/g, '').trim().replace(/\s+/g, '_');
