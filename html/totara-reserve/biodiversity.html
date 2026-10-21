@@ -3912,17 +3912,18 @@ const BIO_DATA = {
 
     // Drawn at the host's own pixel size and redrawn by render(); a host with no
     // size yet is skipped, the same guard the other pages use for hidden embeds.
-    function drawTrendChart() {
-      const host = document.getElementById('tr-host');
-      if (!host || !trendSel) return;
-      const W = host.clientWidth, H = host.clientHeight;
-      if (!W || !H) return;
+    // The chart markup at a given size. `big` is the export layout: a framed plot
+    // with both axes named and full years, which the dashboard card has no room
+    // for. Everything else is identical, so the two cannot drift apart.
+    function trendChartMarkup(W, H, big) {
       const isStatus = trendSel === 'STATUS';
       const SER = isStatus
         ? TREND.groups.map(g => ({ sp: g, label: g.mi, col: TR_STATUS[g.mi] }))
         : [{ sp: trFind(trendSel), label: null, col: null }];
 
-      const ml = 24, mr = 26, mt = 8, mb = 18;
+      const ml = big ? 58 : 24, mr = big ? 64 : 26;
+      const mt = big ? 12 : 8, mb = big ? 34 : 18;
+      const fs = big ? 11 : 8.5;
       const cw = W - ml - mr, ch = H - mt - mb;
       const yrs = TREND.years, x0 = yrs[0] - 0.45, x1 = yrs[yrs.length - 1] + 0.45;
       const xOf = y => ml + (y - x0) / (x1 - x0) * cw;
@@ -3933,17 +3934,27 @@ const BIO_DATA = {
       for (let v = 0; v <= TR_TOP; v++) {
         s += `<line x1="${ml}" y1="${yOf(v).toFixed(1)}" x2="${ml + cw}" y2="${yOf(v).toFixed(1)}"
                 stroke="var(--border)" stroke-width="1" opacity=".55"/>
-              <text x="${ml - 4}" y="${(yOf(v) + 3).toFixed(1)}" text-anchor="end"
-                font-size="8.5" fill="var(--caption)">${v}</text>`;
+              <text x="${ml - (big ? 8 : 4)}" y="${(yOf(v) + 3).toFixed(1)}" text-anchor="end"
+                font-size="${fs}" fill="var(--caption)">${v}</text>`;
       }
-      for (let v = 0; v <= 100; v += 25) {
-        s += `<text x="${ml + cw + 4}" y="${(tOf(v) + 3).toFixed(1)}"
-                font-size="8.5" fill="var(--caption)">${v}</text>`;
+      for (let v = 0; v <= 100; v += (big ? 20 : 25)) {
+        s += `<text x="${ml + cw + (big ? 8 : 4)}" y="${(tOf(v) + 3).toFixed(1)}"
+                font-size="${fs}" fill="var(--caption)">${v}</text>`;
       }
       s += `<line x1="${ml}" y1="${tOf(20).toFixed(1)}" x2="${ml + cw}" y2="${tOf(20).toFixed(1)}"
               stroke="var(--caption)" stroke-width="1" stroke-dasharray="1 3"/>`;
-      yrs.forEach(y => { s += `<text x="${xOf(y).toFixed(1)}" y="${(mt + ch + 12).toFixed(1)}"
-              text-anchor="middle" font-size="8.5" fill="var(--caption)">'${String(y).slice(2)}</text>`; });
+      yrs.forEach(y => { s += `<text x="${xOf(y).toFixed(1)}" y="${(mt + ch + (big ? 20 : 12)).toFixed(1)}"
+              text-anchor="middle" font-size="${fs}" fill="var(--caption)">${
+              big ? y : "'" + String(y).slice(2)}</text>`; });
+
+      if (big) {
+        s += `<rect x="${ml}" y="${mt}" width="${cw}" height="${ch}" fill="none"
+                stroke="var(--caption)" stroke-width="1"/>
+              <text transform="translate(${ml - 40},${mt + ch / 2}) rotate(-90)"
+                text-anchor="middle" font-size="12" fill="var(--muted)">Mean bird count</text>
+              <text transform="translate(${ml + cw + 48},${mt + ch / 2}) rotate(90)"
+                text-anchor="middle" font-size="12" fill="var(--muted)">Rat tracking tunnel index (%)</text>`;
+      }
 
       const pts = (TREND.tti.dates || []).map((d, i) => [trYearFrac(d), TREND.tti.rat[i]])
                                          .filter(p => p[0] >= x0 && p[0] <= x1);
@@ -3971,13 +3982,25 @@ const BIO_DATA = {
         const X = xOf(yrs[j] + off[si][i]), col = isStatus ? ser.col : TR_COLOURS[i];
         const se = ser.sp.se[i][j] || 0;
         if (se) s += `<line x1="${X.toFixed(1)}" y1="${yOf(Math.max(v - se, 0)).toFixed(1)}"
-            x2="${X.toFixed(1)}" y2="${yOf(v + se).toFixed(1)}" stroke="${col}" stroke-width="1.1"/>`;
-        s += `<circle cx="${X.toFixed(1)}" cy="${yOf(v).toFixed(1)}" r="3.4" fill="${col}"
-            stroke="var(--surface)" stroke-width="1.4"/>`;
+            x2="${X.toFixed(1)}" y2="${yOf(v + se).toFixed(1)}" stroke="${col}"
+            stroke-width="${big ? 1.4 : 1.1}"/>`;
+        s += `<circle cx="${X.toFixed(1)}" cy="${yOf(v).toFixed(1)}" r="${big ? 4.6 : 3.4}"
+            fill="${col}" stroke="var(--surface)" stroke-width="1.4"/>`;
       })));
 
-      s += `<rect class="tr-hit" x="${ml}" y="${mt}" width="${cw}" height="${ch}" fill="transparent"/>`;
-      host.innerHTML = `<svg viewBox="0 0 ${W} ${H}">${s}</svg>`;
+      return { s, geom: { ml, mt, cw, ch, x0, x1, isStatus, SER } };
+    }
+
+    function drawTrendChart() {
+      const host = document.getElementById('tr-host');
+      if (!host || !trendSel) return;
+      const W = host.clientWidth, H = host.clientHeight;
+      if (!W || !H) return;
+      const { s, geom } = trendChartMarkup(W, H, false);
+      const { ml, mt, cw, ch, x0, x1, isStatus, SER } = geom;
+      const yrs = TREND.years;
+      host.innerHTML = `<svg viewBox="0 0 ${W} ${H}">${s}
+        <rect class="tr-hit" x="${ml}" y="${mt}" width="${cw}" height="${ch}" fill="transparent"/></svg>`;
 
       const hit = host.querySelector('.tr-hit');
       hit.addEventListener('mousemove', e => {
@@ -4032,18 +4055,18 @@ const BIO_DATA = {
       const sp = isStatus ? null : trFind(trendSel);
       const title = isStatus ? 'Native and introduced birds'
         : sp.mi + (sp.name ? ' · ' + sp.name : '');
+      // colours have to be resolved here too: a canvas cannot read var(--forest)
       const legend = (isStatus
-        ? TREND.groups.map(g => [g.mi, TR_STATUS[g.mi]])
-        : TREND.transects.map((t, i) => [t, TR_COLOURS[i]]))
+        ? TREND.groups.map(g => [g.mi, resolveVars(TR_STATUS[g.mi])])
+        : TREND.transects.map((t, i) => [t, resolveVars(TR_COLOURS[i])]))
         .concat([['Rat tracking tunnel index', cssVar('--caption'), true]]);
 
-      const W = host.clientWidth, H = host.clientHeight;
-      const clone = svg.cloneNode(true);
-      clone.querySelectorAll('.tr-hit').forEach(n => n.remove());
-      clone.setAttribute('width', W);
-      clone.setAttribute('height', H);
-      clone.setAttribute('font-family', "'Source Sans 3', Arial, sans-serif");
-      const src = resolveVars(new XMLSerializer().serializeToString(clone));
+      // drawn at its own size, not the card's: room for a frame and axis titles
+      const W = 760, H = 430;
+      const { s } = trendChartMarkup(W, H, true);
+      const src = resolveVars(
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}"
+           viewBox="0 0 ${W} ${H}" font-family="'Source Sans 3', Arial, sans-serif">${s}</svg>`);
       const img = new Image();
       await new Promise((ok, fail) => {
         img.onload = ok; img.onerror = fail;
