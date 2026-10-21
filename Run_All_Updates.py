@@ -57,8 +57,10 @@ STEPS = [
          push=[Path("html") / "targeted-rates" / "WBP.html",
                Path("html") / "targeted-rates" / "REG.html"]),
 
-    # Tōtara Reserve runs section by section. "river" is left out: the Hilltop
-    # feed returns malformed XML and a full run blanks river-management.html.
+    # Tōtara Reserve runs section by section. "river" is left out on purpose and
+    # does not need fixing: river-management.html is a live embed, so it is always
+    # current without the script. Keep it out of scheduled runs anyway — the
+    # Hilltop feed returns malformed XML and a run would blank the page.
     # The Tōtara script does not push, so the runner pushes its files.
     dict(name="totara-pco", script="Totara_Reserve_Data_Export.py", args=["--only", "pco"],
          push=[TOTARA / "pest-animal-header.html", TOTARA / "predator-control.html"]),
