@@ -450,7 +450,7 @@
   <script>
     /* PCO_DATA_START */
 const PCO_DATA = {
-  "generated": "2026-10-21T15:50:23.035340",
+  "generated": "2026-10-22T10:06:41.157359",
   "bioTotara": {
     "total": 167,
     "byType": {
@@ -462,8 +462,8 @@ const PCO_DATA = {
         "A24"
       ],
       "data": [
-        83,
-        46,
+        86,
+        43,
         24,
         13,
         1
@@ -524,7 +524,7 @@ const PCO_DATA = {
         48,
         34,
         41,
-        1
+        2
       ],
       "Mouse": [
         0,
@@ -532,7 +532,7 @@ const PCO_DATA = {
         1,
         0,
         5,
-        1
+        2
       ],
       "Rabbit": [
         0,
@@ -548,7 +548,7 @@ const PCO_DATA = {
         112,
         87,
         93,
-        7
+        15
       ],
       "Stoat": [
         1,
@@ -572,7 +572,7 @@ const PCO_DATA = {
         7,
         13,
         20,
-        2
+        3
       ]
     }
   },
@@ -591,7 +591,7 @@ const PCO_DATA = {
       675,
       1101,
       1596,
-      411
+      461
     ]
   },
   "possumBait": {
@@ -674,6 +674,80 @@ const PCO_DATA = {
         142
       ]
     }
+  },
+  "rtci": {
+    "readings": [
+      {
+        "date": "2023-10-01",
+        "value": 2.3
+      },
+      {
+        "date": "2025-02-01",
+        "value": 1.8
+      },
+      {
+        "date": "2026-02-01",
+        "value": 2.3
+      }
+    ],
+    "target": 2.0,
+    "operations": [
+      {
+        "date": "2022-09-01",
+        "label": "Ditrac All-weather",
+        "kind": "control"
+      },
+      {
+        "date": "2022-12-01",
+        "label": "Ditrac All-weather",
+        "kind": "control"
+      },
+      {
+        "date": "2023-02-01",
+        "label": "CYCLONE",
+        "kind": "event"
+      },
+      {
+        "date": "2023-08-01",
+        "label": "Pestoff Brodifacoum",
+        "kind": "control"
+      },
+      {
+        "date": "2023-11-01",
+        "label": "Pestoff Brodifacoum",
+        "kind": "control"
+      },
+      {
+        "date": "2024-01-01",
+        "label": "Pestoff Brodifacoum",
+        "kind": "control"
+      },
+      {
+        "date": "2024-08-01",
+        "label": "Pestoff Brodifacoum",
+        "kind": "control"
+      },
+      {
+        "date": "2025-06-01",
+        "label": "Pestoff Brodifacoum",
+        "kind": "control"
+      },
+      {
+        "date": "2025-09-01",
+        "label": "Pestoff Brodifacoum",
+        "kind": "control"
+      },
+      {
+        "date": "2026-05-01",
+        "label": "Pestoff Brodifacoum",
+        "kind": "control"
+      },
+      {
+        "date": "2026-10-01",
+        "label": "Pindone P&R",
+        "kind": "control"
+      }
+    ]
   },
   "tti": {
     "latest": {
@@ -976,6 +1050,59 @@ const PCO_DATA = {
     }
 
     // ── TTI line chart ────────────────────────────────────────────────────────
+    // Possum abundance against the baiting that drives it. Monitoring happens
+    // around an operation rather than on a schedule, so there are few readings
+    // and the operations matter as much as the line between them.
+    function rtciChart(r, W = 350, H = 150) {
+      if (!r || !r.readings || !r.readings.length) {
+        return '<p style="font-size:12px;color:var(--caption);padding:12px 0">No monitoring results available.</p>';
+      }
+      const ml = 34, mr = 12, mt = 14, mb = 30;
+      const cw = W - ml - mr, ch = H - mt - mb;
+      const reads = r.readings.map(d => ({ t: new Date(d.date).getTime(), v: d.value, date: d.date }));
+      const ops   = (r.operations || []).map(o => ({ ...o, t: new Date(o.date).getTime() }));
+      const times = [...reads.map(d => d.t), ...ops.map(o => o.t)];
+      const t0 = Math.min(...times), t1 = Math.max(...times);
+      const span = Math.max(t1 - t0, 1);
+      const pad  = span * 0.05;
+      const xAt  = t => ml + ((t - (t0 - pad)) / (span + pad * 2)) * cw;
+      const maxV = Math.max(...reads.map(d => d.v), r.target) * 1.35;
+      const yOf  = v => mt + ch - (v / maxV) * ch;
+      const mon  = t => new Date(t).toLocaleDateString('en-NZ', { month: 'short', year: '2-digit' });
+
+      let s = '';
+      for (let v = 0; v <= maxV; v += 1) {
+        s += `<line x1="${ml}" y1="${yOf(v).toFixed(1)}" x2="${ml + cw}" y2="${yOf(v).toFixed(1)}"
+                stroke="var(--border)" stroke-width="1" opacity=".6"/>
+              <text x="${ml - 5}" y="${(yOf(v) + 3).toFixed(1)}" text-anchor="end"
+                font-size="9" fill="var(--caption)">${v}%</text>`;
+      }
+      // the operations, as ticks along the foot
+      ops.forEach(o => {
+        const x = xAt(o.t), col = o.kind === 'event' ? 'var(--caption)' : '#4f7f22';
+        s += `<line x1="${x.toFixed(1)}" y1="${(mt + ch).toFixed(1)}" x2="${x.toFixed(1)}"
+                y2="${(mt + ch + 6).toFixed(1)}" stroke="${col}" stroke-width="1.6">
+                <title>${o.label} · ${mon(o.t)}</title></line>`;
+      });
+      // the target the operation is judged against
+      s += `<line x1="${ml}" y1="${yOf(r.target).toFixed(1)}" x2="${ml + cw}"
+              y2="${yOf(r.target).toFixed(1)}" stroke="var(--c2)" stroke-width="1.5"
+              stroke-dasharray="5 3"/>`;
+      // the readings
+      const line = reads.map((d, i) => `${i ? 'L' : 'M'}${xAt(d.t).toFixed(1)},${yOf(d.v).toFixed(1)}`).join('');
+      s += `<path d="${line}" fill="none" stroke="var(--c2)" stroke-width="2" stroke-linejoin="round"/>`;
+      reads.forEach(d => {
+        s += `<circle cx="${xAt(d.t).toFixed(1)}" cy="${yOf(d.v).toFixed(1)}" r="4.5"
+                fill="var(--c2)" stroke="#fff" stroke-width="1.6">
+                <title>${d.v}% · ${mon(d.t)}</title></circle>
+              <text x="${xAt(d.t).toFixed(1)}" y="${(yOf(d.v) - 9).toFixed(1)}" text-anchor="middle"
+                font-size="10" font-weight="600" fill="var(--navy)">${d.v}%</text>
+              <text x="${xAt(d.t).toFixed(1)}" y="${(mt + ch + 19).toFixed(1)}" text-anchor="middle"
+                font-size="9" fill="var(--caption)">${mon(d.t)}</text>`;
+      });
+      return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="100%">${s}</svg>`;
+    }
+
     function ttiChart(tti, W = 350, H = 275) {
       if (!tti || !tti.history || !tti.history.dates || !tti.history.dates.length) {
         return '<p style="font-size:12px;color:var(--caption);padding:12px 0">No history data available.</p>';
@@ -1211,6 +1338,42 @@ const PCO_DATA = {
               season (Nov–Feb) and <strong style="color:var(--navy)">below 10%</strong> the rest of the year.
             </div>
           </div>
+
+          <div class="chart-card">
+            <div class="prog-badge">Possum Residual Trap Catch Index</div>
+            ${(() => {
+              const r = d.rtci;
+              if (!r || !r.readings || !r.readings.length) {
+                return '<div class="chart-note" style="font-style:italic">Possum monitoring results not yet loaded — run script to update.</div>';
+              }
+              const last = r.readings[r.readings.length - 1];
+              const prev = r.readings.length > 1 ? r.readings[r.readings.length - 2] : null;
+              const when = x => new Date(x.date).toLocaleDateString('en-NZ', { month: 'short', year: 'numeric' });
+              const cls = ttiClass(last.value, r.target);
+              return `
+                <div class="rtci-row">
+                  <div class="rtci-card">
+                    <div class="rtci-label">Possum RTCI &middot; ${when(last)}</div>
+                    <div class="rtci-val ${cls}">${last.value}%</div>
+                    <div class="rtci-grade ${cls}">${last.value < r.target ? 'Below target' : 'Above target'}</div>
+                  </div>
+                  <div class="rtci-card">
+                    <div class="rtci-label">${prev ? 'Previous &middot; ' + when(prev) : 'Target'}</div>
+                    <div class="rtci-val">${prev ? prev.value + '%' : 'under ' + r.target + '%'}</div>
+                    <div class="rtci-grade">${prev
+                      ? (last.value > prev.value ? '&#9650; up from' : last.value < prev.value ? '&#9660; down from' : 'unchanged since') + ' ' + when(prev)
+                      : 'wax tag monitoring'}</div>
+                  </div>
+                </div>
+                <div class="chart-host" id="rtci-host" style="min-height:92px"></div>`;
+            })()}
+            <div class="chart-note">
+              <strong style="color:var(--navy)">RTCI</strong> is how many possums are left
+              after baiting, converted from wax tag monitoring, against a
+              <strong style="color:var(--navy)">2% target</strong> (dashed).
+              Green ticks are baiting operations — hover for the toxin.
+            </div>
+          </div>
           </div>
         </div>
 
@@ -1228,6 +1391,7 @@ const PCO_DATA = {
       for (const [id, draw] of [
         ['catches-host', (w, h) => catchesChart(d.catchesByFy, w, h)],
         ['tti-host',     (w, h) => ttiChart(d.tti, w, h)],
+        ['rtci-host',    (w, h) => rtciChart(d.rtci, w, h)],
       ]) {
         const host = document.getElementById(id);
         if (host) host.innerHTML = draw(Math.round(host.clientWidth), Math.round(host.clientHeight));

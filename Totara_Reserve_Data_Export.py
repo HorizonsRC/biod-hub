@@ -1017,7 +1017,54 @@ def extract_pco_data() -> dict | None:
         "catchesByFy": catches_by_fy,
         "trapChecksByFy": trap_checks_by_fy,
         "possumBait":  possum_bait,
+        "rtci":        extract_possum_rtci(),
     }
+
+
+# ── RTCI (possum Residual Trap Catch Index) ───────────────────────────────────
+
+# The index the team work to: a converted wax tag result, reported as a
+# percentage, and the operation is judged against staying under this.
+RTCI_TARGET = 2.0
+
+
+def extract_possum_rtci() -> dict | None:
+    """Possum abundance monitoring, with the baiting operations around it.
+
+    Column C of the baiting sheet, stored as a fraction. Readings are sparse —
+    monitoring happens around an operation, not on a schedule — so this is a
+    short series of dated results rather than a continuous trend.
+    """
+    if not PEST_OPS_XLSX:
+        log.info("  Baiting workbook not set in config.py — no possum RTCI")
+        return None
+    path = Path(PEST_OPS_XLSX)
+    if not path.exists():
+        log.info(f"  Baiting workbook not found, no possum RTCI: {path.name}")
+        return None
+    try:
+        df = pd.read_excel(path, sheet_name=PEST_OPS_SHEET, header=None,
+                           usecols=[0, 2], names=["Date", "RTCI"])
+        df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
+        df["RTCI"] = pd.to_numeric(df["RTCI"], errors="coerce")
+        df = df.dropna(subset=["Date", "RTCI"]).sort_values("Date")
+        if df.empty:
+            log.warning("  No possum RTCI readings found in the baiting workbook")
+            return None
+        readings = [{"date": r.Date.strftime("%Y-%m-%d"),
+                     "value": round(float(r.RTCI) * 100, 1)} for r in df.itertuples()]
+        out = {
+            "readings": readings,
+            "target": RTCI_TARGET,
+            "operations": _pest_operations(int(df["Date"].min().year) - 1),
+        }
+        log.info(f"  Possum RTCI: {len(readings)} readings "
+                 f"{readings[0]['date'][:7]} to {readings[-1]['date'][:7]}, "
+                 f"latest {readings[-1]['value']}% against a {RTCI_TARGET}% target")
+        return out
+    except Exception:
+        log.exception("  Possum RTCI could not be read")
+        return None
 
 
 
