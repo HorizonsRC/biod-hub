@@ -316,6 +316,23 @@
     /* ── RTCI SECTION ── */
     .rtci-section { display: flex; flex-direction: column; gap: 10px; padding-top: 10px; }
 
+    /* Rodents / Possums switch on the monitoring card — same as the bird card
+       on the biodiversity page, so the two read alike. */
+    .tabs { display: flex; gap: 4px; flex-shrink: 0; }
+    .tab {
+      font: inherit;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--muted);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1px 10px;
+      cursor: pointer;
+    }
+    .tab:hover { border-color: var(--forest); }
+    .tab.on { color: #fff; background: var(--forest); border-color: var(--forest); }
+
     .rtci-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -891,6 +908,10 @@ const PCO_DATA = {
 
     const TTI_CHART_FROM = "2020-01-01";   // earliest survey drawn on the TTI chart
 
+    // Which monitoring view the right-hand card shows. Kept outside render(),
+    // which rebuilds the page. #possums in the URL opens the possum tab.
+    let pestTab = location.hash === '#possums' ? 'possums' : 'rodents';
+
     // Rat TTI targets (Tōtara Reserve Annual Report 2025-26): below 5% in the bird
     // breeding season, November to February, and below 10% the rest of the year.
     // There is no target for mice.
@@ -1299,6 +1320,11 @@ const PCO_DATA = {
 
           <div class="col">
           <div class="chart-card grow">
+            <div class="tabs">
+              <button class="tab${pestTab === 'rodents' ? ' on' : ''}" data-pest-tab="rodents">Rodents</button>
+              <button class="tab${pestTab === 'possums' ? ' on' : ''}" data-pest-tab="possums">Possums</button>
+            </div>
+            ${pestTab === 'rodents' ? `
             <div class="prog-badge">Rodent Tracking Tunnel Index</div>
             ${(() => {
               const t = d.tti;
@@ -1336,10 +1362,7 @@ const PCO_DATA = {
               showing rat or mouse footprints after a 24-hour exposure.
               Rat targets: <strong style="color:var(--navy)">below 5%</strong> in the bird breeding
               season (Nov–Feb) and <strong style="color:var(--navy)">below 10%</strong> the rest of the year.
-            </div>
-          </div>
-
-          <div class="chart-card">
+            </div>` : `
             <div class="prog-badge">Possum Residual Trap Catch Index</div>
             ${(() => {
               const r = d.rtci;
@@ -1365,14 +1388,22 @@ const PCO_DATA = {
                       : 'wax tag monitoring'}</div>
                   </div>
                 </div>
-                <div class="chart-host" id="rtci-host" style="min-height:92px"></div>`;
+                <div class="catches-legend" style="margin-bottom:0">
+                  <div class="legend-item"><div class="legend-dot" style="background:var(--c2)"></div><span>Possum RTCI</span></div>
+                  <div class="legend-item"><svg width="18" height="8" aria-hidden="true"><line x1="0" y1="4" x2="18" y2="4"
+                    stroke="var(--c2)" stroke-width="1.5" stroke-dasharray="5 3"/></svg><span>${r.target}% target</span></div>
+                  <div class="legend-item"><svg width="8" height="8" aria-hidden="true"><line x1="4" y1="0" x2="4" y2="8"
+                    stroke="#4f7f22" stroke-width="1.6"/></svg><span>Baiting &mdash; hover for the toxin</span></div>
+                </div>
+                <div class="chart-host" id="rtci-host"></div>`;
             })()}
             <div class="chart-note">
-              <strong style="color:var(--navy)">RTCI</strong> is how many possums are left
-              after baiting, converted from wax tag monitoring, against a
-              <strong style="color:var(--navy)">2% target</strong> (dashed).
-              Green ticks are baiting operations — hover for the toxin.
-            </div>
+              <strong style="color:var(--navy)">What is RTCI?</strong>
+              The Residual Trap Catch Index measures how many possums are left after baiting,
+              converted from wax tag monitoring. Monitoring is done around an operation rather
+              than on a schedule, so the readings are occasional.
+              Target: <strong style="color:var(--navy)">under 2%</strong>.
+            </div>`}
           </div>
           </div>
         </div>
@@ -1397,6 +1428,15 @@ const PCO_DATA = {
         if (host) host.innerHTML = draw(Math.round(host.clientWidth), Math.round(host.clientHeight));
       }
     }
+
+    document.addEventListener('click', e => {
+      const tab = e.target.closest('[data-pest-tab]');
+      if (tab && tab.dataset.pestTab !== pestTab) {
+        pestTab = tab.dataset.pestTab;
+        render();
+        drawCharts();
+      }
+    });
 
     document.addEventListener('DOMContentLoaded', () => { render(); drawCharts(); });
     window.addEventListener('resize', drawCharts);
