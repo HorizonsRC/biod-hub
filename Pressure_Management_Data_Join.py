@@ -142,7 +142,10 @@ _icon_fl = FeatureLayer(_ICON_SITES_URL, gis=gis)
 _names_sql = ", ".join(f"'{n}'" for n in _ICON_NAME_TO_SITEID)
 _icon_sdf = _icon_fl.query(
     where=f"SiteName IN ({_names_sql})",
-    out_fields="SiteName",
+    # Hectares carries the site area. Without it these sites land in AGOL with
+    # area_ha = 0, which silently undercounts any total hectares drawn from the
+    # layer. Shape__Area is the fallback (see _area_ha below).
+    out_fields="SiteName,Hectares,Shape__Area",
     return_geometry=True,
 ).sdf
 log.info(f"  Retrieved {len(_icon_sdf)} Icon Site feature(s): {_icon_sdf['SiteName'].tolist()}")
@@ -160,6 +163,24 @@ else:
             all_rings.extend(g['rings'])
         return _Geometry({'rings': all_rings, 'spatialReference': geoms[0]['spatialReference']})
 
+    def _area_ha(group):
+        """Area in hectares for the site, summed across its parts (Pūkaha is
+        the main site plus its northern buffer).
+
+        Prefers the Icon Sites layer's own Hectares value. Falls back to the
+        polygon area if that is blank: both this layer and the Priority
+        Habitats one are NZTM 2000 (wkid 2193), so Shape__Area is square
+        metres and converts cleanly. In a geographic or Web Mercator spatial
+        reference it would not.
+        """
+        for _col, _divisor in (('Hectares', 1.0), ('Shape__Area', 10000.0)):
+            if _col not in group.columns:
+                continue
+            _total = pd.to_numeric(group[_col], errors='coerce').sum()
+            if pd.notna(_total) and _total > 0:
+                return round(float(_total) / _divisor, 2)
+        return None
+
     _icon_rows = []
     for _site_id, _group in _icon_sdf.groupby('SiteID'):
         # Shown name for the row: display_name override if set, else the primary icon_name
@@ -167,11 +188,14 @@ else:
         # Te Āpiti it's the verbose 'Te Āpiti – Manawatū Gorge' layer name we don't want shown.
         _site_name = _ICON_GEOM_SITES[_site_id].get('display_name') or _ICON_GEOM_SITES[_site_id]['icon_name']
         _geom = _merge_polygons(_group['SHAPE']) if len(_group) > 1 else _group['SHAPE'].iloc[0]
-        _icon_rows.append({'SiteID': _site_id, 'SiteName': _site_name, 'SHAPE': _geom})
-        log.info(f"  {_site_id} ({_site_name}) — {len(_group)} polygon part(s)")
+        _ha = _area_ha(_group)
+        _icon_rows.append({'SiteID': _site_id, 'SiteName': _site_name,
+                           'SHAPE': _geom, 'AreaHa': _ha})
+        log.info(f"  {_site_id} ({_site_name}) — {len(_group)} polygon part(s), "
+                 f"{_ha if _ha is not None else 'no'} ha")
 
     _icon_append = pd.DataFrame(_icon_rows)
-    for _col in ['Actual_EcoSystem_s_', 'AreaHa', 'HRCLevel', 'HRCStaff', 'Management', 'Protection']:
+    for _col in ['Actual_EcoSystem_s_', 'HRCLevel', 'HRCStaff', 'Management', 'Protection']:
         _icon_append[_col] = None
     _icon_append['Actual_EcoSystem_s_'] = 'F'
 
