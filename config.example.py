@@ -89,12 +89,28 @@ KIA_WHARITE_GDB = r"\\gisdata\GIS\Department\Environmental_Management\Biodiversi
 
 # Rodent Tracking Tunnel Index spreadsheet, SharePoint-synced.
 # Columns 0-3 are Location / Date / Rat TTI / Mouse TTI, first sheet only.
-TOTARA_TTI_XLSX = r"C:\path\to\your\Rodent tracking indices ALL.xlsx"
+TOTARA_TTI_XLSX = r"C:\path\to\your\rodent tracking indices.xlsx"
 
 # Raw tracking tunnel records, one row per tunnel per survey (May 2022 on).
 # Columns: Date / Line / Tunnel / Mouse / Rat / ... with 1 = tracked. The TTI
 # for these dates is calculated from this file and replaces the summary above.
-TOTARA_TTI_RAW_XLSX = r"C:\path\to\your\Totara Reserve Tracking Tunnel Monitoring raw data.xlsx"
+TOTARA_TTI_RAW_XLSX = r"C:\path\to\your\raw tracking tunnel records.xlsx"
+
+# Five-minute bird count records: one row per species per count, with the
+# species not seen listed as 0. Columns used are Date / Year / Station number /
+# Species / Status / Total.
+TOTARA_5MBC_XLSX  = r"C:\path\to\your\five minute bird counts.xlsx"
+TOTARA_5MBC_SHEET = "name of the sheet holding the records"
+
+# Workbooks holding seasons the master sheet has not taken in yet. Every sheet
+# of each is read and a year the master already has is skipped, so once a season
+# is merged into the master the extra workbook stops contributing. May be empty.
+TOTARA_5MBC_EXTRA = [
+    # r"C:\path\to\your\later season bird counts.xlsx",
+]
+
+# Bat detector exports, one file per survey. The newest survey is the one shown.
+TOTARA_BAT_CSV_GLOB = r"C:\path\to\your\bat data\*.csv"
 
 # ── Targeted Rates ────────────────────────────────────────────────────────────
 

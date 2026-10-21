@@ -20,8 +20,11 @@ Pulls data for two Tōtara Reserve dashboards:
   4. biodiversity.html — public sightings and bat monitoring (--only bio)
        eBird hotspots (EBIRD_HOTSPOTS) — species lists + checklists reporting them.
        iNaturalist place 208780 — research-grade birds, plants, insects, fungi.
-       Bat detector CSV exports (BAT_CSV_GLOB) — one file per survey.
-       Five-minute bird count spreadsheet (FIVE_MBC_XLSX) — spring surveys.
+       Bat detector exports (config.TOTARA_BAT_CSV_GLOB) — one file per survey.
+       Five-minute bird counts (config.TOTARA_5MBC_XLSX, plus TOTARA_5MBC_EXTRA
+       for seasons the master sheet has not taken in yet) — spring surveys,
+       yearly totals and the per-species trends.
+       Tracking tunnel spreadsheets — the rat index shown beside the trends.
        No ArcGIS needed.
 
   5. campground.html — guest numbers from Newbook bookings (--only camp)
@@ -53,6 +56,7 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 
 import requests
+import numpy as np
 import pandas as pd
 
 # ── Config ────────────────────────────────────────────────────────────────────
@@ -169,12 +173,30 @@ INAT_PLACE_ID   = 208780   # inaturalist.org/places/totara-reserve-nz
 INAT_NZ_PLACE   = 6803     # New Zealand — establishment means and threat status
 # Only photos under these licences are shown, each with its credit line.
 INAT_OPEN_LICENCES = "cc0,cc-by,cc-by-nc,cc-by-sa,cc-by-nd,cc-by-nc-sa,cc-by-nc-nd"
-# One CSV per survey, exported from the bat detector platform.
-BAT_CSV_GLOB    = "Data/Totara-Reserve/*bat_data*.csv"
+# Local data files live in the gitignored Data folder, so their paths are kept in
+# config.py rather than here: this repository is public.
+# One file per survey, exported from the bat detector platform.
+BAT_CSV_GLOB    = getattr(config, "TOTARA_BAT_CSV_GLOB", None) if config else None
 # Five-minute bird counts (5MBC), Biodiversity team spring surveys. One row per
 # species per count; the newer surveys also list the species that weren't seen, as 0.
-FIVE_MBC_XLSX   = "Data/Totara-Reserve/5MBC_Totara_ALLDATA.xlsx"
-FIVE_MBC_SHEET  = "5MBC_Totara_ALLDATA"
+FIVE_MBC_XLSX   = getattr(config, "TOTARA_5MBC_XLSX", None) if config else None
+FIVE_MBC_SHEET  = getattr(config, "TOTARA_5MBC_SHEET", 0) if config else 0
+# Workbooks holding seasons the master sheet has not taken in yet — every sheet is
+# read, and a year the master already has is skipped, so once a season is merged
+# into the master the extra file quietly stops contributing.
+FIVE_MBC_EXTRA_XLSX = (getattr(config, "TOTARA_5MBC_EXTRA", None) if config else None) or []
+# Transect comes from the station code. The counts are reported per transect, so a
+# station that matches none of these is left out of the trend figures with a warning.
+FIVE_MBC_TRANSECTS = {"FW": "Fern Walk", "PF": "Petifar Walk",
+                      "TRNT": "Tōtara Nature Trail"}
+# The Biodiversity team's own analysis divides by a fixed 26 rather than the number
+# of stations on the transect. Kept as theirs: the dashboard reproduces their
+# figures, it does not recalculate them.
+FIVE_MBC_SE_DIVISOR = 26
+# The species they publish a trend chart for. Titipounamu has no records since the
+# 2021 restart and its chart is an empty frame in their outputs too.
+FIVE_MBC_TREND_SPECIES = ["kereru", "bellbird", "kingfisher", "fantail", "whitehead",
+                          "grey warbler", "silvereye", "rifleman", "tui"]
 # The sheet's Status column is blank before 2018 and the names vary between
 # observers, so every name is mapped here: key -> (te reo, English, status).
 FIVE_MBC_BIRDS = {
@@ -1625,9 +1647,13 @@ def _inat_group(iconic: str, n_top: int, n_photos: int) -> dict:
 
 def extract_bat_data() -> dict | None:
     """One summary per bat detector export (one CSV per survey)."""
-    files = sorted(HERE.glob(BAT_CSV_GLOB))
+    if not BAT_CSV_GLOB:
+        log.warning("  Bat exports not set in config.py (TOTARA_BAT_CSV_GLOB)")
+        return None
+    pattern = Path(BAT_CSV_GLOB)
+    files = sorted(pattern.parent.glob(pattern.name))
     if not files:
-        log.warning(f"  No bat CSVs match {BAT_CSV_GLOB}")
+        log.warning(f"  No bat exports match {pattern.name}")
         return None
     surveys = []
     for f in files:
@@ -1643,7 +1669,8 @@ def extract_bat_data() -> dict | None:
         nights = pd.date_range(df["night"].min(), df["night"].max(), freq="D")
         per_night = bats.groupby("night").size().reindex(nights, fill_value=0)
         surveys.append({
-            "file": f.name,
+            # the export's file name is deliberately not published: it would put
+            # the name of a gitignored data file into this public repository
             "from": nights[0].strftime("%Y-%m-%d"),
             "to": nights[-1].strftime("%Y-%m-%d"),
             "nights": len(nights),
@@ -1664,8 +1691,39 @@ def extract_bat_data() -> dict | None:
     return {"surveys": surveys} if surveys else None
 
 
-def extract_5mbc_data() -> dict | None:
-    """Five-minute bird counts: birds per count by year, native vs introduced.
+def _read_5mbc(path: Path, sheet, known_years: set | None = None) -> pd.DataFrame:
+    """One sheet of count records, cleaned. Rows with no date are dropped — the
+    count denominator is station × date — and the loss is logged, because a whole
+    season arriving without dates would otherwise vanish without trace. It is only
+    a warning where the year is not already covered by the master sheet."""
+    df = pd.read_excel(path, sheet_name=sheet)
+    df.columns = [str(c).replace("\n", " ").strip() for c in df.columns]
+    df = df.dropna(subset=["Station number", "Species"])
+    undated = df["Date"].isna().sum()
+    if undated:
+        years = sorted(set(pd.to_numeric(df.loc[df["Date"].isna(), "Year"],
+                                         errors="coerce").dropna().astype(int)))
+        covered = known_years is not None and years and set(years) <= known_years
+        msg = (f"  5MBC {path.name} [{sheet}]: {undated} rows have no date and are "
+               f"left out ({years or 'year unknown'})")
+        log.info(msg + ", already in the master sheet") if covered else log.warning(msg)
+    df = df.dropna(subset=["Date"])
+    df["Date"] = pd.to_datetime(df["Date"])
+    # the master stores Year as text and the newer workbooks as a float, and the
+    # two cannot be grouped together until they agree
+    df["Year"] = pd.to_numeric(df["Year"], errors="coerce").astype("Int64")
+    df = df.dropna(subset=["Year"])
+    df["Year"] = df["Year"].astype(int)
+    df["station"] = df["Station number"].astype(str).str.strip().str.upper()
+    df["transect"] = df["station"].str.extract(
+        r"^(" + "|".join(sorted(FIVE_MBC_TRANSECTS, key=len, reverse=True)) + r")"
+    )[0].map(FIVE_MBC_TRANSECTS)
+    return df
+
+
+def extract_5mbc_data(tti: dict | None = None) -> dict | None:
+    """Five-minute bird counts: birds per count by year, native vs introduced,
+    plus the per-species trends the Biodiversity team publish.
 
     A count is one station on one date. Figures are means per count, so years
     with more stations or repeat visits stay comparable. A year whose stations
@@ -1673,15 +1731,43 @@ def extract_5mbc_data() -> dict | None:
     series is kept: the 2017–19 counts used different stations, observers and
     visits, and the reserve's annual report leaves them out for the same reason.
     """
-    path = HERE / FIVE_MBC_XLSX
-    if not path.exists():
-        log.warning(f"  No 5MBC spreadsheet at {FIVE_MBC_XLSX}")
+    if not FIVE_MBC_XLSX:
+        log.warning("  5MBC spreadsheet not set in config.py (TOTARA_5MBC_XLSX)")
         return None
-    df = pd.read_excel(path, sheet_name=FIVE_MBC_SHEET)
-    df.columns = [str(c).replace("\n", " ").strip() for c in df.columns]
-    df = df.dropna(subset=["Date", "Station number", "Species"])
-    df["Date"] = pd.to_datetime(df["Date"])
-    df["station"] = df["Station number"].astype(str).str.strip().str.upper()
+    path = Path(FIVE_MBC_XLSX)
+    if not path.exists():
+        log.warning(f"  5MBC spreadsheet not found: {path.name}")
+        return None
+    df = _read_5mbc(path, FIVE_MBC_SHEET)
+
+    # Seasons that have not been merged into the master sheet yet. A year the
+    # master already holds is skipped, so merging one in later changes nothing.
+    for extra in FIVE_MBC_EXTRA_XLSX:
+        xpath = Path(extra)
+        if not xpath.exists():
+            log.info(f"  5MBC extra workbook not present, skipped: {xpath.name}")
+            continue
+        for sheet in pd.ExcelFile(xpath).sheet_names:
+            try:
+                part = _read_5mbc(xpath, sheet, known_years=set(df["Year"]))
+            except KeyError:
+                log.warning(f"  5MBC {xpath.name} [{sheet}]: unexpected columns, skipped")
+                continue
+            if part.empty:
+                continue
+            have = set(df["Year"])
+            new = part[~part["Year"].isin(have)]
+            skipped = sorted(set(part["Year"]) & have)
+            if len(new):
+                log.info(f"  5MBC {xpath.name} [{sheet}]: added "
+                         f"{sorted(set(new['Year']))} ({len(new)} rows)")
+                df = pd.concat([df, new], ignore_index=True)
+            if skipped:
+                log.info(f"  5MBC {xpath.name} [{sheet}]: {skipped} already in the "
+                         f"master sheet, skipped")
+
+    counts_raw = df.copy()     # before the species filter: the team group their
+                               # native/introduced chart on the sheet's own Status
     # Every count, before any rows are dropped, so a count with nothing
     # identifiable in it still counts towards the means
     counts_all = df[["Year", "station", "Date"]].drop_duplicates()
@@ -1733,7 +1819,118 @@ def extract_5mbc_data() -> dict | None:
     log.info(f"  5MBC: {len(years)} years {years[0]['year']}–{latest}, "
              f"{sum(y['counts'] for y in years)} counts; "
              f"{latest}: {years[-1]['native']} native birds per count")
-    return {"years": years, "top": top}
+
+    kept = [y["year"] for y in years]
+    trend = _5mbc_trend(df, counts_raw[counts_raw["Year"].isin(kept)], kept, tti)
+    return {"years": years, "top": top, "trend": trend}
+
+
+def _5mbc_series(sub: pd.DataFrame, years: list[int]) -> dict:
+    """One chart's points: the mean of the rows at each transect each year.
+
+    This is the Biodiversity team's calculation, reproduced rather than revised —
+    a plain mean over the rows present, with no summing per station and no filling
+    in of absent rows, and their fixed divisor for the standard error. Two
+    consequences are theirs and are kept: a station carrying two spellings of one
+    bird has the extra row averaged in, and a transect with no row for a species
+    has no point rather than a zero.
+    """
+    by_t, se_t, n_t, points = [], [], [], []
+    for name in FIVE_MBC_TRANSECTS.values():
+        means, ses, ns = [], [], []
+        for y in years:
+            vals = sub.loc[(sub["Year"] == y) & (sub["transect"] == name), "Total"]
+            if not len(vals):
+                means.append(None), ses.append(None), ns.append(0)
+                continue
+            means.append(round(float(vals.mean()), 3))
+            sd = vals.std(ddof=1)
+            ses.append(None if pd.isna(sd)
+                       else round(float(sd / np.sqrt(FIVE_MBC_SE_DIVISOR)), 3))
+            ns.append(int(len(vals)))
+            points.append((y, float(vals.mean())))
+        by_t.append(means), se_t.append(ses), n_t.append(ns)
+
+    mean = []
+    for j, _ in enumerate(years):
+        vals = [row[j] for row in by_t if row[j] is not None]
+        mean.append(round(float(np.mean(vals)), 3) if vals else None)
+    return {"byTransect": by_t, "se": se_t, "rows": n_t, "mean": mean,
+            "fit": _5mbc_fit(points)}
+
+
+def _5mbc_fit(points: list[tuple[int, float]]) -> dict | None:
+    """The fitted line and its 95% band, across every transect point — the same
+    points the team's `geom_smooth(method = "lm")` uses. None where a line cannot
+    be fitted, which is what an all-zero species gives."""
+    if len(points) < 3:
+        return None
+    x = np.array([p[0] for p in points], float)
+    y = np.array([p[1] for p in points], float)
+    if np.allclose(y, y[0]):
+        return None
+    slope, intercept = np.polyfit(x, y, 1)
+    resid = y - (slope * x + intercept)
+    dof = len(x) - 2
+    s2 = float(resid @ resid) / dof
+    sxx = float(((x - x.mean()) ** 2).sum())
+    if not sxx:
+        return None
+    tcrit = 2.12 if dof > 15 else 2.31 if dof > 8 else 2.78
+    band = []
+    for xi in np.linspace(x.min(), x.max(), 25):
+        se = np.sqrt(s2 * (1 / len(x) + (xi - x.mean()) ** 2 / sxx))
+        band.append([round(float(xi), 3),
+                     round(float(slope * xi + intercept - tcrit * se), 3),
+                     round(float(slope * xi + intercept + tcrit * se), 3)])
+    return {"slope": round(float(slope), 4),
+            "slopeSe": round(float(np.sqrt(s2 / sxx)), 4),
+            "y0": round(float(slope * x.min() + intercept), 3),
+            "y1": round(float(slope * x.max() + intercept), 3),
+            "band": band}
+
+
+def _5mbc_trend(df: pd.DataFrame, raw: pd.DataFrame, years: list[int],
+                tti: dict | None) -> dict:
+    """Per-species and native/introduced trends, with the rat index for context."""
+    unplaced = raw[raw["transect"].isna()]["station"].unique()
+    if len(unplaced):
+        log.warning(f"  5MBC: stations outside the known transects, left out of the "
+                    f"trends: {sorted(unplaced)[:8]}")
+
+    species = []
+    for key in FIVE_MBC_TREND_SPECIES:
+        mi, en, _ = FIVE_MBC_BIRDS[key]
+        s = _5mbc_series(df[df["key"] == key], years)
+        s.update(key=key, mi=mi, name=en if en != mi else None,
+                 total=float(df.loc[df["key"] == key, "Total"].sum()))
+        species.append(s)
+        if not s["total"]:
+            log.info(f"  5MBC trend: {mi} has no records since {years[0]}, "
+                     f"its chart is empty")
+
+    # the native/introduced chart groups on the sheet's own Status column, over
+    # every row, not just the species named in FIVE_MBC_BIRDS
+    status = raw["Status"].astype(str).str.strip().str.lower()
+    groups = []
+    for value, label in (("native", "Native"), ("exotic", "Introduced")):
+        s = _5mbc_series(raw[status == value], years)
+        s.update(key=label, mi=label, name=None)
+        groups.append(s)
+
+    rat = {"dates": [], "rat": []}
+    if tti and tti.get("history"):
+        first = f"{years[0] - 1}-07-01"
+        for d, v in zip(tti["history"]["dates"], tti["history"]["rat"]):
+            if v is not None and d >= first:
+                rat["dates"].append(d)
+                rat["rat"].append(v)
+    else:
+        log.info("  5MBC trend: no TTI history, the rat index overlay is left off")
+
+    return {"years": years,
+            "transects": list(FIVE_MBC_TRANSECTS.values()),
+            "species": species, "groups": groups, "tti": rat}
 
 
 def extract_biodiversity_data() -> dict | None:
@@ -1757,7 +1954,9 @@ def extract_biodiversity_data() -> dict | None:
         "insects": insects,
         "fungi": fungi,
         "bats": extract_bat_data(),
-        "fiveMbc": extract_5mbc_data(),
+        # the bird count trends carry the rat index for context, from the same
+        # spreadsheets the pest animal page reads
+        "fiveMbc": extract_5mbc_data(extract_tti_data()),
     }
 
 
