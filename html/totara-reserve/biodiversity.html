@@ -127,10 +127,10 @@
       gap: 10px;
       min-height: 0;
     }
-    /* A single species' trend chart takes the plants and fungi column as well.
-       No transition: the chart redraws on every resize step, so sliding the
-       columns would redraw it dozens of times on the way. */
-    .cols.bird-wide { grid-template-columns: 2.12fr 1fr; }
+    /* A single species' trend chart takes the whole row: the width is what the
+       chart is short of, and it is the only thing being looked at. No transition,
+       since the chart redraws on every resize step. */
+    .cols.bird-wide { grid-template-columns: 1fr; }
 
     .col { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
 
@@ -4067,7 +4067,21 @@ const BIO_DATA = {
       const headH = big ? 6 : 5, headW = big ? 3.4 : 2.8, shaft = big ? 14 : 11;
       const foot = mt + ch;
       const laneTop = foot + (big ? 28 : 18);
-      (TREND.events || []).forEach(ev => {
+      // Every operation gets an arrow, but only the first of a run of the same
+      // toxin is named, and by its short name — "Pestoff", not "Pestoff
+      // Brodifacoum" — the way the team's own charts label them. Seven Pestoff
+      // operations in a row would otherwise print the same word seven times on
+      // top of itself. The full name stays on hover and in the export key.
+      let runLabel = null;
+      const names = (TREND.events || []).map(ev => {
+        // a cyclone or flood is always named, and does not break a toxin's run
+        if (ev.kind === 'event') return ev.label;
+        const short = ev.label.split(' ')[0];
+        const first = short !== runLabel;
+        runLabel = short;
+        return first ? short : null;
+      });
+      (TREND.events || []).forEach((ev, n) => {
         const xf = trYearFrac(ev.date);
         if (xf < x0 || xf > x1) return;
         const X = xOf(xf);
@@ -4079,11 +4093,12 @@ const BIO_DATA = {
               <line x1="${X.toFixed(1)}" y1="${(laneTop + headH).toFixed(1)}"
                 x2="${X.toFixed(1)}" y2="${(laneTop + shaft).toFixed(1)}"
                 stroke="${col}" stroke-width="${big ? 2 : 1.6}"/>`;
-        if (isEvent) {
-          const flip = X > ml + cw * 0.92;
+        if (names[n]) {
+          const flip = X > ml + cw * 0.93;
           s += `<text x="${X.toFixed(1)}" y="${(laneTop + shaft + (big ? 12 : 10)).toFixed(1)}"
                   text-anchor="${flip ? 'end' : 'middle'}" font-size="${big ? 10 : 9}"
-                  font-weight="600" fill="var(--muted)">${esc(ev.label)}</text>`;
+                  font-weight="${isEvent ? 600 : 500}"
+                  fill="${isEvent ? 'var(--muted)' : TR_OPERATION}">${esc(names[n])}</text>`;
         }
         // a wider invisible target, or a thin arrow is near impossible to hover
         s += `<rect class="tr-ev" x="${(X - 5).toFixed(1)}" y="${(laneTop - 2).toFixed(1)}"
@@ -4505,11 +4520,11 @@ const BIO_DATA = {
           <div class="col">
             ${groupCard('Plants', d.plants, true)}
             ${groupCard('Fungi', d.fungi, false)}
-          </div>`}
+          </div>
           <div class="col">
             ${groupCard('Insects', d.insects, true)}
             ${batCard(d.bats)}
-          </div>
+          </div>`}
         </div>
 
         <div class="dash-footer">
