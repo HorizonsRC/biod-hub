@@ -190,6 +190,11 @@ PEST_OPS_XLSX  = getattr(config, "TOTARA_PEST_OPS_XLSX", None) if config else No
 PEST_OPS_SHEET = getattr(config, "TOTARA_PEST_OPS_SHEET", 0) if config else 0
 # Anything else in the treatment column is taken to be a baiting operation.
 PEST_EVENT_WORDS = ("cyclone", "flood", "storm", "slip", "fire", "drought", "closure")
+# Events the baiting workbook does not record, because they are not pest operations.
+# Hand maintained — the campground page carries the same ones in its own list.
+TOTARA_EXTRA_EVENTS = [
+    ("2026-02-15", "Flood"),     # reserve closed seven days; Kahikatea shut for the season
+]
 # Transect comes from the station code. The counts are reported per transect, so a
 # station that matches none of these is left out of the trend figures with a warning.
 FIVE_MBC_TRANSECTS = {"FW": "Fern Walk", "PF": "Petifar Walk",
@@ -2011,9 +2016,19 @@ def _pest_operations(from_year: int) -> list[dict]:
         out = []
         for r in df.itertuples():
             label = str(r.Treatment).strip()
+            # the workbook shouts some labels; capitalise for display only, the
+            # sheet itself is the team's and is left alone
+            if label.isupper():
+                label = label.title()
             kind = ("event" if any(w in label.lower() for w in PEST_EVENT_WORDS)
                     else "control")
             out.append({"date": r.Date.strftime("%Y-%m-%d"), "label": label, "kind": kind})
+
+        for date, label in TOTARA_EXTRA_EVENTS:
+            if date >= f"{from_year}-07-01":
+                out.append({"date": date, "label": label, "kind": "event"})
+        out.sort(key=lambda e: e["date"])
+
         kinds = Counter(e["kind"] for e in out)
         log.info(f"  Baiting operations on the trends: {kinds.get('control', 0)} operations, "
                  f"{kinds.get('event', 0)} events from {from_year} — "
