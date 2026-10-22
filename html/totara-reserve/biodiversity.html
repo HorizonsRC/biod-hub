@@ -4238,6 +4238,7 @@ const BIO_DATA = {
         ? TREND.groups.map(g => [g.mi, resolveVars(TR_STATUS[g.mi])])
         : TREND.transects.map((t, i) => [t, resolveVars(TR_COLOURS[i])]))
         .concat([['Rat tracking tunnel index', cssVar('--caption'), 'dash']]);
+      legend.push(['20% rat index', cssVar('--caption'), 'dotted']);
       const evs = TREND.events || [];
       if (evs.some(e => e.kind !== 'event')) legend.push(['Baiting', TR_OPERATION, 'arrow']);
       if (evs.some(e => e.kind === 'event')) legend.push(['Cyclone or flood', cssVar('--muted'), 'arrow']);
@@ -4255,41 +4256,8 @@ const BIO_DATA = {
         img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(src);
       });
 
-      // A PNG has no hover, so the operations are listed underneath instead —
-      // grouped by toxin in first-use order, each with the months it was used.
-      const keyLines = (() => {
-        const groups = new Map();
-        evs.forEach(e => {
-          const bucket = e.kind === 'event' ? 'EVENT' : 'BAIT';
-          const k = bucket + '|' + e.label;
-          if (!groups.has(k)) groups.set(k, { bucket, label: e.label, when: [] });
-          groups.get(k).when.push(monthLabel(e.date));
-        });
-        const phrase = g => `${g.label} ${g.when.join(', ')}`;
-        const out = [];
-        const bait = [...groups.values()].filter(g => g.bucket === 'BAIT');
-        const events = [...groups.values()].filter(g => g.bucket === 'EVENT');
-        if (bait.length) out.push('Baiting: ' + bait.map(phrase).join(' · ') + '.');
-        if (events.length) out.push('Recorded: ' + events.map(phrase).join(' · ') + '.');
-        return out;
-      })();
-
-      const S = 2, pad = 22, chartY = 92;   // laid out in CSS px, drawn at 2x
+      const S = 2, pad = 22, chartY = 92, footH = 14;   // CSS px, drawn at 2x
       const cv = document.createElement('canvas');
-      const probe = cv.getContext('2d');
-      probe.font = "11px 'Source Sans 3', Arial, sans-serif";
-      // wrap the key to the canvas width before the height is fixed
-      const wrapped = [];
-      keyLines.forEach(line => {
-        let current = '';
-        line.split(' ').forEach(word => {
-          const next = current ? current + ' ' + word : word;
-          if (current && probe.measureText(next).width > W) { wrapped.push(current); current = word; }
-          else current = next;
-        });
-        if (current) wrapped.push(current);
-      });
-      const footH = 44 + wrapped.length * 14 + (wrapped.length ? 6 : 0);
       cv.width = (W + pad * 2) * S;
       cv.height = (chartY + H + footH) * S;
       const c = cv.getContext('2d');
@@ -4310,8 +4278,9 @@ const BIO_DATA = {
       c.font = "12px 'Source Sans 3', Arial, sans-serif";
       legend.forEach(([label, colour, mark]) => {
         c.strokeStyle = c.fillStyle = colour;
-        if (mark === 'dash') {
-          c.setLineDash([4, 3]); c.lineWidth = 2;
+        if (mark === 'dash' || mark === 'dotted') {
+          c.setLineDash(mark === 'dash' ? [4, 3] : [1.5, 2.5]);
+          c.lineWidth = 2;
           c.beginPath(); c.moveTo(x, 72); c.lineTo(x + 15, 72); c.stroke();
           c.setLineDash([]); x += 20;
         } else if (mark === 'arrow') {
@@ -4330,18 +4299,8 @@ const BIO_DATA = {
 
       c.drawImage(img, pad, chartY, W, H);
 
-      c.fillStyle = cssVar('--caption');
-      c.font = "11px 'Source Sans 3', Arial, sans-serif";
-      const yearSpan = `${TREND.years[0]}–${TREND.years[TREND.years.length - 1]}`;
-      c.fillText(`Mean bird count by transect, ${yearSpan}. Rat tracking tunnel index on the right-hand axis.`,
-                 pad, chartY + H + 18);
-      const gd = new Date(BIO_DATA.generated);
-      c.fillText('Horizons Regional Council five-minute bird counts · Updated '
-                 + `${gd.getDate()} ${MONTHS[gd.getMonth()]} ${gd.getFullYear()}`,
-                 pad, chartY + H + 33);
-      wrapped.forEach((line, i) => {
-        c.fillText(line, pad, chartY + H + 53 + i * 14);
-      });
+      // Nothing under the chart: these go into reports, where anything below the
+      // plot gets cropped off anyway. Title and legend sit above it instead.
 
       const url = cv.toDataURL('image/png');
       const file = ('5MBC ' + title).replace(/[^a-zA-Z0-9 _-]/g, '').trim().replace(/\s+/g, '_');
