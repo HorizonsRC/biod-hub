@@ -17,38 +17,58 @@ biod-hub/
 │   │   ├── PH_Pressure_by_Ecosystem.html        # Chart — loads dashboard_data.json at runtime
 │   │   ├── PH_Sites_Threshold_Status.html       # Chart — loads dashboard_data.json at runtime
 │   │   ├── PH_Sites_YoY_Threshold.html          # Chart — loads dashboard_data.json at runtime
+│   │   ├── PH_Average_Score_by_Year.html        # Chart — average pressure score by financial year
 │   │   ├── PH_Site_Pressure_Summary.html        # Per-site pressure card (?site= URL param)
 │   │   ├── PH_Pressure_Icons.html               # Static pressure-type image panel
+│   │   ├── PM_Legend.html                       # Shared chart legend, its own embed in the app
 │   │   └── dashboard_data.json                  # Auto-updated by PM_Dashboard_Export.py
 │   ├── kkt/
 │   │   ├── KKT-dashboard.html                   # Overview panel — loads dashboard_data.json
 │   │   ├── KKT_Project_Stats.html               # Chart — loads dashboard_data.json (?metric=, ?year=)
 │   │   ├── KKT_Projects_by_Type.html            # Chart — loads dashboard_data.json
+│   │   ├── KKT_Legend.html                      # Shared chart legend, its own embed in the app
+│   │   ├── KKT_Popup_Preview.html               # Local preview of the web map pop-up layout
+│   │   ├── KKT_Popup_Arcade.txt                 # Arcade expression behind the web map pop-up
 │   │   └── dashboard_data.json                  # Auto-updated by KKT_Dashboard_Export.py
 │   ├── targeted-rates/
-│   │   ├── Targeted-rate.html
-│   │   ├── REG.html
-│   │   └── WBP.html
+│   │   ├── Targeted-rate.html                   # Cover page — one card per project
+│   │   ├── WBP.html                             # Auto-updated by Targeted_Rates_Data_Export.py
+│   │   └── REG.html                             # Auto-updated by Targeted_Rates_Data_Export.py
 │   ├── icon-sites/
-│   │   ├── icon-sites.html
-│   │   ├── bushy-park.html
+│   │   ├── icon-sites.html                      # Cover page — cards linking to each site page
+│   │   ├── header.html                          # Title strip above the site pages
+│   │   ├── bushy-park.html                      # Static — no automated feed yet
 │   │   ├── te-apiti.html                        # Auto-updated by Icon_Sites_Data_Export.py
 │   │   ├── kia-wharite.html                     # Auto-updated by Icon_Sites_Data_Export.py (PCO RTCI from local GDB)
 │   │   ├── manawatu-estuary.html                # Auto-updated by Icon_Sites_Data_Export.py
 │   │   ├── pukaha.html                          # Auto-updated by Icon_Sites_Data_Export.py
-│   │   └── ruahine-kiwi.html                   # Auto-updated by Icon_Sites_Data_Export.py (Trap.NZ + local GDB)
+│   │   └── ruahine-kiwi.html                    # Auto-updated by Icon_Sites_Data_Export.py (Trap.NZ + local GDB)
 │   └── totara-reserve/
 │       ├── totara-reserve.html                  # Cover page — cards linking to each programme page
-│       ├── predator-control.html                # Auto-updated by Totara_Reserve_Data_Export.py
-│       └── river-management.html                # Auto-updated by Totara_Reserve_Data_Export.py
+│       ├── pest-animal-header.html              # Pest Animal title strip + 5 tiles — auto-updated
+│       ├── predator-control.html                # Pest Animal main page — auto-updated
+│       ├── pest-plant-header.html               # Pest Plant title strip + 5 tiles — auto-updated
+│       ├── pest-plant-control.html              # Pest Plant charts panel — auto-updated
+│       ├── pest-plant-legend.html               # Pest Plant map legend — auto-updated
+│       ├── biodiversity.html                    # Species records, bird counts and bats — auto-updated
+│       ├── campground.html                      # Campground occupancy from Newbook — auto-updated
+│       ├── river-management-header.html         # River title strip + LAWA link (static)
+│       ├── river-management.html                # River levels and swim quality (not embedded in the app)
+│       └── fit.js                               # Scales a page as one piece to fit its iframe
+├── Run_All_Updates.py                           # Master runner — runs every script below in order
+├── Run_All_Updates.bat                          # Wrapper for the Windows scheduled task
 ├── KKT_Stats_Update.py                          # Loads the KKT stats spreadsheet into AGOL
+├── KKT_Workbook_Export.py                       # Builds the team's KKT data entry workbook
+├── KKT_Workbook_Load.py                         # Diffs the edited workbook back into AGOL
 ├── KKT_Dashboard_Export.py                      # Builds html/kkt/dashboard_data.json
 ├── Pressure_Management_Data_Join.py             # Pressure Management data pipeline
 ├── PM_Dashboard_Export.py                       # Builds dashboard_data.json and pushes to GitHub
 ├── Icon_Sites_Data_Export.py                    # Queries AGOL, updates icon site HTML dashboards
-├── Totara_Reserve_Data_Export.py                # Queries AGOL/LAWA/Hilltop, updates Tōtara Reserve HTML
+├── Icon_Sites_Report_Check.py                   # Checks page figures against the annual reports
+├── Targeted_Rates_Data_Export.py                # Queries AGOL, updates the WBP and REG pages
+├── Totara_Reserve_Data_Export.py                # Updates the Tōtara Reserve pages (see below)
 ├── Hub_Stats_Export.py                          # Builds html/hub_stats.json (landing page figures)
-├── config.py                                    # Local paths — gitignored, not committed
+├── config.py                                    # Local paths and item IDs — gitignored, not committed
 ├── config.example.py                            # Template for config.py
 └── requirements.txt
 ```
@@ -57,13 +77,58 @@ HTML files are served via GitHub Pages at `https://HorizonsRC.github.io/biod-hub
 
 ## Programmes
 
-| Programme | Dashboard files |
-|---|---|
-| Priority Habitats Pressure Management | `html/pressure-management/` |
-| KKT Fund | `html/kkt/` |
-| Targeted Rates | `html/targeted-rates/` |
-| Icon Sites | `html/icon-sites/` |
-| Tōtara Reserve | `html/totara-reserve/` *(in progress — not yet embedded in the app)* |
+| Programme | Dashboard files | Updated by |
+|---|---|---|
+| Priority Habitats Pressure Management | `html/pressure-management/` | `Pressure_Management_Data_Join.py` → `PM_Dashboard_Export.py` |
+| KKT Fund | `html/kkt/` | `KKT_Dashboard_Export.py` |
+| Targeted Rates | `html/targeted-rates/` | `Targeted_Rates_Data_Export.py` |
+| Icon Sites | `html/icon-sites/` | `Icon_Sites_Data_Export.py` |
+| Tōtara Reserve | `html/totara-reserve/` | `Totara_Reserve_Data_Export.py` |
+
+All five are built and embedded in their Experience Builder apps.
+
+## Running every update in one go
+
+`Run_All_Updates.py` runs each script below in order, one per subprocess so a failure
+does not stop the rest, and commits and pushes the pages for the scripts that do not
+push for themselves. Every script's output goes to its own file under
+`logs/runner/<timestamp>/`, and the runner exits non-zero if any step failed, so a
+Windows scheduled task records the run as failed.
+
+```
+python Run_All_Updates.py                 # everything enabled in STEPS
+python Run_All_Updates.py --dry-run       # list the steps, run nothing
+python Run_All_Updates.py --only hub      # one step by name
+```
+
+`Run_All_Updates.bat` is the wrapper the scheduled task calls: it names the ArcGIS Pro
+conda `python.exe` explicitly (Task Scheduler cannot pick the environment on its own),
+sets `PYTHONIOENCODING=utf-8` and passes any arguments straight through.
+
+| Step | Script | Notes |
+|---|---|---|
+| `pm-join` | `Pressure_Management_Data_Join.py` | Only changes anything after a new SharePoint CSV export; also pushes to AGOL |
+| `pm-export` | `PM_Dashboard_Export.py` | Skipped if `pm-join` failed; pushes for itself |
+| `icon-sites` | `Icon_Sites_Data_Export.py` | Pushes for itself |
+| `kkt` | `KKT_Dashboard_Export.py` | **Disabled** in a normal run — the KKT data changes once a year. `--only kkt` still runs it |
+| `hub` | `Hub_Stats_Export.py` | Pushes for itself |
+| `targeted-rates` | `Targeted_Rates_Data_Export.py` | Runner pushes `WBP.html` and `REG.html` |
+| `totara-pco` | `Totara_Reserve_Data_Export.py --only pco` | Runner pushes the two pest animal pages |
+| `totara-plants` | `… --only plants` | Runner pushes the three pest plant pages |
+| `totara-bio` | `… --only bio` | Runner pushes `biodiversity.html` |
+| `totara-camp` | `… --only camp` | Runner pushes `campground.html` |
+
+The Tōtara `--only river` section is left out: `river-management.html` is not embedded in
+the app.
+
+The runner pulls with `--rebase --autostash` before anything else, because pages are
+sometimes edited directly on github.com and every push would otherwise be rejected.
+
+### Logging
+
+`logs/runner/<timestamp>/runner.log` holds the outcome of each step, with one log file
+per step beside it. `logs/runner/wrapper.log` records each scheduled-task invocation
+and its exit code (`0` fine, `1` a step failed, `2` the Pro python was not found).
 
 ## Hub landing page stats
 
@@ -338,4 +403,186 @@ Each site is classified as **Priority Habitat**, **Icon Site**, or **Regional Pa
 ### Logging
 
 Each script run writes a timestamped log file to `logs/pressure-management/`. Output is written to both the log file and the console. The `logs/` folder is gitignored.
+
+---
+
+## Targeted Rates scripts
+
+`Targeted_Rates_Data_Export.py` reads the Biodiversity Targeted Rates contractor data
+view on AGOL (a filtered view of the main contractor layer, layer 1 waypoints and layer
+2 tracks) and rewrites the data block in each project page:
+
+| Page | Project | Data block |
+|---|---|---|
+| `html/targeted-rates/WBP.html` | Waitārere Beach Community Project | `/* WBP_DATA_START */ … /* WBP_DATA_END */` |
+| `html/targeted-rates/REG.html` | Rangitīkei Environment Group | `/* REG_DATA_START */ … /* REG_DATA_END */` |
+
+`Targeted-rate.html` is the static cover page; its reporting period is typed in by hand.
+
+```
+python Targeted_Rates_Data_Export.py        # about 20 seconds
+```
+
+The script writes the two HTML files only — it does not commit or push.
+`Run_All_Updates.py --only targeted-rates` runs it and pushes both pages.
+
+### What each page counts
+
+- **WBP** charts plants (every waypoint is one plant), grouped into Tree Lupin, Sydney
+  Golden Wattle and Other. The control outcome is read out of the free-text
+  `Control_notes` field, testing for "Partially controlled" and "Not controlled" before
+  "Controlled" so the longer phrases are not swallowed by the shorter one. Life stage
+  folds the seedling and juvenile classes together.
+- **REG** charts recorded points rather than plants, old man's beard only, by reserve and
+  age class. `SiteName` spellings that refer to the same reserve are merged through
+  `RESERVE_ALIASES`; `SiteID` cannot be used for grouping because one ID covers three
+  reserves. Species names are compared with the curly apostrophe straightened, because
+  both `'` and `’` appear in the data.
+
+### REG 2024-25 comes from the annual report
+
+REG's 2024-25 spatial data is too patchy to chart (one reserve, no age classes), so that
+season is taken from the group's own annual report instead. The figures sit in
+`REG_REPORT` in `REG.html`, **outside** the marker block so the script never touches
+them, and `REPORT_SEASONS` makes the script drop spatial points for that year. The season
+stays its own entry in the dropdown and is never merged with a spatial season; the page
+notes that the counts are estimated and not comparable.
+
+### Guards
+
+- A project with no points returned from AGOL is treated as suspect, not as zero: the
+  page is left as it was and a warning is logged.
+- A `FinYr` value that is not a real financial year (a `24-26` style typo) is skipped
+  with a warning.
+- A missing marker comment raises rather than warning, so a renamed block cannot
+  silently stop updating.
+- The data blocks carry no generated timestamp, so a run with unchanged data changes
+  nothing and the runner makes no commit.
+
+### Setup
+
+Add to `config.py`:
+- `TARGETED_RATES_CONTRACTOR_URL` — FeatureServer URL for the Targeted Rates contractor
+  data view (needs a signed-in session; the REST URL returns "Token Required" otherwise)
+
+### Logging
+
+Log files are written to `logs/targeted-rates/` (gitignored).
+
+---
+
+## Tōtara Reserve script
+
+`Totara_Reserve_Data_Export.py` feeds the Tōtara Reserve Regional Park app. Unlike KKT
+and Pressure Management, **the data is injected into the HTML rather than fetched at
+runtime** — the same pattern as the icon sites — so nothing on a page changes until the
+script runs. It does not commit or push; `Run_All_Updates.py` does that.
+
+The script is divided into five sections, each run on its own with `--only`, because they
+share nothing and the slow ones should not drag the others along:
+
+| `--only` | Pages written | Sources | Needs ArcGIS |
+|---|---|---|---|
+| `pco` | `pest-animal-header.html`, `predator-control.html` | Animal Pest Control layer (traps + inspections), possum bait station layer, tracking tunnel spreadsheets, pest animal baiting workbook | Yes |
+| `plants` | `pest-plant-header.html`, `pest-plant-control.html`, `pest-plant-legend.html` | Tōtara Reserve contractor data layer and web map | Yes |
+| `bio` | `biodiversity.html` | eBird hotspots, iNaturalist, bat detector exports, five-minute bird counts, tracking tunnel spreadsheets | No |
+| `camp` | `campground.html` | Newbook booking system REST API | No |
+| `river` | `river-management.html` | LAWA swim quality, Horizons Hilltop river level | No |
+
+```
+python Totara_Reserve_Data_Export.py --only pco      # about 3 minutes
+python Totara_Reserve_Data_Export.py --only bio      # about 2 minutes
+```
+
+Set `PYTHONIOENCODING=utf-8` when running by hand: the log lines contain macrons and the
+console encoding otherwise chokes.
+
+Run one section at a time. `--only river` writes `river-management.html`, which is not
+embedded in the app, so it is left out of the scheduled runs.
+
+### Pages
+
+| Page | What it is |
+|---|---|
+| `totara-reserve.html` | Cover page, embedded on the app's main page. Cards link to each app page. Scales its own root font size to fit the iframe |
+| `pest-animal-header.html` / `predator-control.html` | Two embeds sharing one `PCO_DATA` block: a title strip with five tiles, and the full-width page beneath it (trapping, bait stations, catches by financial year, deer card, rodent tracking index, possum RTCI) |
+| `pest-plant-header.html` / `pest-plant-control.html` / `pest-plant-legend.html` | Three embeds sharing one `PEST_PLANT_DATA` block: title strip, charts panel beside the map, and a legend floated over the map |
+| `biodiversity.html` | One full-page embed: species recorded in and around the reserve, the five-minute bird count series with per-species trend charts, and bat monitoring |
+| `campground.html` | Guest nights, bookings and occupancy by season, month and night |
+| `river-management-header.html` | Title strip with a link out to LAWA. LAWA refuses to be iframed, so it is a button rather than an embed |
+
+`fit.js` lays each page out at its Experience Builder design size (`data-base-w` and
+`data-base-h` on `<body>`) and scales it as one piece to fit the iframe. The measured
+slots are 1111 × 122 for the header strips, 1111 × 564 for the pest animal page and
+563 × 564 for the pest plant panel.
+
+### How features are selected
+
+Traps and possum bait stations are chosen by a live spatial intersect against the Tōtara
+Reserve polygon (from the HRC Icon Sites layer) every run, not by a name field. The
+intersect is sent as a POST: putting a ~1,400-vertex polygon in a GET query string makes
+AGOL answer with 502s. Traps use a 200 m buffer because the trap lines run along and just
+outside the reserve edge; possum bait stations use none.
+
+### Tracking tunnel index
+
+Two spreadsheets feed the rodent tracking index. The raw per-tunnel records are
+authoritative from their first date (May 2022), with the index calculated per survey as
+the mean across lines of the share of tunnels tracked. The older summary sheet supplies
+everything before that. The chart draws from 2020 on, while the full history stays in the
+data.
+
+### Species trend charts
+
+The Species trend tab on the bird card reproduces the Biodiversity team's own charts:
+their grouping (a plain mean over the rows present, no per-station summing and no zero
+filling) and their `sd / sqrt(26)` standard error, so the figures on the dashboard match
+the figures in their reports. Each chart carries the fitted line and its 95% band, the
+rat index on a second axis, and named arrows for baiting operations and weather events.
+Clicking a species takes the full width of the row. Each chart exports a 1000 × 460 PNG
+of the plot alone, for cropping into reports.
+
+Bird count records are read from the master workbook plus any extra workbooks listed in
+`TOTARA_5MBC_EXTRA`, skipping a year the master already holds — so once the team merges a
+season into the master, the extra workbook stops contributing on its own.
+
+### Hand-maintained content
+
+Figures come from data; sentences and a few things with no feed are entered by hand.
+
+- The deer control card, updated each season from the ICC and contractor reports.
+- `TOTARA_EXTRA_EVENTS` in the script, for events the team's baiting workbook does not
+  record (it holds operations only). Delete an entry once it appears in their sheet.
+- `EVENTS` in `campground.html`, for closures and weather events on the daily chart, and
+  `CAMP_CLOSURES` and `CAMP_REMOVED_SITES` in the script — Newbook drops a removed site
+  from `sites_list` with no end date, so removals have to be recorded to keep the
+  occupancy denominator right.
+
+### Guards
+
+- No boundary returned, or zero features, is a warning and a skipped section, not a zero.
+  The page keeps its last good data.
+- A bird or pest plant species name the script does not recognise is logged as a warning
+  and left out rather than guessed at.
+- If the species list or the plant list comes back empty, or any fetch throws, the page is
+  left exactly as it was.
+
+### Setup
+
+Add to `config.py` (see `config.example.py` for the full list with comments):
+- `TOTARA_TTI_XLSX`, `TOTARA_TTI_RAW_XLSX` — tracking tunnel summary and raw records
+- `TOTARA_5MBC_XLSX`, `TOTARA_5MBC_SHEET`, `TOTARA_5MBC_EXTRA` — five-minute bird counts
+- `TOTARA_BAT_CSV_GLOB` — bat detector exports, one file per survey
+- `TOTARA_PEST_OPS_XLSX`, `TOTARA_PEST_OPS_SHEET` — baiting operations and possum RTCI
+- `EBIRD_API_KEY`, `TRAP_SERVICE_URL`, `HRC_ICON_SITES_URL` — shared with the icon sites
+
+Every local path and item ID lives in `config.py`, which is not committed. Newbook
+credentials are read from a local file that is not in the repo and are never printed or
+logged. Only counts are kept from a booking — dates, site category and age group. Guest
+details and money are dropped on arrival and never stored.
+
+### Logging
+
+Log files are written to `logs/totara-reserve/` (gitignored). After a run, check for
+`WARNING` and `ERROR` lines before pushing.
 
