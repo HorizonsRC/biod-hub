@@ -3997,8 +3997,7 @@ const BIO_DATA = {
           : (isStatus
             ? 'Average count per species at each transect, native and introduced, with standard errors.'
             : 'Mean birds per five-minute count at each transect, with standard errors and a fitted trend since ' + TREND.years[0] + '.')}
-          Dashed line is the rat tracking tunnel index against the right-hand axis;
-          dotted line marks 20%.</div>`;
+          Dotted line marks a 20% rat index.</div>`;
     }
 
     // Drawn at the host's own pixel size and redrawn by render(); a host with no
@@ -4012,10 +4011,10 @@ const BIO_DATA = {
         ? TREND.groups.map(g => ({ sp: g, label: g.mi, col: TR_STATUS[g.mi] }))
         : [{ sp: trFind(trendSel), label: null, col: null }];
 
-      const ml = big ? 58 : 24, mr = big ? 64 : 26;
-      // the foot carries the year labels and, below them, a lane of baiting markers
-      const mt = big ? 12 : 8, mb = big ? 42 : 26;
-      const fs = big ? 11 : 8.5;
+      // both sides carry an axis title now, so the note does not have to name them
+      const ml = big ? 58 : 46, mr = big ? 64 : 50;
+      const mt = big ? 12 : 10, mb = big ? 34 : 24;
+      const fs = big ? 11 : 9;
       const cw = W - ml - mr, ch = H - mt - mb;
       const yrs = TREND.years, lastYear = yrs[yrs.length - 1];
       const x0 = yrs[0] - 0.45;
@@ -4051,44 +4050,54 @@ const BIO_DATA = {
       // No text against each one: fourteen markers share only five toxin names, so
       // labelling every occurrence just stacks the same words on top of each other.
       // The toxin is in the legend, on hover, and in the key under the PNG export.
-      const laneTop = mt + ch + (big ? 26 : 16);
-      const laneH = big ? 12 : 8;
+      // the pointer target for the year tooltip goes down first, so the markers
+      // drawn after it can take the pointer for themselves
+      if (!big) {
+        s += `<rect class="tr-hit" x="${ml}" y="${mt}" width="${cw}" height="${ch}" fill="transparent"/>`;
+      }
+
+      // Arrows standing on the axis, as the team's own charts draw them: green for
+      // a baiting operation, grey and labelled for a cyclone or flood.
+      const shaft = big ? 17 : 13, headH = big ? 6 : 5, headW = big ? 3.4 : 2.8;
+      const foot = mt + ch;
       (TREND.events || []).forEach(ev => {
         const xf = trYearFrac(ev.date);
         if (xf < x0 || xf > x1) return;
         const X = xOf(xf);
-        if (ev.kind === 'event') {
-          // Cyclones and floods get a rule through the whole plot with a labelled
-          // halo, the same treatment the campground chart gives its closures —
-          // they are the thing you need to spot, and a tick at the foot is lost.
-          const flip = X > ml + cw * 0.82;
-          s += `<line x1="${X.toFixed(1)}" y1="${mt}" x2="${X.toFixed(1)}"
-                  y2="${(mt + ch).toFixed(1)}" stroke="var(--navy)"
-                  stroke-width="1.25" opacity=".55"/>
-                <text x="${(X + (flip ? -5 : 5)).toFixed(1)}" y="${mt + (big ? 12 : 10)}"
-                  text-anchor="${flip ? 'end' : 'start'}" font-size="${big ? 11 : 9}"
-                  font-weight="600" fill="var(--navy)" stroke="var(--surface)"
+        const isEvent = ev.kind === 'event';
+        const col = isEvent ? 'var(--muted)' : TR_OPERATION;
+        s += `<line x1="${X.toFixed(1)}" y1="${(foot - shaft).toFixed(1)}"
+                x2="${X.toFixed(1)}" y2="${(foot - headH).toFixed(1)}"
+                stroke="${col}" stroke-width="${big ? 2 : 1.6}"/>
+              <path d="M${(X - headW).toFixed(1)},${(foot - headH).toFixed(1)}
+                L${(X + headW).toFixed(1)},${(foot - headH).toFixed(1)}
+                L${X.toFixed(1)},${foot.toFixed(1)}Z" fill="${col}"/>`;
+        if (isEvent) {
+          const flip = X > ml + cw * 0.9;
+          s += `<text x="${X.toFixed(1)}" y="${(foot - shaft - 4).toFixed(1)}"
+                  text-anchor="${flip ? 'end' : 'middle'}" font-size="${big ? 10 : 9}"
+                  font-weight="600" fill="var(--muted)" stroke="var(--surface)"
                   stroke-width="3" paint-order="stroke">${esc(ev.label)}</text>`;
         }
-        const col = ev.kind === 'event' ? 'var(--navy)' : TR_OPERATION;
-        s += `<line x1="${X.toFixed(1)}" y1="${laneTop.toFixed(1)}" x2="${X.toFixed(1)}"
-                y2="${(laneTop + laneH).toFixed(1)}" stroke="${col}"
-                stroke-width="${big ? 2.6 : 2}"/>`;
-        // a wider invisible target, or a thin rule is near impossible to hover
-        s += `<rect class="tr-ev" x="${(X - 5).toFixed(1)}" y="${(laneTop - 2).toFixed(1)}"
-                width="10" height="${laneH + 4}" fill="transparent"
+        // a wider invisible target, or a thin arrow is near impossible to hover
+        s += `<rect class="tr-ev" x="${(X - 5).toFixed(1)}" y="${(foot - shaft - 2).toFixed(1)}"
+                width="10" height="${shaft + 4}" fill="transparent"
                 data-label="${esc(ev.label)}" data-when="${esc(monthLabel(ev.date))}"
                 data-kind="${ev.kind}"/>`;
       });
 
-      if (big) {
-        s += `<rect x="${ml}" y="${mt}" width="${cw}" height="${ch}" fill="none"
-                stroke="var(--caption)" stroke-width="1"/>
-              <text transform="translate(${ml - 40},${mt + ch / 2}) rotate(-90)"
-                text-anchor="middle" font-size="12" fill="var(--muted)">Mean bird count</text>
-              <text transform="translate(${ml + cw + 48},${mt + ch / 2}) rotate(90)"
-                text-anchor="middle" font-size="12" fill="var(--muted)">Rat tracking tunnel index (%)</text>`;
-      }
+      // A framed plot on the export, left/right/bottom rules on the card — enough
+      // structure to tell the two axes apart without boxing in a small chart.
+      s += big
+        ? `<rect x="${ml}" y="${mt}" width="${cw}" height="${ch}" fill="none"
+             stroke="var(--caption)" stroke-width="1"/>`
+        : `<line x1="${ml}" y1="${mt}" x2="${ml}" y2="${mt + ch}" stroke="var(--caption)" stroke-width="1"/>
+           <line x1="${ml + cw}" y1="${mt}" x2="${ml + cw}" y2="${mt + ch}" stroke="var(--caption)" stroke-width="1"/>
+           <line x1="${ml}" y1="${mt + ch}" x2="${ml + cw}" y2="${mt + ch}" stroke="var(--caption)" stroke-width="1"/>`;
+      s += `<text transform="translate(${ml - (big ? 40 : 33)},${mt + ch / 2}) rotate(-90)"
+              text-anchor="middle" font-size="${big ? 12 : 10}" fill="var(--muted)">Mean bird count</text>
+            <text transform="translate(${ml + cw + (big ? 48 : 38)},${mt + ch / 2}) rotate(90)"
+              text-anchor="middle" font-size="${big ? 12 : 10}" fill="var(--muted)">Rat tracking tunnel index (%)</text>`;
 
       const pts = (TREND.tti.dates || []).map((d, i) => [trYearFrac(d), TREND.tti.rat[i]])
                                          .filter(p => p[0] >= x0 && p[0] <= x1);
@@ -4134,8 +4143,7 @@ const BIO_DATA = {
       const { s, geom } = trendChartMarkup(W, H, false);
       const { ml, mt, cw, ch, x0, x1, isStatus, SER } = geom;
       const yrs = TREND.years;
-      host.innerHTML = `<svg viewBox="0 0 ${W} ${H}">${s}
-        <rect class="tr-hit" x="${ml}" y="${mt}" width="${cw}" height="${ch}" fill="transparent"/></svg>`;
+      host.innerHTML = `<svg viewBox="0 0 ${W} ${H}">${s}</svg>`;
 
       // the marker lane sits outside .tr-hit, so each marker can take the pointer
       host.querySelectorAll('.tr-ev').forEach(node => {
