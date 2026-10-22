@@ -4017,7 +4017,7 @@ const BIO_DATA = {
       // both sides carry an axis title now, so the note does not have to name them.
       // the foot stacks year labels, then the arrow lane, then the event names.
       const ml = big ? 58 : 46, mr = big ? 64 : 50;
-      const mt = big ? 12 : 10, mb = big ? 58 : 42;
+      const mt = big ? 12 : 10, mb = big ? 70 : 53;
       const fs = big ? 11 : 9;
       const cw = W - ml - mr, ch = H - mt - mb;
       const yrs = TREND.years, lastYear = yrs[yrs.length - 1];
@@ -4067,19 +4067,20 @@ const BIO_DATA = {
       const headH = big ? 6 : 5, headW = big ? 3.4 : 2.8, shaft = big ? 14 : 11;
       const foot = mt + ch;
       const laneTop = foot + (big ? 28 : 18);
-      // Every operation gets an arrow, but only the first of a run of the same
-      // toxin is named, and by its short name — "Pestoff", not "Pestoff
-      // Brodifacoum" — the way the team's own charts label them. Seven Pestoff
-      // operations in a row would otherwise print the same word seven times on
-      // top of itself. The full name stays on hover and in the export key.
-      let runLabel = null;
+      // Every arrow is named, by the short name the team's own charts use —
+      // "Pestoff", not "Pestoff Brodifacoum". Five of the fourteen gaps are too
+      // tight for two names side by side, so a label that would run into its
+      // neighbour drops to a second row; nothing is left unlabelled, since a bare
+      // arrow reads as a mystery. Full names stay on hover and in the export key.
+      const labelW = t => t.length * (big ? 5.6 : 5);
+      const rowEnd = [-Infinity, -Infinity];
       const names = (TREND.events || []).map(ev => {
-        // a cyclone or flood is always named, and does not break a toxin's run
-        if (ev.kind === 'event') return ev.label;
-        const short = ev.label.split(' ')[0];
-        const first = short !== runLabel;
-        runLabel = short;
-        return first ? short : null;
+        const text = ev.kind === 'event' ? ev.label : ev.label.split(' ')[0];
+        const half = labelW(text) / 2;
+        const X = xOf(trYearFrac(ev.date));
+        const row = X - half < rowEnd[0] + 4 ? 1 : 0;
+        rowEnd[row] = X + half;
+        return { text, row };
       });
       (TREND.events || []).forEach((ev, n) => {
         const xf = trYearFrac(ev.date);
@@ -4093,12 +4094,14 @@ const BIO_DATA = {
               <line x1="${X.toFixed(1)}" y1="${(laneTop + headH).toFixed(1)}"
                 x2="${X.toFixed(1)}" y2="${(laneTop + shaft).toFixed(1)}"
                 stroke="${col}" stroke-width="${big ? 2 : 1.6}"/>`;
-        if (names[n]) {
+        const lab = names[n];
+        if (lab) {
           const flip = X > ml + cw * 0.93;
-          s += `<text x="${X.toFixed(1)}" y="${(laneTop + shaft + (big ? 12 : 10)).toFixed(1)}"
+          const dy = (big ? 12 : 10) + lab.row * (big ? 12 : 11);
+          s += `<text x="${X.toFixed(1)}" y="${(laneTop + shaft + dy).toFixed(1)}"
                   text-anchor="${flip ? 'end' : 'middle'}" font-size="${big ? 10 : 9}"
                   font-weight="${isEvent ? 600 : 500}"
-                  fill="${isEvent ? 'var(--muted)' : TR_OPERATION}">${esc(names[n])}</text>`;
+                  fill="${isEvent ? 'var(--muted)' : TR_OPERATION}">${esc(lab.text)}</text>`;
         }
         // a wider invisible target, or a thin arrow is near impossible to hover
         s += `<rect class="tr-ev" x="${(X - 5).toFixed(1)}" y="${(laneTop - 2).toFixed(1)}"
@@ -4239,8 +4242,9 @@ const BIO_DATA = {
       if (evs.some(e => e.kind !== 'event')) legend.push(['Baiting', TR_OPERATION, 'arrow']);
       if (evs.some(e => e.kind === 'event')) legend.push(['Cyclone or flood', cssVar('--muted'), 'arrow']);
 
-      // drawn at its own size, not the card's: room for a frame and axis titles
-      const W = 760, H = 430;
+      // drawn at its own size, not the card's: room for a frame, axis titles and
+      // the operation names, which need at least the width the card gives them
+      const W = 1000, H = 460;
       const { s } = trendChartMarkup(W, H, true);
       const src = resolveVars(
         `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}"
