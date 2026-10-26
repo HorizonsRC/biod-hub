@@ -260,7 +260,13 @@
     <div class="stat-strip">
       <div class="stat-box">
         <div class="stat-label">Reserve Area</div>
-        <div class="stat-value">340 ha</div>
+        <!-- 438 ha measured from the HRC Icon Sites polygon (SiteName = 'Totara
+             Reserve', OBJECTID 9, NZTM 2000 / EPSG:2193): 438.1 ha planar,
+             437.8 ha geodesic, 5 rings. This is the same polygon the exporter
+             intersects to pick up traps, bait stations and pest plant work, so
+             the stat and the data on the dashboard pages cover the same area.
+             Replaces an unsourced 340 ha that came in with the original build. -->
+        <div class="stat-value">438 ha</div>
       </div>
       <div class="stat-box">
         <div class="stat-label">Location</div>
