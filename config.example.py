@@ -109,6 +109,12 @@ TOTARA_5MBC_EXTRA = [
     # r"C:\path\to\your\later season bird counts.xlsx",
 ]
 
+# Comparison (control) site counts, outside the reserve.
+# Same columns plus a Site column naming the site. May be empty.
+TOTARA_5MBC_CONTROL = [
+    # r"C:\path\to\your\comparison site bird counts.xlsx",
+]
+
 # Bat detector exports, one file per survey. The newest survey is the one shown.
 TOTARA_BAT_CSV_GLOB = r"C:\path\to\your\bat data\*.csv"
 

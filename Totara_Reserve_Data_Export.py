@@ -185,6 +185,10 @@ FIVE_MBC_SHEET  = getattr(config, "TOTARA_5MBC_SHEET", 0) if config else 0
 # read, and a year the master already has is skipped, so once a season is merged
 # into the master the extra file quietly stops contributing.
 FIVE_MBC_EXTRA_XLSX = (getattr(config, "TOTARA_5MBC_EXTRA", None) if config else None) or []
+# Comparison (control) sites counted the same way outside the reserve. Kept apart from the reserve figures entirely: shown beside
+# them, never averaged into them or into the reserve's fitted trend. The site name
+# comes from the workbook's Site column.
+FIVE_MBC_CONTROL_XLSX = (getattr(config, "TOTARA_5MBC_CONTROL", None) if config else None) or []
 # Baiting operations and events marked along the foot of the trend charts.
 PEST_OPS_XLSX  = getattr(config, "TOTARA_PEST_OPS_XLSX", None) if config else None
 PEST_OPS_SHEET = getattr(config, "TOTARA_PEST_OPS_SHEET", 0) if config else 0
@@ -267,6 +271,7 @@ FIVE_MBC_ALIASES = {
     "australian magpie": "magpie",
     "common pheasant": "pheasant",
     "sulphur-crested cockatoo": "cockatoo",
+    "morepork/ruru": "morepork",
 }
 # Less common birds kept in the page's top list when space runs short (rows lower
 # down are dropped first). Only shown if at least one was counted that spring.
@@ -1828,14 +1833,7 @@ def extract_5mbc_data(tti: dict | None = None) -> dict | None:
     # Every count, before any rows are dropped, so a count with nothing
     # identifiable in it still counts towards the means
     counts_all = df[["Year", "station", "Date"]].drop_duplicates()
-    raw = df["Species"].astype(str).str.strip().str.lower()
-    df["key"] = raw.map(lambda n: FIVE_MBC_ALIASES.get(n, n))
-    unknown = sorted(set(df["key"]) - set(FIVE_MBC_BIRDS) - FIVE_MBC_UNIDENTIFIED)
-    if unknown:
-        log.warning(f"  5MBC names not in FIVE_MBC_BIRDS, left out: {unknown}")
-    df = df[df["key"].isin(FIVE_MBC_BIRDS)].copy()
-    df["status"] = df["key"].map(lambda k: FIVE_MBC_BIRDS[k][2])
-    df["Total"] = pd.to_numeric(df["Total"], errors="coerce").fillna(0)
+    df = _5mbc_keys(df)
 
     years, series, prev_stations = [], 0, None
     for year, cy in counts_all.groupby("Year"):
@@ -1843,22 +1841,8 @@ def extract_5mbc_data(tti: dict | None = None) -> dict | None:
         if prev_stations is not None and len(stations & prev_stations) < len(stations) / 2:
             series += 1
         prev_stations = stations
-        n = len(cy)
-        dy = df[df["Year"] == year]
-        birds = dy.groupby("status")["Total"].sum()
-        seen = dy[(dy["Total"] > 0) & (dy["status"] == "native")]
-        native_sp = seen.groupby(["station", "Date"])["key"].nunique().sum() / n
-        years.append({
-            "year": int(year),
-            "series": series,
-            "counts": n,
-            "stations": len(stations),
-            "from": cy["Date"].min().strftime("%Y-%m-%d"),
-            "to": cy["Date"].max().strftime("%Y-%m-%d"),
-            "native": round(float(birds.get("native", 0)) / n, 1),
-            "introduced": round(float(birds.get("introduced", 0)) / n, 1),
-            "nativeSpecies": round(float(native_sp), 1),
-        })
+        years.append({"year": int(year), "series": series,
+                      **_5mbc_year(cy, df[df["Year"] == year])})
     if not years:
         log.warning("  5MBC spreadsheet has no counts")
         return None
@@ -1878,11 +1862,99 @@ def extract_5mbc_data(tti: dict | None = None) -> dict | None:
              f"{latest}: {years[-1]['native']} native birds per count")
 
     kept = [y["year"] for y in years]
-    trend = _5mbc_trend(df, counts_raw[counts_raw["Year"].isin(kept)], kept, tti)
-    return {"years": years, "top": top, "trend": trend}
+
+    # Comparison sites: their own figures, worked the same way, for the same years
+    control, control_raw, control_years = None, _read_5mbc_control(), []
+    if control_raw is not None:
+        outside = sorted(set(control_raw["Year"]) - set(kept))
+        if outside:
+            log.info(f"  5MBC control: {outside} not counted in the reserve, left out")
+        control_raw = control_raw[control_raw["Year"].isin(kept)]
+    if control_raw is not None and len(control_raw):
+        control = _5mbc_keys(control_raw, "control ")
+        counts_ctl = control_raw[["transect", "Year", "station", "Date"]].drop_duplicates()
+        for (site, year), cy in counts_ctl.groupby(["transect", "Year"]):
+            stats = _5mbc_year(cy, control[(control["transect"] == site)
+                                           & (control["Year"] == year)])
+            control_years.append({"site": site, "year": int(year), **stats})
+            log.info(f"  5MBC control: {site} {year}, {stats['counts']} counts; "
+                     f"{stats['native']} native birds per count")
+    else:
+        control_raw = None
+
+    trend = _5mbc_trend(df, counts_raw[counts_raw["Year"].isin(kept)], kept, tti,
+                        control, control_raw)
+    return {"years": years, "top": top, "trend": trend, "control": control_years}
 
 
-def _5mbc_series(sub: pd.DataFrame, years: list[int]) -> dict:
+def _5mbc_keys(df: pd.DataFrame, label: str = "") -> pd.DataFrame:
+    """Rows mapped to a FIVE_MBC_BIRDS key and its status, Total as a number.
+    Names that are not a known bird are dropped, and named in a warning."""
+    df = df.copy()
+    raw = df["Species"].astype(str).str.strip().str.lower()
+    df["key"] = raw.map(lambda n: FIVE_MBC_ALIASES.get(n, n))
+    unknown = sorted(set(df["key"]) - set(FIVE_MBC_BIRDS) - FIVE_MBC_UNIDENTIFIED)
+    if unknown:
+        log.warning(f"  5MBC {label}names not in FIVE_MBC_BIRDS, left out: {unknown}")
+    df = df[df["key"].isin(FIVE_MBC_BIRDS)].copy()
+    df["status"] = df["key"].map(lambda k: FIVE_MBC_BIRDS[k][2])
+    df["Total"] = pd.to_numeric(df["Total"], errors="coerce").fillna(0)
+    return df
+
+
+def _5mbc_year(cy: pd.DataFrame, dy: pd.DataFrame) -> dict:
+    """One spring's figures. `cy` holds every count (station × date) that year,
+    `dy` that year's rows after _5mbc_keys(). nativeSe is the standard error of
+    native birds per count with the team's fixed divisor, the same error bar the
+    trend charts carry."""
+    n = len(cy)
+    birds = dy.groupby("status")["Total"].sum()
+    seen = dy[(dy["Total"] > 0) & (dy["status"] == "native")]
+    native_sp = seen.groupby(["station", "Date"])["key"].nunique().sum() / n
+    # a count with no native bird in it is a zero, not a missing value
+    per_count = (dy[dy["status"] == "native"].groupby(["station", "Date"])["Total"].sum()
+                 .reindex(pd.MultiIndex.from_frame(cy[["station", "Date"]]), fill_value=0))
+    sd = per_count.std(ddof=1)
+    return {
+        "counts": n,
+        "stations": cy["station"].nunique(),
+        "from": cy["Date"].min().strftime("%Y-%m-%d"),
+        "to": cy["Date"].max().strftime("%Y-%m-%d"),
+        "native": round(float(birds.get("native", 0)) / n, 1),
+        "introduced": round(float(birds.get("introduced", 0)) / n, 1),
+        "nativeSpecies": round(float(native_sp), 1),
+        "nativeSe": None if pd.isna(sd) else round(float(sd / np.sqrt(FIVE_MBC_SE_DIVISOR)), 2),
+    }
+
+
+def _read_5mbc_control() -> pd.DataFrame | None:
+    """Comparison site counts, every sheet of every workbook in config. The site
+    named in each row's Site column stands in for the transect, so the trend
+    calculation treats each site as one more series. None when there are none."""
+    parts = []
+    for f in FIVE_MBC_CONTROL_XLSX:
+        path = Path(f)
+        if not path.exists():
+            log.info(f"  5MBC control workbook not present, skipped: {path.name}")
+            continue
+        for sheet in pd.ExcelFile(path).sheet_names:
+            try:
+                part = _read_5mbc(path, sheet)
+            except KeyError:
+                log.warning(f"  5MBC control {path.name} [{sheet}]: unexpected columns, skipped")
+                continue
+            if "Site" not in part.columns:
+                log.warning(f"  5MBC control {path.name} [{sheet}]: no Site column, skipped")
+                continue
+            part = part.dropna(subset=["Site"])
+            part["transect"] = part["Site"].astype(str).str.strip()
+            if len(part):
+                parts.append(part)
+    return pd.concat(parts, ignore_index=True) if parts else None
+
+
+def _5mbc_series(sub: pd.DataFrame, years: list[int],
+                 transects: list[str] | None = None) -> dict:
     """One chart's points: the mean of the rows at each transect each year.
 
     This is the Biodiversity team's calculation, reproduced rather than revised —
@@ -1893,7 +1965,7 @@ def _5mbc_series(sub: pd.DataFrame, years: list[int]) -> dict:
     has no point rather than a zero.
     """
     by_t, se_t, n_t, points = [], [], [], []
-    for name in FIVE_MBC_TRANSECTS.values():
+    for name in transects or FIVE_MBC_TRANSECTS.values():
         means, ses, ns = [], [], []
         for y in years:
             vals = sub.loc[(sub["Year"] == y) & (sub["transect"] == name), "Total"]
@@ -1947,13 +2019,27 @@ def _5mbc_fit(points: list[tuple[int, float]]) -> dict | None:
             "band": band}
 
 
+def _5mbc_control_series(sub: pd.DataFrame, years: list[int], sites: list[str]) -> list:
+    """A comparison site's points for one chart, worked exactly as a reserve
+    transect's. Its own fitted line appears once it has three years of counts."""
+    out = []
+    for site in sites:
+        s = _5mbc_series(sub, years, [site])
+        out.append({"site": site, "mean": s["byTransect"][0], "se": s["se"][0],
+                    "rows": s["rows"][0], "fit": s["fit"]})
+    return out
+
+
 def _5mbc_trend(df: pd.DataFrame, raw: pd.DataFrame, years: list[int],
-                tti: dict | None) -> dict:
-    """Per-species and native/introduced trends, with the rat index for context."""
+                tti: dict | None, control: pd.DataFrame | None = None,
+                control_raw: pd.DataFrame | None = None) -> dict:
+    """Per-species and native/introduced trends, with the rat index for context.
+    Comparison sites, if any, ride alongside under `control` on each chart."""
     unplaced = raw[raw["transect"].isna()]["station"].unique()
     if len(unplaced):
         log.warning(f"  5MBC: stations outside the known transects, left out of the "
                     f"trends: {sorted(unplaced)[:8]}")
+    sites = sorted(control_raw["transect"].unique()) if control_raw is not None else []
 
     species = []
     for key in FIVE_MBC_TREND_SPECIES:
@@ -1961,6 +2047,8 @@ def _5mbc_trend(df: pd.DataFrame, raw: pd.DataFrame, years: list[int],
         s = _5mbc_series(df[df["key"] == key], years)
         s.update(key=key, mi=mi, name=en if en != mi else None,
                  total=float(df.loc[df["key"] == key, "Total"].sum()))
+        if sites:
+            s["control"] = _5mbc_control_series(control[control["key"] == key], years, sites)
         species.append(s)
         if not s["total"]:
             log.info(f"  5MBC trend: {mi} has no records since {years[0]}, "
@@ -1969,10 +2057,14 @@ def _5mbc_trend(df: pd.DataFrame, raw: pd.DataFrame, years: list[int],
     # the native/introduced chart groups on the sheet's own Status column, over
     # every row, not just the species named in FIVE_MBC_BIRDS
     status = raw["Status"].astype(str).str.strip().str.lower()
+    ctl_status = (control_raw["Status"].astype(str).str.strip().str.lower()
+                  if sites else None)
     groups = []
     for value, label in (("native", "Native"), ("exotic", "Introduced")):
         s = _5mbc_series(raw[status == value], years)
         s.update(key=label, mi=label, name=None)
+        if sites:
+            s["control"] = _5mbc_control_series(control_raw[ctl_status == value], years, sites)
         groups.append(s)
 
     rat = {"dates": [], "rat": []}
@@ -1987,6 +2079,7 @@ def _5mbc_trend(df: pd.DataFrame, raw: pd.DataFrame, years: list[int],
 
     return {"years": years,
             "transects": list(FIVE_MBC_TRANSECTS.values()),
+            "controlSites": sites,
             "species": species, "groups": groups, "tti": rat,
             "events": _pest_operations(years[0] - 1)}
 
