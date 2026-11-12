@@ -1028,6 +1028,9 @@ def extract_pco_data() -> dict | None:
         "trapChecksByFy": trap_checks_by_fy,
         "possumBait":  possum_bait,
         "rtci":        extract_possum_rtci(),
+        # one list for both monitoring charts; each page chart keeps the stretch
+        # it draws (rodents from 2020, possums from the year before the first reading)
+        "operations":  _pest_operations(PCO_OPS_FROM_YEAR),
     }
 
 
@@ -1037,13 +1040,18 @@ def extract_pco_data() -> dict | None:
 # percentage, and the operation is judged against staying under this.
 RTCI_TARGET = 2.0
 
+# Baiting operations on the pest animal page start from 1 July of this year. The
+# rodent tracking chart draws from 2020 (TTI_CHART_FROM in predator-control.html).
+PCO_OPS_FROM_YEAR = 2019
+
 
 def extract_possum_rtci() -> dict | None:
-    """Possum abundance monitoring, with the baiting operations around it.
+    """Possum abundance monitoring.
 
     Column C of the baiting sheet, stored as a fraction. Readings are sparse —
     monitoring happens around an operation, not on a schedule — so this is a
-    short series of dated results rather than a continuous trend.
+    short series of dated results rather than a continuous trend. The operations
+    themselves are a separate list in the page data, shared with the rodent chart.
     """
     if not PEST_OPS_XLSX:
         log.info("  Baiting workbook not set in config.py — no possum RTCI")
@@ -1066,7 +1074,6 @@ def extract_possum_rtci() -> dict | None:
         out = {
             "readings": readings,
             "target": RTCI_TARGET,
-            "operations": _pest_operations(int(df["Date"].min().year) - 1),
         }
         log.info(f"  Possum RTCI: {len(readings)} readings "
                  f"{readings[0]['date'][:7]} to {readings[-1]['date'][:7]}, "
