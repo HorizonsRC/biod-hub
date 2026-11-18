@@ -61,6 +61,24 @@
 
     .period { font-size: 0.78rem; color: var(--muted); }
 
+    /* The catch map needs AGOL sign-in, which can't happen inside an ExB embed,
+       so it opens in a new tab. Same look as the river header's link buttons. */
+    .period-row { display: flex; align-items: center; gap: 10px; }
+    .map-link {
+      display: inline-flex;
+      align-items: center;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--forest);
+      background: var(--surface);
+      border: 1px solid var(--forest);
+      border-radius: 4px;
+      padding: 2px 8px;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .map-link:hover { background: var(--forest); color: #fff; }
+
     .tiles {
       flex: 1;
       display: grid;
@@ -567,7 +585,11 @@ const PCO_DATA = {
   <div class="title-block">
     <a class="eyebrow" href="https://experience.arcgis.com/experience/0b02dc0ca9c545f7bf31fe3ea20ace1a?draft=true" target="_blank" rel="noopener">← Tōtara Reserve</a>
     <h1>Pest Animal Control</h1>
-    <span class="period" id="period"></span>
+    <div class="period-row">
+      <span class="period" id="period"></span>
+      <a class="map-link" href="https://horizonsrc.github.io/biod-hub/html/totara-reserve/trap-catches.html"
+         target="_blank" rel="noopener" title="Map of trap catches over time (opens in a new tab, ArcGIS sign-in needed)">Catch map ↗</a>
+    </div>
   </div>
 
   <div class="tiles" id="tiles"></div>
