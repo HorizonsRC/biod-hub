@@ -37,19 +37,18 @@
     main { flex: 1; display: flex; min-height: 0; }
     #map { flex: 1; min-width: 0; }
 
+    /* Trap panel on the left of the map, bait station panel on the right. */
     aside {
       position: relative;
-      width: clamp(420px, 46vw, 940px);
+      width: 340px;
+      flex: 0 0 auto;
       background: var(--surface);
-      border-left: 1px solid var(--border);
       padding: 14px 16px;
       overflow-y: auto;
     }
-    /* Two columns when the panel is wide enough, one when it isn't. */
-    .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0 32px; }
-    .cols > div > :first-child { margin-top: 0; }
-    .cols + .cols { margin-top: 16px; }
-    .panel-section + .panel-section { border-top: 1px solid var(--border); margin-top: 18px; padding-top: 16px; }
+    aside.left  { border-right: 1px solid var(--border); }
+    aside.right { border-left: 1px solid var(--border); }
+    .panel-body > h2:first-child { margin-top: 0; padding-right: 36px; }   /* room for the button */
     /* Collapse button: the panel shrinks to a strip and the map takes the space. */
     .panel-toggle {
       position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; z-index: 1;
@@ -60,8 +59,6 @@
     .panel-toggle:hover { background: var(--bg); }
     aside.collapsed { width: 46px; padding: 8px; overflow: hidden; }
     aside.collapsed .panel-toggle { top: 8px; right: 8px; }
-    /* Room for the collapse button beside the first heading */
-    .panel-section:first-child .cols:first-child > div:last-child { padding-right: 36px; }
     aside.collapsed .panel-body { display: none; }
 
     /* Layer on/off tick boxes in the legend headings */
@@ -147,7 +144,7 @@
     @media (max-width: 700px) {
       main { flex-direction: column; }
       #map { min-height: 55vh; }
-      aside, aside.collapsed { width: 100%; border-left: 0; border-top: 1px solid var(--border); }
+      aside, aside.collapsed { width: 100%; border-left: 0; border-right: 0; border-top: 1px solid var(--border); }
     }
   </style>
 </head>
@@ -158,92 +155,82 @@
   </header>
   <div id="status">Signing in…</div>
   <main>
-    <div id="map"></div>
-    <aside id="panel">
-      <button class="panel-toggle" id="panel-toggle" title="Hide panel" aria-expanded="true">&rsaquo;</button>
+    <!-- Left: trap catches -->
+    <aside class="left" id="trap-panel">
+      <button class="panel-toggle" title="Hide trap panel" data-name="trap panel" aria-expanded="true">&lsaquo;</button>
       <div class="panel-body">
+        <h2>Catches in this period</h2>
+        <div id="window-label"></div>
+        <div id="total"></div>
+        <div class="bars" id="bars"></div>
+        <p class="hint" id="hint">Click a species to show only its catches on the map.</p>
 
-        <!-- Traps: catches, busiest traps, heat map and trap legend -->
-        <section class="panel-section">
-          <div class="cols">
-            <div>
-              <h2>Catches in this period</h2>
-              <div id="window-label"></div>
-              <div id="total"></div>
-              <div class="bars" id="bars"></div>
-              <p class="hint" id="hint">Click a species to show only its catches on the map.</p>
-            </div>
-            <div>
-              <h2 class="legend-title">Busiest traps in this period</h2>
-              <div id="top-traps"></div>
-            </div>
-          </div>
-          <div class="cols">
-            <div>
-              <h2 class="legend-title"><label><input type="checkbox" id="heat-toggle" checked /> Heat map</label></h2>
-              <div class="heat-key"></div>
-              <div class="heat-labels"><span>Fewer catches</span><span>More catches</span></div>
-            </div>
-            <div>
-              <h2 class="legend-title"><label><input type="checkbox" id="trap-toggle" checked /> Traps</label></h2>
-              <div id="trap-legend"></div>
-              <label class="legend-row"><input type="checkbox" id="unchecked-toggle" /> Ring traps not checked in this period</label>
-              <div class="legend-row" id="unchecked-key" hidden>
-                <svg width="14" height="14" viewBox="0 0 14 14">
-                  <circle cx="7" cy="7" r="5.5" fill="none" stroke="rgb(255,40,40)" stroke-width="2"/>
-                </svg>
-                <span>Not checked in this period</span>
-              </div>
-              <p class="hint" id="checks-line">Loading trap checks…</p>
-            </div>
-          </div>
-          <p class="note">
-            Each catch is one trap inspection that recorded one of these species.
-            Inspections with nothing caught, and non-target catches, are not shown.
-            Click a trap to see its catches for the selected period.
-          </p>
-        </section>
+        <h2 class="legend-title">Busiest traps in this period</h2>
+        <div id="top-traps"></div>
 
-        <!-- Possum bait stations -->
-        <section class="panel-section">
-          <div class="cols">
-            <div>
-              <h2 class="legend-title"><label><input type="checkbox" id="bait-toggle" checked /> Bait stations</label></h2>
-              <div class="legend-row">
-                <label for="bait-colour">Colour by</label>
-                <select id="bait-colour">
-                  <option value="plain">one colour</option>
-                  <option value="fills">fills in this period</option>
-                  <option value="take">bait take in this period</option>
-                </select>
-              </div>
-              <div class="legend-row" id="bait-plain">
-                <svg width="14" height="14" viewBox="0 0 14 14">
-                  <circle cx="7" cy="7" r="3.5" fill="rgb(0,255,255)" stroke="rgba(0,0,0,0.6)" stroke-width="0.75"/>
-                </svg>
-                <span id="bait-label">Bait stations</span>
-              </div>
-              <div id="fill-legend" hidden></div>
-              <p class="hint">Click a bait station to see its fills. Station colours are easier to see with the heat map off.</p>
-            </div>
-            <div>
-              <h2 class="legend-title">Bait fills in this period</h2>
-              <div id="bait-total"><small>Loading…</small></div>
-              <div class="take-bar" id="take-bar"></div>
-              <div class="take-labels" id="take-labels"></div>
-              <p class="hint">Take: share of fills where some or all bait had gone.</p>
-            </div>
-          </div>
-          <p class="note">Each bait fill is one bait station inspection.</p>
-        </section>
+        <h2 class="legend-title"><label><input type="checkbox" id="heat-toggle" checked /> Heat map</label></h2>
+        <div class="heat-key"></div>
+        <div class="heat-labels"><span>Fewer catches</span><span>More catches</span></div>
 
+        <h2 class="legend-title"><label><input type="checkbox" id="trap-toggle" checked /> Traps</label></h2>
+        <div id="trap-legend"></div>
+        <label class="legend-row"><input type="checkbox" id="unchecked-toggle" /> Ring traps not checked in this period</label>
+        <div class="legend-row" id="unchecked-key" hidden>
+          <svg width="14" height="14" viewBox="0 0 14 14">
+            <circle cx="7" cy="7" r="5.5" fill="none" stroke="rgb(255,40,40)" stroke-width="2"/>
+          </svg>
+          <span>Not checked in this period</span>
+        </div>
+        <p class="hint" id="checks-line">Loading trap checks…</p>
+
+        <p class="note">
+          Each catch is one trap inspection that recorded one of these species.
+          Inspections with nothing caught, and non-target catches, are not shown.
+          Click a trap to see its catches for the selected period.
+        </p>
+      </div>
+    </aside>
+
+    <div id="map"></div>
+
+    <!-- Right: possum bait stations -->
+    <aside class="right" id="bait-panel">
+      <button class="panel-toggle" title="Hide bait station panel" data-name="bait station panel" aria-expanded="true">&rsaquo;</button>
+      <div class="panel-body">
+        <h2>Bait fills in this period</h2>
+        <div id="bait-total"><small>Loading…</small></div>
+        <div class="take-bar" id="take-bar"></div>
+        <div class="take-labels" id="take-labels"></div>
+        <p class="hint">Take: share of fills where some or all bait had gone.</p>
+
+        <h2 class="legend-title"><label><input type="checkbox" id="bait-toggle" checked /> Bait stations</label></h2>
+        <div class="legend-row">
+          <label for="bait-colour">Colour by</label>
+          <select id="bait-colour">
+            <option value="plain">one colour</option>
+            <option value="fills">fills in this period</option>
+            <option value="take">bait take in this period</option>
+          </select>
+        </div>
+        <div class="legend-row" id="bait-plain">
+          <svg width="14" height="14" viewBox="0 0 14 14">
+            <circle cx="7" cy="7" r="3.5" fill="rgb(0,255,255)" stroke="rgba(0,0,0,0.6)" stroke-width="0.75"/>
+          </svg>
+          <span id="bait-label">Bait stations</span>
+        </div>
+        <div id="fill-legend" hidden></div>
+        <p class="hint">Click a bait station to see its fills. Station colours are easier to see with the heat map off.</p>
+
+        <p class="note">Each bait fill is one bait station inspection.</p>
       </div>
     </aside>
   </main>
   <div id="slider-wrap">
     <div id="timeline-wrap">
-      <div class="tl-title" id="tl-title">Catches per month</div>
-      <svg id="timeline"></svg>
+      <div id="catch-tl">
+        <div class="tl-title" id="tl-title">Catches per month</div>
+        <svg id="timeline"></svg>
+      </div>
       <div id="bait-tl" hidden>
         <div class="tl-title" id="bait-tl-title">Bait fills per month</div>
         <svg id="bait-timeline"></svg>
@@ -349,14 +336,16 @@
     "esri/core/reactiveUtils"
   ], (OAuthInfo, esriId, Map, MapView, FeatureLayer, GraphicsLayer, Graphic, TimeSlider, reactiveUtils) => {
 
-    // Collapse or expand the side panel; the map resizes itself to fill the gap.
-    document.getElementById("panel-toggle").addEventListener("click", e => {
-      const panel = document.getElementById("panel");
+    // Collapse or expand either side panel; the map resizes itself to fill the gap.
+    // The arrow points the way the panel will move: left panel ‹ to hide, right panel ›.
+    document.querySelectorAll(".panel-toggle").forEach(btn => btn.addEventListener("click", () => {
+      const panel = btn.closest("aside");
       const collapsed = panel.classList.toggle("collapsed");
-      e.currentTarget.innerHTML = collapsed ? "&lsaquo;" : "&rsaquo;";
-      e.currentTarget.title = collapsed ? "Show panel" : "Hide panel";
-      e.currentTarget.setAttribute("aria-expanded", String(!collapsed));
-    });
+      const left = panel.classList.contains("left");
+      btn.innerHTML = collapsed !== left ? "&lsaquo;" : "&rsaquo;";
+      btn.title = `${collapsed ? "Show" : "Hide"} ${btn.dataset.name}`;
+      btn.setAttribute("aria-expanded", String(!collapsed));
+    }));
 
     const statusEl = document.getElementById("status");
     const setStatus = (msg) => { statusEl.textContent = msg; };
@@ -634,6 +623,17 @@
       });
 
       window.addEventListener("resize", () => { drawTimeline(); drawBaitTimeline(); });
+
+      // Each timeline shows only while its layer is on: catches with the heat map,
+      // bait fills with the bait stations.
+      document.getElementById("heat-toggle").addEventListener("change", e => {
+        document.getElementById("catch-tl").hidden = !e.target.checked;
+        drawTimeline();
+      });
+      document.getElementById("bait-toggle").addEventListener("change", e => {
+        document.getElementById("bait-tl").hidden = !(e.target.checked && baitReady);
+        drawBaitTimeline();
+      });
       setStatus("");
 
       // Bait stations and trap checks load after the catches, so the map is usable sooner.
@@ -766,7 +766,7 @@
           });
         }
         baitReady = true;
-        document.getElementById("bait-tl").hidden = false;
+        document.getElementById("bait-tl").hidden = !document.getElementById("bait-toggle").checked;
         refreshBait();
       }
 
