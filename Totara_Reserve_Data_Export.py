@@ -140,14 +140,20 @@ POSSUM_BAIT_LAYER_ID = 0
 POSSUM_INSP_LAYER_ID = 2
 
 # Tōtara Reserve boundary — queried from HRC Icon Sites layer at runtime. Traps and
-# possum bait stations are selected by a live intersect against this polygon.
+# possum bait stations are selected by a live intersect against this polygon
+# (plus TRAP_BUFFER_M / BAIT_BUFFER_M below).
 ICON_SITES_URL      = "https://services1.arcgis.com/VuN78wcRdq1Oj69W/arcgis/rest/services/HRC_Icon_Sites_Projects/FeatureServer"
 ICON_SITES_LAYER_ID = 0
 TOTARA_SITE_NAME    = "Totara Reserve"
 
 # Traps within this distance of the reserve boundary count as reserve traps — the
-# trap lines run along and just outside the edge. Possum bait stations use none.
+# trap lines run along and just outside the edge.
 TRAP_BUFFER_M = 200
+
+# Possum bait stations: the reserve's own stations (PCO 'Totara'), still in use,
+# within 50 m of the boundary. Same rule as the catch map app (trap-catches.html).
+BAIT_BUFFER_M = 50
+BAIT_WHERE    = "PCOName = 'Totara' AND Status NOT IN ('Error', 'Removed')"
 
 # Pest plant contractor data — Tōtara_Reserve_Contractor_Data, a separate service
 # from the icon sites' BioD contractor item. Layer 1 = waypoints (one row per weed
@@ -677,10 +683,10 @@ def _fetch_reserve_boundary(gis):
 
 
 def _fetch_in_reserve(gis, service_url: str, layer_id: int, reserve_geom,
-                      buffer_m: float = 0) -> pd.DataFrame:
+                      buffer_m: float = 0, where: str = "1=1") -> pd.DataFrame:
     """
     Query a FeatureServer layer for every feature intersecting the reserve polygon,
-    or within buffer_m metres of it.
+    or within buffer_m metres of it, optionally narrowed by an attribute filter.
 
     Sent as a POST: the polygon is ~1,400 vertices (~42 KB of JSON), too long for
     the GET URL FeatureLayer.query() builds, which AGOL rejects with 502s.
@@ -696,7 +702,7 @@ def _fetch_in_reserve(gis, service_url: str, layer_id: int, reserve_geom,
 
     params = {
         "f":              "json",
-        "where":          "1=1",
+        "where":          where,
         "geometry":       json.dumps(reserve_geom),
         "geometryType":   "esriGeometryPolygon",
         "inSR":           sr,
@@ -754,7 +760,8 @@ def extract_pco_data() -> dict | None:
       Every trap in the reserve or within TRAP_BUFFER_M of it, whoever the PCO. TrapType containing "Vespex"
       → wasp bait stations; everything else → animal traps.
 
-    Possum bait stations: PC_Possum_Control_Layer_2025 (layer 1) + fills (2).
+    Possum bait stations: PC_Possum_Control_Layer_2025 (layer 0) + fills (2).
+      PCO 'Totara' stations not in Error/Removed status, within BAIT_BUFFER_M of the reserve.
 
     Requires ArcGIS Pro Python environment (arcgis SDK) for authenticated
     AGOL access. Returns None on failure, or when either intersect comes back
@@ -931,7 +938,8 @@ def extract_pco_data() -> dict | None:
     }
     try:
         stations = _fetch_in_reserve(gis, POSSUM_SERVICE_URL, POSSUM_BAIT_LAYER_ID,
-                                     reserve_geom)
+                                     reserve_geom, buffer_m=BAIT_BUFFER_M,
+                                     where=BAIT_WHERE)
     except Exception:
         log.exception("  Possum bait station intersect query failed — PCO data skipped")
         return None
