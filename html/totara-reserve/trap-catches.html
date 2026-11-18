@@ -165,7 +165,7 @@
     { value: "DOC200", style: "triangle", color: [38, 38, 230] },
     { value: "DOC250", style: "square",   color: [38, 38, 230] },
     { value: "Timms",  style: "square",   color: [56, 230, 0] },
-    { value: "Cage",   style: "diamond",  color: [130, 130, 130] }
+    { value: "Cage",   style: "diamond",  color: [255, 255, 255] }
   ];
   const TRAP_OTHER = { value: "Other", style: "circle", color: [178, 178, 178] };
 
@@ -178,7 +178,9 @@
   };
 
   // Side-panel trap legend, drawn from TRAP_TYPES so it always matches the map.
-  (function drawTrapLegend() {
+  // Drawn once without counts, then again once the trap counts arrive.
+  drawTrapLegend();
+  function drawTrapLegend(counts) {
     const shapes = {
       triangle: '<polygon points="7,1 13,13 1,13"/>',
       square:   '<rect x="2" y="2" width="10" height="10"/>',
@@ -190,9 +192,9 @@
          <svg width="14" height="14" viewBox="0 0 14 14">
            <g fill="rgb(${t.color.join(",")})" stroke="rgba(0,0,0,0.6)" stroke-width="0.75">${shapes[t.style]}</g>
          </svg>
-         <span>${t.value}</span>
+         <span>${t.value}${counts ? ` (${counts[t.value] || 0})` : ""}</span>
        </div>`).join("");
-  })();
+  }
 
   require([
     "esri/identity/OAuthInfo",
@@ -270,7 +272,7 @@
         const res = await joinLayer.queryFeatures(query);
         res.features.forEach(f => {
           const trap = normId(f.attributes.GlobalID);
-          if (f.attributes.TrapType) trapTypes[trap] = f.attributes.TrapType;
+          if (f.attributes.TrapType) trapTypes[trap] = f.attributes.TrapType.trim();
           trapRawIds[trap] = f.attributes.GlobalID;
           rows.push({
             t: f.attributes[DATE_FIELD],
@@ -331,13 +333,34 @@
         },
         renderer: {
           type: "unique-value",
-          field: "TrapType",
+          // Trimmed: the layer's domain stores Cage as 'Cage  ' (two trailing spaces)
+          valueExpression: "Trim($feature.TrapType)",
           uniqueValueInfos: TRAP_TYPES.map(t => ({ value: t.value, label: t.value, symbol: marker(t) })),
           defaultSymbol: marker(TRAP_OTHER),
           defaultLabel: "Other"
         }
       });
       map.add(trapLayer, 0);
+
+      // Number of traps of each type, for the legend. Types not in TRAP_TYPES
+      // (and blanks) are added together as "Other", matching the map symbols.
+      trapLayer.load().then(() => {
+        const q = trapLayer.createQuery();   // carries the 'Bio Totara' filter
+        q.groupByFieldsForStatistics = ["TrapType"];
+        q.outStatistics = [{ statisticType: "count", onStatisticField: trapLayer.objectIdField,
+                             outStatisticFieldName: "n" }];
+        q.returnGeometry = false;
+        return trapLayer.queryFeatures(q);
+      }).then(res => {
+        const known = TRAP_TYPES.map(t => t.value);
+        const counts = {};
+        res.features.forEach(f => {
+          const type = (f.attributes.TrapType || "").trim();
+          const key = known.includes(type) ? type : TRAP_OTHER.value;
+          counts[key] = (counts[key] || 0) + f.attributes.n;
+        });
+        drawTrapLegend(counts);
+      }).catch(err => console.error("Trap counts failed:", err));
 
       // Species order fixed by all-time total, so bars don't jump around.
       const allTime = {};
