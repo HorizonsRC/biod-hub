@@ -38,21 +38,30 @@
     #map { flex: 1; min-width: 0; }
 
     aside {
-      width: 420px;
+      position: relative;
+      width: clamp(420px, 46vw, 940px);
       background: var(--surface);
       border-left: 1px solid var(--border);
       padding: 14px 16px;
       overflow-y: auto;
     }
+    /* Two columns when the panel is wide enough, one when it isn't. */
+    .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0 32px; }
+    .cols > div > :first-child { margin-top: 0; }
+    .cols + .cols { margin-top: 16px; }
+    .panel-section + .panel-section { border-top: 1px solid var(--border); margin-top: 18px; padding-top: 16px; }
     /* Collapse button: the panel shrinks to a strip and the map takes the space. */
     .panel-toggle {
-      float: right; width: 28px; height: 28px; margin-left: 8px;
+      position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; z-index: 1;
       border: 1px solid var(--border); border-radius: 3px;
       background: var(--surface); color: var(--muted);
       font-size: 16px; line-height: 1; cursor: pointer;
     }
     .panel-toggle:hover { background: var(--bg); }
     aside.collapsed { width: 46px; padding: 8px; overflow: hidden; }
+    aside.collapsed .panel-toggle { top: 8px; right: 8px; }
+    /* Room for the collapse button beside the first heading */
+    .panel-section:first-child .cols:first-child > div:last-child { padding-right: 36px; }
     aside.collapsed .panel-body { display: none; }
 
     /* Layer on/off tick boxes in the legend headings */
@@ -71,6 +80,16 @@
     .take-all  { background: #c3cbc8; }
     .take-labels { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--muted); margin-top: 4px; }
     .take-labels i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+    .legend-row select { font: inherit; font-size: 13px; padding: 2px 4px; border: 1px solid var(--border);
+                         border-radius: 3px; background: var(--surface); color: var(--navy); }
+
+    /* Bait station pop-up: list of fills */
+    .bait-pop table { border-collapse: collapse; margin-top: 4px; }
+    .bait-pop th, .bait-pop td { padding: 1px 12px 1px 0; text-align: left; }
+    .bait-pop th { font-weight: 600; }
+
+    /* Bait fills timeline under the catch timeline */
+    #bait-timeline { display: block; width: 100%; height: 56px; }
     aside h2 { font-size: 16px; font-weight: 600; }
     #window-label { font-size: 14px; color: var(--muted); margin-bottom: 4px; }
     #total { font-size: 28px; font-weight: 700; color: var(--forest); }
@@ -143,38 +162,81 @@
     <aside id="panel">
       <button class="panel-toggle" id="panel-toggle" title="Hide panel" aria-expanded="true">&rsaquo;</button>
       <div class="panel-body">
-      <h2>Catches in this period</h2>
-      <div id="window-label"></div>
-      <div id="total"></div>
-      <div class="bars" id="bars"></div>
-      <p class="hint" id="hint">Click a species to show only its catches on the map.</p>
-      <h2 class="legend-title"><label><input type="checkbox" id="heat-toggle" checked /> Heat map</label></h2>
-      <div class="heat-key"></div>
-      <div class="heat-labels"><span>Fewer catches</span><span>More catches</span></div>
-      <h2 class="legend-title"><label><input type="checkbox" id="trap-toggle" checked /> Traps</label></h2>
-      <div id="trap-legend"></div>
-      <h2 class="legend-title"><label><input type="checkbox" id="bait-toggle" checked /> Bait stations</label></h2>
-      <div class="legend-row" id="bait-plain">
-        <svg width="14" height="14" viewBox="0 0 14 14">
-          <circle cx="7" cy="7" r="3.5" fill="rgb(0,255,255)" stroke="rgba(0,0,0,0.6)" stroke-width="0.75"/>
-        </svg>
-        <span id="bait-label">Bait stations</span>
-      </div>
-      <div id="fill-legend" hidden></div>
-      <label class="legend-row"><input type="checkbox" id="bait-colour" /> Colour by fills in this period</label>
-      <h2 class="legend-title">Bait fills in this period</h2>
-      <div id="bait-total"><small>Loading…</small></div>
-      <div class="take-bar" id="take-bar"></div>
-      <div class="take-labels" id="take-labels"></div>
-      <p class="hint">Take: share of fills where some or all bait had gone.</p>
-      <h2 class="legend-title">Busiest traps in this period</h2>
-      <div id="top-traps"></div>
-      <p class="note">
-        Each catch is one trap inspection that recorded one of these species.
-        Inspections with nothing caught, and non-target catches, are not shown.
-        Click a trap to see its catches for the selected period.
-        Each bait fill is one bait station inspection.
-      </p>
+
+        <!-- Traps: catches, busiest traps, heat map and trap legend -->
+        <section class="panel-section">
+          <div class="cols">
+            <div>
+              <h2>Catches in this period</h2>
+              <div id="window-label"></div>
+              <div id="total"></div>
+              <div class="bars" id="bars"></div>
+              <p class="hint" id="hint">Click a species to show only its catches on the map.</p>
+            </div>
+            <div>
+              <h2 class="legend-title">Busiest traps in this period</h2>
+              <div id="top-traps"></div>
+            </div>
+          </div>
+          <div class="cols">
+            <div>
+              <h2 class="legend-title"><label><input type="checkbox" id="heat-toggle" checked /> Heat map</label></h2>
+              <div class="heat-key"></div>
+              <div class="heat-labels"><span>Fewer catches</span><span>More catches</span></div>
+            </div>
+            <div>
+              <h2 class="legend-title"><label><input type="checkbox" id="trap-toggle" checked /> Traps</label></h2>
+              <div id="trap-legend"></div>
+              <label class="legend-row"><input type="checkbox" id="unchecked-toggle" /> Ring traps not checked in this period</label>
+              <div class="legend-row" id="unchecked-key" hidden>
+                <svg width="14" height="14" viewBox="0 0 14 14">
+                  <circle cx="7" cy="7" r="5.5" fill="none" stroke="rgb(255,40,40)" stroke-width="2"/>
+                </svg>
+                <span>Not checked in this period</span>
+              </div>
+              <p class="hint" id="checks-line">Loading trap checks…</p>
+            </div>
+          </div>
+          <p class="note">
+            Each catch is one trap inspection that recorded one of these species.
+            Inspections with nothing caught, and non-target catches, are not shown.
+            Click a trap to see its catches for the selected period.
+          </p>
+        </section>
+
+        <!-- Possum bait stations -->
+        <section class="panel-section">
+          <div class="cols">
+            <div>
+              <h2 class="legend-title"><label><input type="checkbox" id="bait-toggle" checked /> Bait stations</label></h2>
+              <div class="legend-row">
+                <label for="bait-colour">Colour by</label>
+                <select id="bait-colour">
+                  <option value="plain">one colour</option>
+                  <option value="fills">fills in this period</option>
+                  <option value="take">bait take in this period</option>
+                </select>
+              </div>
+              <div class="legend-row" id="bait-plain">
+                <svg width="14" height="14" viewBox="0 0 14 14">
+                  <circle cx="7" cy="7" r="3.5" fill="rgb(0,255,255)" stroke="rgba(0,0,0,0.6)" stroke-width="0.75"/>
+                </svg>
+                <span id="bait-label">Bait stations</span>
+              </div>
+              <div id="fill-legend" hidden></div>
+              <p class="hint">Click a bait station to see its fills. Station colours are easier to see with the heat map off.</p>
+            </div>
+            <div>
+              <h2 class="legend-title">Bait fills in this period</h2>
+              <div id="bait-total"><small>Loading…</small></div>
+              <div class="take-bar" id="take-bar"></div>
+              <div class="take-labels" id="take-labels"></div>
+              <p class="hint">Take: share of fills where some or all bait had gone.</p>
+            </div>
+          </div>
+          <p class="note">Each bait fill is one bait station inspection.</p>
+        </section>
+
       </div>
     </aside>
   </main>
@@ -182,6 +244,10 @@
     <div id="timeline-wrap">
       <div class="tl-title" id="tl-title">Catches per month</div>
       <svg id="timeline"></svg>
+      <div id="bait-tl" hidden>
+        <div class="tl-title" id="bait-tl-title">Bait fills per month</div>
+        <svg id="bait-timeline"></svg>
+      </div>
     </div>
     <div id="slider"></div>
   </div>
@@ -216,6 +282,20 @@
     { label: "3 fills",         color: [0, 140, 255] },
     { label: "4 or more fills", color: [170, 90, 255] }
   ];
+  // Station colours when coloured by bait take: the share of a station's fills in
+  // the period where some or all bait had gone. Warmer = more possum activity.
+  const TAKE_CLASSES = [
+    { label: "No fills, or bait left not recorded", color: [150, 150, 150] },
+    { label: "No take",                             color: [255, 255, 255] },
+    { label: "Take at under half of fills",         color: [255, 210, 90] },
+    { label: "Take at half or more of fills",       color: [255, 120, 0] },
+    { label: "Take at every fill",                  color: [215, 0, 0] }
+  ];
+  const COLOUR_MODES = { fills: FILL_CLASSES, take: TAKE_CLASSES };
+
+  // Ring drawn around traps with no inspection in the slider period.
+  const RING = { type: "simple-marker", style: "circle", size: 18, color: [0, 0, 0, 0],
+                 outline: { color: [255, 40, 40], width: 2.5 } };
 
   const DATE_FIELD    = "created_date_1674511669584";  // inspection date
   const SPECIES_FIELD = "SpeciesCaught";
@@ -412,9 +492,20 @@
       });
       map.add(trapLayer, 0);
 
+      // Traps with no inspection in the slider period get a red ring (top layer).
+      const ringLayer = new GraphicsLayer({ visible: false });
+      map.add(ringLayer);
+      const trapsById = {};    // trap GlobalID (normalised) → { geometry, first: first inspection time }
+      const checks = [];       // one per trap inspection: { trap, t }
+      let checksReady = false;
+
+      document.getElementById("unchecked-toggle").addEventListener("change", e => {
+        ringLayer.visible = e.target.checked;
+        document.getElementById("unchecked-key").hidden = !e.target.checked;
+      });
+
       // Bait stations, under the traps and heat map. The service layer is only
-      // queried; stations are drawn as graphics so their colour can follow the
-      // slider. No pop-ups (as in the web map).
+      // queried; stations are drawn as graphics so their colour can follow the slider.
       const baitSource = new FeatureLayer({
         url: BAIT_URL,
         definitionExpression: BAIT_WHERE
@@ -423,20 +514,26 @@
       map.add(baitLayer, 0);
       const dot = (color, size) => ({ type: "simple-marker", style: "circle", size, color,
                                       outline: { color: [0, 0, 0, 0.6], width: 0.5 } });
-      const BAIT_PLAIN   = dot(BAIT_COLOR, 4);
-      const FILL_SYMBOLS = FILL_CLASSES.map(c => dot(c.color, 6));
-      const stations = {};   // OBJECTID → { graphic, n: fills in the period, k: symbol shown }
-      const fills = [];      // one per fill visit: { oid, t, rem }
+      // One symbol per colour class, keyed "plain", "fills0".."fills4", "take0".."take4".
+      const STATION_SYMBOLS = { plain: dot(BAIT_COLOR, 4) };
+      Object.entries(COLOUR_MODES).forEach(([mode, classes]) =>
+        classes.forEach((c, i) => { STATION_SYMBOLS[mode + i] = dot(c.color, 6); }));
+      const baitTemplate = {
+        title: "Possum bait station",
+        content: ({ graphic }) => baitPopup(graphic.attributes.oid)
+      };
+      const stations = {};   // OBJECTID → { graphic, n, known, taken (fills in the period), k: symbol shown }
+      const fills = [];      // one per fill visit: { oid, t, m, rem, toxin }
       let baitReady = false;
-      let colourByFills = false;
+      let colourMode = "plain";
 
       document.getElementById("bait-colour").addEventListener("change", e => {
-        colourByFills = e.target.checked;
-        document.getElementById("bait-plain").hidden = colourByFills;
-        document.getElementById("fill-legend").hidden = !colourByFills;
+        colourMode = e.target.value;
+        document.getElementById("bait-plain").hidden = colourMode !== "plain";
+        document.getElementById("fill-legend").hidden = colourMode === "plain";
+        drawStationLegend();   // key straight away; counts follow once fills load
         refreshBait();
       });
-      drawFillLegend();
 
       // Legend tick boxes turn each layer on and off.
       [["heat-toggle", catchLayer], ["trap-toggle", trapLayer], ["bait-toggle", baitLayer]].forEach(([id, layer]) => {
@@ -536,13 +633,17 @@
         if (view.openPopup) view.openPopup({ features: [f], location: f.geometry });
       });
 
-      window.addEventListener("resize", drawTimeline);
+      window.addEventListener("resize", () => { drawTimeline(); drawBaitTimeline(); });
       setStatus("");
 
-      // Bait stations and fills load after the catches, so the map is usable sooner.
+      // Bait stations and trap checks load after the catches, so the map is usable sooner.
       loadBait().catch(err => {
         console.error("Bait stations failed:", err);
         document.getElementById("bait-total").innerHTML = "<small>Could not load bait fills.</small>";
+      });
+      loadChecks().catch(err => {
+        console.error("Trap checks failed:", err);
+        document.getElementById("checks-line").textContent = "Could not load trap checks.";
       });
 
       function refresh() {
@@ -559,6 +660,63 @@
         drawTimeline();
         drawTopTraps();
         refreshBait();
+        refreshChecks();
+      }
+
+      // Every inspection of the reserve's traps (not just catches), for the
+      // "not checked" rings and the trap pop-ups.
+      async function loadChecks() {
+        await trapLayer.load();
+        const tq = trapLayer.createQuery();   // carries the 'Bio Totara' filter
+        tq.outFields = ["GlobalID"];
+        tq.returnGeometry = true;
+        tq.outSpatialReference = view.spatialReference;
+        const traps = await trapLayer.queryFeatures(tq);
+        traps.features.forEach(f => {
+          trapsById[normId(f.attributes.GlobalID)] = { geometry: f.geometry, first: null };
+        });
+
+        const q = joinLayer.createQuery();
+        q.where = `${DATE_FIELD} IS NOT NULL`;
+        q.geometry = reserve;
+        q.distance = BUFFER_M;
+        q.units = "meters";
+        q.spatialRelationship = "intersects";
+        q.outFields = ["GlobalID", DATE_FIELD];
+        q.returnGeometry = false;
+        for (let start = 0; ; start += pageSize) {
+          q.start = start;
+          q.num = pageSize;
+          const res = await joinLayer.queryFeatures(q);
+          res.features.forEach(f => {
+            const trap = normId(f.attributes.GlobalID);
+            const tr = trapsById[trap];
+            if (!tr) return;   // only the traps shown on the map
+            const t = f.attributes[DATE_FIELD];
+            checks.push({ trap, t });
+            if (tr.first === null || t < tr.first) tr.first = t;
+          });
+          if (!res.exceededTransferLimit) break;
+        }
+        checksReady = true;
+        refreshChecks();
+      }
+
+      // Rings round traps with no inspection in the period. A trap only counts
+      // once it has been set (its first inspection is before the period ends).
+      function refreshChecks() {
+        if (!checksReady) return;
+        const [a, b] = win;
+        const checked = new Set();
+        let n = 0;
+        checks.forEach(c => { if (c.t >= a && c.t < b) { n++; checked.add(c.trap); } });
+        const expected = Object.entries(trapsById).filter(([, tr]) => tr.first !== null && tr.first < b);
+        const missed = expected.filter(([id]) => !checked.has(id));
+        ringLayer.removeAll();
+        ringLayer.addMany(missed.map(([, tr]) => new Graphic({ geometry: tr.geometry, symbol: RING })));
+        document.getElementById("checks-line").textContent =
+          `${n} trap ${n === 1 ? "check" : "checks"} in this period. ` +
+          `${missed.length} of ${expected.length} traps not checked.`;
       }
 
       // Stations from the service, then their fill visits through the
@@ -576,8 +734,10 @@
         q.outSpatialReference = view.spatialReference;
         const res = await baitSource.queryFeatures(q);
         const graphics = res.features.map(f => {
-          const g = new Graphic({ geometry: f.geometry, symbol: BAIT_PLAIN });
-          stations[f.attributes[oidField]] = { graphic: g, n: 0, k: -1 };
+          const oid = f.attributes[oidField];
+          const g = new Graphic({ geometry: f.geometry, symbol: STATION_SYMBOLS.plain,
+                                  attributes: { oid }, popupTemplate: baitTemplate });
+          stations[oid] = { graphic: g, n: 0, known: 0, taken: 0, k: "plain" };
           return g;
         });
         baitLayer.addMany(graphics);
@@ -592,47 +752,65 @@
           const related = await baitSource.queryRelatedFeatures({
             relationshipId: rel.id,
             objectIds: oids.slice(i, i + 100),
-            outFields: ["created_date", "BaitRemaining"]
+            outFields: ["created_date", "BaitRemaining", "Toxin"]
           });
           Object.entries(related).forEach(([oid, fs]) => {
             if (fs.exceededTransferLimit) console.warn("Bait fills cut short for station", oid);
             fs.features.forEach(f => {
               const t = f.attributes.created_date;
               if (t == null) return;   // undated fills are left out, as on the dashboard
-              fills.push({ oid: Number(oid), t,
-                           rem: String(f.attributes.BaitRemaining || "").trim().toLowerCase() });
+              fills.push({ oid: Number(oid), t, m: monthIdx(t),
+                           rem: String(f.attributes.BaitRemaining || "").trim().toLowerCase(),
+                           toxin: f.attributes.Toxin });
             });
           });
         }
         baitReady = true;
+        document.getElementById("bait-tl").hidden = false;
         refreshBait();
       }
+
+      // Take is known when BaitRemaining is All / Half / None; taken = Half or None.
+      const remKnown = r => r === "all" || r === "half" || r === "none";
+      const fillClass = s => Math.min(s.n, FILL_CLASSES.length - 1);
+      const takeClass = s => !s.known ? 0 : !s.taken ? 1 : s.taken === s.known ? 4
+                           : s.taken / s.known >= 0.5 ? 3 : 2;
 
       // Fills in the slider period: station colours, fill legend counts and the take bar.
       function refreshBait() {
         if (!baitReady) return;
         const [a, b] = win;
-        Object.values(stations).forEach(s => { s.n = 0; });
+        Object.values(stations).forEach(s => { s.n = 0; s.known = 0; s.taken = 0; });
         const rem = { all: 0, half: 0, none: 0 };
         let total = 0;
         fills.forEach(f => {
           if (f.t < a || f.t >= b) return;
           total++;
-          stations[f.oid].n++;
-          if (f.rem === "all" || f.rem === "half" || f.rem === "none") rem[f.rem]++;
+          const s = stations[f.oid];
+          s.n++;
+          if (remKnown(f.rem)) {
+            rem[f.rem]++;
+            s.known++;
+            if (f.rem !== "all") s.taken++;
+          }
         });
 
-        const byClass = FILL_CLASSES.map(() => 0);
+        const classes = COLOUR_MODES[colourMode];
+        const byClass = classes ? classes.map(() => 0) : null;
         Object.values(stations).forEach(s => {
-          const k = Math.min(s.n, FILL_CLASSES.length - 1);
-          byClass[k]++;
-          const want = colourByFills ? k : -1;   // -1 = plain cyan
+          let want = "plain";
+          if (classes) {
+            const k = colourMode === "fills" ? fillClass(s) : takeClass(s);
+            byClass[k]++;
+            want = colourMode + k;
+          }
           if (s.k !== want) {
-            s.graphic.symbol = want < 0 ? BAIT_PLAIN : FILL_SYMBOLS[want];
+            s.graphic.symbol = STATION_SYMBOLS[want];
             s.k = want;
           }
         });
-        drawFillLegend(byClass);
+        drawStationLegend(byClass);
+        drawBaitTimeline();
 
         // Take: share of fills where some or all bait had gone (same rule as the dashboard).
         const n = rem.all + rem.half + rem.none;
@@ -646,15 +824,87 @@
           `<span><i class="take-${k}"></i>${label} ${rem[k]}</span>`).join("");
       }
 
-      // Station colour key; counts are stations in each class for the period.
-      function drawFillLegend(byClass) {
-        document.getElementById("fill-legend").innerHTML = FILL_CLASSES.map((c, i) =>
+      // Station colour key for the chosen mode; counts are stations in each class for the period.
+      function drawStationLegend(byClass) {
+        const classes = COLOUR_MODES[colourMode];
+        if (!classes) return;
+        document.getElementById("fill-legend").innerHTML = classes.map((c, i) =>
           `<div class="legend-row">
              <svg width="14" height="14" viewBox="0 0 14 14">
                <circle cx="7" cy="7" r="5" fill="rgb(${c.color.join(",")})" stroke="rgba(0,0,0,0.6)" stroke-width="0.75"/>
              </svg>
              <span>${c.label}${byClass ? ` (${byClass[i]})` : ""}</span>
            </div>`).join("");
+      }
+
+      // Pop-up for a clicked bait station: its fills in the slider period.
+      function baitPopup(oid) {
+        if (!baitReady) return "<p>Fills are still loading.</p>";
+        const [a, b] = win;
+        const mine = fills.filter(f => f.oid === oid).sort((x, y) => y.t - x.t);
+        const inWin = mine.filter(f => f.t >= a && f.t < b);
+        const left = { all: "All", half: "Half", none: "None" };
+        const known = inWin.filter(f => remKnown(f.rem));
+        const taken = known.filter(f => f.rem !== "all").length;
+
+        let html = '<div class="bait-pop">';
+        html += `<p>${winLabel}: <strong>${inWin.length}</strong> ${inWin.length === 1 ? "fill" : "fills"}` +
+                (known.length ? `, ${Math.round(taken / known.length * 100)}% take` : "") + "</p>";
+        if (inWin.length) {
+          const shown = inWin.slice(0, 12);
+          html += "<table><tr><th>Date</th><th>Bait left</th><th>Toxin</th></tr>" + shown.map(f =>
+            `<tr><td>${fmtDay(new Date(f.t))}</td><td>${left[f.rem] || "Not recorded"}</td><td>${esc(f.toxin || "")}</td></tr>`
+          ).join("") + "</table>";
+          if (inWin.length > shown.length) html += `<p>and ${inWin.length - shown.length} earlier fills</p>`;
+        }
+        html += `<p style="margin-top:6px">Last fill: ${mine.length ? fmtDay(new Date(mine[0].t)) : "none recorded"}. ` +
+                `All records: ${mine.length} ${mine.length === 1 ? "fill" : "fills"}.</p></div>`;
+        return html;
+      }
+
+      // Bait fills per month across the whole record, under the catch timeline.
+      // Darker part of each bar = fills where bait was taken. Slider months in green.
+      function drawBaitTimeline() {
+        const svg = document.getElementById("bait-timeline");
+        const W = svg.clientWidth, H = 56;
+        if (!W || !baitReady) return;
+        const ml = 16, mr = 16, mt = 4, mb = 4, ch = H - mt - mb;
+
+        const per = Array.from({ length: nMonths }, () => ({ n: 0, known: 0, taken: 0 }));
+        fills.forEach(f => {
+          if (f.m < 0 || f.m >= nMonths) return;
+          const p = per[f.m];
+          p.n++;
+          if (remKnown(f.rem)) { p.known++; if (f.rem !== "all") p.taken++; }
+        });
+        const max = Math.max(1, ...per.map(p => p.n));
+        const bw = (W - ml - mr) / nMonths;
+        const gap = bw > 4 ? 1 : 0;
+        const ia = monthIdx(win[0]), ib = monthIdx(win[1]);
+
+        let s = "";
+        per.forEach((p, i) => {
+          const x = ml + i * bw;
+          const d = new Date(y0, m0 + i, 1);
+          const inWin = i >= ia && i < ib;
+          const hTaken = ch * p.taken / max;
+          const hRest  = ch * (p.n - p.taken) / max;
+          const w = Math.max(bw - gap, 0.5).toFixed(1), xs = (x + gap / 2).toFixed(1);
+          const tip = `${fmtMonth(d)}: ${p.n} ${p.n === 1 ? "fill" : "fills"}` +
+                      (p.known ? `, ${Math.round(p.taken / p.known * 100)}% take` : "");
+          s += `<g><title>${tip}</title>`;
+          s += `<rect x="${xs}" y="${(mt + ch - hTaken - hRest).toFixed(1)}" width="${w}" height="${hRest.toFixed(1)}" fill="${inWin ? "#9fd3c7" : "#dfe4e2"}"/>`;
+          s += `<rect x="${xs}" y="${(mt + ch - hTaken).toFixed(1)}" width="${w}" height="${hTaken.toFixed(1)}" fill="${inWin ? "var(--forest)" : "#a3ada9"}"/>`;
+          s += "</g>";
+          if (d.getMonth() === 0) {
+            s += `<line x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${mt}" y2="${mt + ch}" stroke="#dcdcdc"/>`;
+          }
+        });
+        s += `<line x1="${ml}" x2="${W - mr}" y1="${mt + ch}" y2="${mt + ch}" stroke="#8a8a8a"/>`;
+        svg.innerHTML = s;
+
+        document.getElementById("bait-tl-title").textContent =
+          `Bait fills per month, darker part = bait taken (busiest month: ${max})`;
       }
 
       // Top 5 traps by catches in the period, following the species filter.
@@ -758,7 +1008,14 @@
           html += "<table>" + Object.keys(counts).sort((x, y) => counts[y] - counts[x])
             .map(sp => `<tr><td>${sp}</td><td>${counts[sp]}</td></tr>`).join("") + "</table>";
         }
-        html += `<p style="margin-top:6px">All records: ${ever} ${ever === 1 ? "catch" : "catches"}</p></div>`;
+        html += `<p style="margin-top:6px">All records: ${ever} ${ever === 1 ? "catch" : "catches"}</p>`;
+        if (checksReady) {
+          const mine = checks.filter(c => c.trap === id);
+          const inP = mine.filter(c => c.t >= a && c.t < b).length;
+          const last = mine.length ? Math.max(...mine.map(c => c.t)) : null;
+          html += `<p>Checks in this period: ${inP}. Last checked: ${last ? fmtDay(new Date(last)) : "never"}.</p>`;
+        }
+        html += "</div>";
         return html;
       }
     }
