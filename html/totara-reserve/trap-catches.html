@@ -380,7 +380,13 @@
         fullTimeExtent: { start: fullStart, end: fullEnd },
         timeExtent: { start: openStart < fullStart ? fullStart : openStart, end: fullEnd },
         stops: { interval: { value: 1, unit: "months" } },
-        playRate: 1200
+        playRate: 1200,
+        // NZ date order (dd/mm/yyyy) instead of the widget's US default.
+        labelFormatFunction: (value, type, element) => {
+          element.innerHTML = type === "extent"
+            ? `${fmtDay(value[0])}<br>-<br>${fmtDay(value[1])}`
+            : fmtDay(value);
+        }
       });
 
       // Month number of each catch, counted from the slider's first month (for the timeline).
@@ -549,6 +555,11 @@
         html += `<p style="margin-top:6px">All records: ${ever} ${ever === 1 ? "catch" : "catches"}</p></div>`;
         return html;
       }
+    }
+
+    function fmtDay(d) {
+      const p = n => String(n).padStart(2, "0");
+      return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`;
     }
 
     function fmtMonth(d) {
