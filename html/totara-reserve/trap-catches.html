@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trap Catches · Tōtara Reserve</title>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://js.arcgis.com/4.30/esri/themes/light/main.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* Colours follow the Tōtara Reserve website, same as predator-control.html */
+    :root {
+      --navy:      #222222;
+      --bg:        #f0f0f0;
+      --surface:   #ffffff;
+      --border:    #dcdcdc;
+      --muted:     #515151;
+      --caption:   #8a8a8a;
+      --forest:    #047f67;
+      --forest-lt: #e2f1ed;
+    }
+
+    html, body { height: 100%; }
+    body {
+      font-family: 'Source Sans 3', sans-serif;
+      background: var(--bg);
+      color: var(--navy);
+      display: flex;
+      flex-direction: column;
+    }
+
+    header { padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--border); }
+    header h1 { font-size: 20px; font-weight: 700; }
+    header p  { font-size: 14px; color: var(--muted); }
+
+    main { flex: 1; display: flex; min-height: 0; }
+    #map { flex: 1; min-width: 0; }
+
+    aside {
+      width: 320px;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      padding: 14px 16px;
+      overflow-y: auto;
+    }
+    aside h2 { font-size: 16px; font-weight: 600; }
+    #window-label { font-size: 14px; color: var(--muted); margin-bottom: 4px; }
+    #total { font-size: 28px; font-weight: 700; color: var(--forest); }
+    #total small { font-size: 14px; font-weight: 400; color: var(--muted); }
+
+    .bars { margin-top: 12px; }
+    .bar-row { display: grid; grid-template-columns: 72px 1fr 40px; align-items: center; gap: 8px; margin: 6px 0; font-size: 14px; }
+    .bar-track { background: var(--forest-lt); height: 14px; border-radius: 2px; overflow: hidden; }
+    .bar-fill  { background: var(--forest); height: 100%; transition: width .25s; }
+    .bar-n { text-align: right; font-variant-numeric: tabular-nums; }
+
+    .legend-title { margin-top: 16px; }
+    .legend-row { display: flex; align-items: center; gap: 8px; margin: 5px 0; font-size: 14px; }
+    .legend-row svg { flex: 0 0 14px; }
+
+    .note { font-size: 12px; color: var(--caption); margin-top: 14px; line-height: 1.4; }
+    .hint { font-size: 12px; color: var(--caption); margin-top: 8px; }
+
+    /* Same colour stops as the heat map renderer */
+    .heat-key {
+      height: 12px; margin-top: 6px; border-radius: 2px;
+      background: linear-gradient(to right, rgb(255,255,0) 0%, rgb(255,170,0) 30%,
+                                  rgb(255,50,0) 60%, rgb(255,0,200) 100%);
+    }
+    .heat-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    .top-row { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 5px 4px;
+               font-size: 14px; cursor: pointer; border-radius: 3px; }
+    .top-row:hover { background: var(--bg); }
+    .top-row .n { font-weight: 700; color: var(--forest); text-align: right; }
+    .top-row .sp { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
+    .top-empty { font-size: 13px; color: var(--caption); margin-top: 4px; }
+
+    /* Click a species to filter the heat map */
+    .bar-row { cursor: pointer; border-radius: 3px; }
+    .bar-row:hover { background: var(--bg); }
+    .bar-row.dim { opacity: .35; }
+    .bar-row.sel span:first-child { font-weight: 700; }
+
+    #slider-wrap { background: var(--surface); border-top: 1px solid var(--border); }
+    #timeline-wrap { padding: 6px 0 0; }
+    .tl-title { font-size: 12px; color: var(--muted); padding: 0 16px; }
+    #timeline { display: block; width: 100%; height: 70px; }
+
+    .trap-pop table { border-collapse: collapse; margin-top: 4px; }
+    .trap-pop td { padding: 1px 12px 1px 0; }
+    .trap-pop td:last-child { text-align: right; padding-right: 0; }
+    #status {
+      position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
+      background: var(--surface); border: 1px solid var(--border);
+      padding: 8px 14px; font-size: 14px; z-index: 10;
+    }
+    #status:empty { display: none; }
+
+    @media (max-width: 700px) {
+      main { flex-direction: column; }
+      #map { min-height: 55vh; }
+      aside { width: 100%; border-left: 0; border-top: 1px solid var(--border); }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Trap catches over time</h1>
+    <p>Tōtara Reserve and traps within 200 m of it. Move the slider to change the period.</p>
+  </header>
+  <div id="status">Signing in…</div>
+  <main>
+    <div id="map"></div>
+    <aside>
+      <h2>Catches in this period</h2>
+      <div id="window-label"></div>
+      <div id="total"></div>
+      <div class="bars" id="bars"></div>
+      <p class="hint" id="hint">Click a species to show only its catches on the map.</p>
+      <h2 class="legend-title">Heat map</h2>
+      <div class="heat-key"></div>
+      <div class="heat-labels"><span>Fewer catches</span><span>More catches</span></div>
+      <h2 class="legend-title">Traps</h2>
+      <div id="trap-legend"></div>
+      <h2 class="legend-title">Busiest traps in this period</h2>
+      <div id="top-traps"></div>
+      <p class="note">
+        Each catch is one trap inspection that recorded one of these species.
+        Inspections with nothing caught, and non-target catches, are not shown.
+        Click a trap to see its catches for the selected period.
+      </p>
+    </aside>
+  </main>
+  <div id="slider-wrap">
+    <div id="timeline-wrap">
+      <div class="tl-title" id="tl-title">Catches per month</div>
+      <svg id="timeline"></svg>
+    </div>
+    <div id="slider"></div>
+  </div>
+
+  <script src="https://js.arcgis.com/4.30/"></script>
+  <script>
+  // ── Settings ──────────────────────────────────────────────────────────────
+  // OAuth 2.0 client ID (user authentication) from the AGOL developer
+  // credentials item. Not a secret. The org URL sends sign-in to the
+  // organisation's own login page.
+  const APP_ID     = "sNWEHbUjtpiu4Bte";
+  const PORTAL_URL = "https://horizonsrc.maps.arcgis.com";
+
+  const JOIN_URL   = "https://services1.arcgis.com/VuN78wcRdq1Oj69W/arcgis/rest/services/Join_Features___Trap_to_Inspection/FeatureServer/0";
+  const TRAP_URL   = "https://services1.arcgis.com/VuN78wcRdq1Oj69W/arcgis/rest/services/Animal_Pest_Control_Layer_New/FeatureServer/0";
+  const ICON_URL   ="https://services1.arcgis.com/VuN78wcRdq1Oj69W/arcgis/rest/services/HRC_Icon_Sites_Projects/FeatureServer/0";
+  const SITE_WHERE = "SiteName = 'Totara Reserve'";
+  const BUFFER_M   = 200;   // same as TRAP_BUFFER_M in Totara_Reserve_Data_Export.py
+
+  const DATE_FIELD    = "created_date_1674511669584";  // inspection date
+  const SPECIES_FIELD = "SpeciesCaught";
+
+  // Trap symbols by TrapType, matched to the Animal Pest Trap Layer in AGOL.
+  // Used for both the map renderer and the side-panel legend.
+  const TRAP_TYPES = [
+    { value: "DOC200", style: "triangle", color: [38, 38, 230] },
+    { value: "DOC250", style: "square",   color: [38, 38, 230] },
+    { value: "Timms",  style: "square",   color: [56, 230, 0] },
+    { value: "Cage",   style: "diamond",  color: [130, 130, 130] }
+  ];
+  const TRAP_OTHER = { value: "Other", style: "circle", color: [178, 178, 178] };
+
+  // Raw SpeciesCaught value → species shown. Anything not listed is left out.
+  const SPECIES_MAP = {
+    "Rat": "Rat", "Rat - Ship": "Rat", "Rat - Norway": "Rat",
+    "Hedgehog": "Hedgehog", "Hedgehogs": "Hedgehog",
+    "Stoat": "Stoat", "Weasel": "Weasel", "Ferret": "Ferret",
+    "Cat": "Cat", "Possum": "Possum", "Rabbit": "Rabbit", "Mouse": "Mouse"
+  };
+
+  // Side-panel trap legend, drawn from TRAP_TYPES so it always matches the map.
+  (function drawTrapLegend() {
+    const shapes = {
+      triangle: '<polygon points="7,1 13,13 1,13"/>',
+      square:   '<rect x="2" y="2" width="10" height="10"/>',
+      diamond:  '<polygon points="7,1 13,7 7,13 1,7"/>',
+      circle:   '<circle cx="7" cy="7" r="5"/>'
+    };
+    document.getElementById("trap-legend").innerHTML = [...TRAP_TYPES, TRAP_OTHER].map(t =>
+      `<div class="legend-row">
+         <svg width="14" height="14" viewBox="0 0 14 14">
+           <g fill="rgb(${t.color.join(",")})" stroke="rgba(0,0,0,0.6)" stroke-width="0.75">${shapes[t.style]}</g>
+         </svg>
+         <span>${t.value}</span>
+       </div>`).join("");
+  })();
+
+  require([
+    "esri/identity/OAuthInfo",
+    "esri/identity/IdentityManager",
+    "esri/Map",
+    "esri/views/MapView",
+    "esri/layers/FeatureLayer",
+    "esri/layers/GraphicsLayer",
+    "esri/Graphic",
+    "esri/widgets/TimeSlider",
+    "esri/core/reactiveUtils"
+  ], (OAuthInfo, esriId, Map, MapView, FeatureLayer, GraphicsLayer, Graphic, TimeSlider, reactiveUtils) => {
+
+    const statusEl = document.getElementById("status");
+    const setStatus = (msg) => { statusEl.textContent = msg; };
+
+    if (APP_ID) {
+      const info = new OAuthInfo({ appId: APP_ID, portalUrl: PORTAL_URL, popup: false });
+      esriId.registerOAuthInfos([info]);
+    }
+
+    const boundaryLayer = new GraphicsLayer();
+    const map  = new Map({ basemap: "satellite", layers: [boundaryLayer] });
+    const view = new MapView({ container: "map", map, center: [175.55, -40.03], zoom: 13 });
+
+    run().catch(err => {
+      console.error(err);
+      setStatus("Could not load the trap data: " + (err.message || err));
+    });
+
+    async function run() {
+      const iconLayer = new FeatureLayer({ url: ICON_URL });
+      const joinLayer = new FeatureLayer({ url: JOIN_URL });
+
+      // Reserve boundary twice: in its own coordinate system for the trap query
+      // (so the 200 m buffer is measured in NZTM metres), and in the map's for drawing.
+      setStatus("Loading reserve boundary…");
+      const [native, forMap] = await Promise.all([
+        iconLayer.queryFeatures({ where: SITE_WHERE, returnGeometry: true, outFields: [] }),
+        iconLayer.queryFeatures({ where: SITE_WHERE, returnGeometry: true, outFields: [],
+                                  outSpatialReference: view.spatialReference })
+      ]);
+      if (!native.features.length) throw new Error("Tōtara Reserve not found in the Icon Sites layer");
+      const reserve = native.features[0].geometry;
+
+      boundaryLayer.add(new Graphic({
+        geometry: forMap.features[0].geometry,
+        symbol: { type: "simple-fill", color: [0, 0, 0, 0],
+                  outline: { color: [255, 255, 255, 0.9], width: 2 } }
+      }));
+      view.goTo(forMap.features[0].geometry.extent.expand(1.15));
+
+      // Catch records: one row per inspection that caught a wanted species.
+      setStatus("Loading catch records…");
+      const wanted = Object.keys(SPECIES_MAP).map(s => `'${s}'`).join(",");
+      const query = joinLayer.createQuery();
+      query.where = `${SPECIES_FIELD} IN (${wanted}) AND ${DATE_FIELD} IS NOT NULL`;
+      query.geometry = reserve;
+      query.distance = BUFFER_M;
+      query.units = "meters";
+      query.spatialRelationship = "intersects";
+      // GlobalID here is the trap's (the inspection's carries the join suffix),
+      // so it links each catch to its trap for the pop-ups.
+      query.outFields = [SPECIES_FIELD, DATE_FIELD, "GlobalID", "TrapType"];
+      query.returnGeometry = true;
+      query.outSpatialReference = view.spatialReference;
+
+      const rows = [];
+      const trapTypes = {};
+      const trapRawIds = {};   // GlobalID as the service stores it, for querying the trap layer
+      const pageSize = 2000;
+      for (let start = 0; ; start += pageSize) {
+        query.start = start;
+        query.num = pageSize;
+        const res = await joinLayer.queryFeatures(query);
+        res.features.forEach(f => {
+          const trap = normId(f.attributes.GlobalID);
+          if (f.attributes.TrapType) trapTypes[trap] = f.attributes.TrapType;
+          trapRawIds[trap] = f.attributes.GlobalID;
+          rows.push({
+            t: f.attributes[DATE_FIELD],
+            species: SPECIES_MAP[f.attributes[SPECIES_FIELD]],
+            trap,
+            geometry: f.geometry
+          });
+        });
+        if (!res.exceededTransferLimit) break;
+      }
+      if (!rows.length) throw new Error("no catch records found inside the reserve");
+
+      // Client-side layer so the slider filters in the browser, no server round trip.
+      const catchLayer = new FeatureLayer({
+        source: rows.map((r, i) => new Graphic({
+          geometry: r.geometry,
+          attributes: { ObjectID: i + 1, t: r.t, species: r.species }
+        })),
+        objectIdField: "ObjectID",
+        fields: [
+          { name: "ObjectID", type: "oid" },
+          { name: "t", type: "double" },
+          { name: "species", type: "string" }
+        ],
+        geometryType: "point",
+        spatialReference: view.spatialReference,
+        // Bright yellow → orange → red → magenta, near-opaque, to stand out on imagery.
+        // A lower maxDensity than the default (0.04) lets a few catches reach the hot colours.
+        renderer: {
+          type: "heatmap",
+          radius: 10,
+          maxDensity: 0.015,
+          minDensity: 0,
+          colorStops: [
+            { ratio: 0,    color: "rgba(255, 255, 0, 0)" },
+            { ratio: 0.08, color: "rgba(255, 255, 0, 0.8)" },
+            { ratio: 0.3,  color: "rgba(255, 170, 0, 0.9)" },
+            { ratio: 0.6,  color: "rgba(255, 50, 0, 0.95)" },
+            { ratio: 1,    color: "rgba(255, 0, 200, 1)" }
+          ]
+        }
+      });
+      map.add(catchLayer, 0);
+
+      // Tōtara Reserve animal traps under the heat map, symbolised by type.
+      // Wasp bait stations sit under a separate PCO name ('Bio Totara Wasp').
+      const marker = t => ({
+        type: "simple-marker", style: t.style, size: 8, color: t.color,
+        outline: { color: [0, 0, 0, 0.6], width: 0.5 }
+      });
+      const trapLayer = new FeatureLayer({
+        url: TRAP_URL,
+        definitionExpression: "PCOName = 'Bio Totara'",
+        outFields: ["TrapType", "GlobalID"],
+        popupTemplate: {
+          title: "{TrapType} trap",
+          content: ({ graphic }) => trapPopup(graphic.attributes)
+        },
+        renderer: {
+          type: "unique-value",
+          field: "TrapType",
+          uniqueValueInfos: TRAP_TYPES.map(t => ({ value: t.value, label: t.value, symbol: marker(t) })),
+          defaultSymbol: marker(TRAP_OTHER),
+          defaultLabel: "Other"
+        }
+      });
+      map.add(trapLayer, 0);
+
+      // Species order fixed by all-time total, so bars don't jump around.
+      const allTime = {};
+      rows.forEach(r => { allTime[r.species] = (allTime[r.species] || 0) + 1; });
+      const order = Object.keys(allTime).sort((a, b) => allTime[b] - allTime[a]);
+
+      // Slider: monthly steps from the first catch month to now, opening on the last 12 months.
+      const first = new Date(Math.min(...rows.map(r => r.t)));
+      const fullStart = new Date(first.getFullYear(), first.getMonth(), 1);
+      const now = new Date();
+      const fullEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      const openStart = new Date(fullEnd.getFullYear(), fullEnd.getMonth() - 12, 1);
+
+      const slider = new TimeSlider({
+        container: "slider",
+        mode: "time-window",
+        fullTimeExtent: { start: fullStart, end: fullEnd },
+        timeExtent: { start: openStart < fullStart ? fullStart : openStart, end: fullEnd },
+        stops: { interval: { value: 1, unit: "months" } },
+        playRate: 1200
+      });
+
+      // Month number of each catch, counted from the slider's first month (for the timeline).
+      const y0 = fullStart.getFullYear(), m0 = fullStart.getMonth();
+      const monthIdx = t => { const d = new Date(t); return (d.getFullYear() - y0) * 12 + d.getMonth() - m0; };
+      const nMonths = monthIdx(fullEnd.getTime());
+      rows.forEach(r => { r.m = monthIdx(r.t); });
+
+      // State shared by the panel, heat map, timeline and pop-ups.
+      let win = [fullStart.getTime(), fullEnd.getTime()];
+      let winLabel = "";
+      let selected = null;   // species picked in the panel, or null for all
+
+      reactiveUtils.watch(() => slider.timeExtent, extent => {
+        if (!extent) return;
+        win = [extent.start.getTime(), extent.end.getTime()];
+        const lastDay = new Date(win[1] - 1);
+        winLabel = `${fmtMonth(extent.start)} to ${fmtMonth(lastDay)}`;
+        if (view.closePopup) view.closePopup();   // its numbers belong to the old period
+        refresh();
+      }, { initial: true });
+
+      // Click a species bar to filter; click it again to show all.
+      document.getElementById("bars").addEventListener("click", e => {
+        const row = e.target.closest(".bar-row");
+        if (!row) return;
+        selected = selected === row.dataset.sp ? null : row.dataset.sp;
+        refresh();
+      });
+
+      // Click a busy trap to zoom to it and open its pop-up.
+      document.getElementById("top-traps").addEventListener("click", async e => {
+        const row = e.target.closest(".top-row");
+        if (!row) return;
+        const raw = trapRawIds[row.dataset.trap];
+        const res = await trapLayer.queryFeatures({
+          where: `GlobalID = '${raw}'`, outFields: ["TrapType", "GlobalID"],
+          returnGeometry: true, outSpatialReference: view.spatialReference
+        });
+        const f = res.features[0];
+        if (!f) return;
+        f.popupTemplate = trapLayer.popupTemplate;
+        await view.goTo({ target: f.geometry, zoom: Math.max(view.zoom, 16) });
+        if (view.openPopup) view.openPopup({ features: [f], location: f.geometry });
+      });
+
+      window.addEventListener("resize", drawTimeline);
+      setStatus("");
+
+      function refresh() {
+        const [a, b] = win;
+        catchLayer.definitionExpression =
+          `t >= ${a} AND t < ${b}` + (selected ? ` AND species = '${selected}'` : "");
+
+        const counts = {};
+        let total = 0;
+        rows.forEach(r => {
+          if (r.t >= a && r.t < b) { counts[r.species] = (counts[r.species] || 0) + 1; total++; }
+        });
+        drawPanel(counts, total);
+        drawTimeline();
+        drawTopTraps();
+      }
+
+      // Top 5 traps by catches in the period, following the species filter.
+      function drawTopTraps() {
+        const [a, b] = win;
+        const byTrap = {};
+        rows.forEach(r => {
+          if (r.t < a || r.t >= b || (selected && r.species !== selected)) return;
+          const t = byTrap[r.trap] || (byTrap[r.trap] = { n: 0, sp: {} });
+          t.n++;
+          t.sp[r.species] = (t.sp[r.species] || 0) + 1;
+        });
+        const top = Object.entries(byTrap)
+          .sort((x, y) => y[1].n - x[1].n)
+          .slice(0, 5);
+
+        const el = document.getElementById("top-traps");
+        if (!top.length) { el.innerHTML = '<p class="top-empty">No catches in this period.</p>'; return; }
+        el.innerHTML = top.map(([id, t], i) => {
+          const sp = Object.keys(t.sp).sort((x, y) => t.sp[y] - t.sp[x])
+            .map(s => `${t.sp[s]} ${s.toLowerCase()}`).join(", ");
+          return `<div class="top-row" data-trap="${id}">
+                    <span><strong>${i + 1}.</strong> ${esc(trapTypes[id] || "Other")} trap</span>
+                    <span class="n">${t.n}</span>
+                    ${selected ? "" : `<span class="sp">${sp}</span>`}
+                  </div>`;
+        }).join("");
+      }
+
+      function drawPanel(counts, total) {
+        document.getElementById("window-label").textContent = winLabel;
+        document.getElementById("total").innerHTML = selected
+          ? `${counts[selected] || 0} <small>${selected.toLowerCase()} catches</small>`
+          : `${total} <small>catches</small>`;
+
+        const max = Math.max(1, ...order.map(s => counts[s] || 0));
+        document.getElementById("bars").innerHTML = order.map(s => {
+          const n = counts[s] || 0;
+          const cls = selected ? (s === selected ? " sel" : " dim") : "";
+          return `<div class="bar-row${cls}" data-sp="${s}">
+                    <span>${s}</span>
+                    <div class="bar-track"><div class="bar-fill" style="width:${(100 * n / max).toFixed(1)}%"></div></div>
+                    <span class="bar-n">${n}</span>
+                  </div>`;
+        }).join("");
+
+        document.getElementById("hint").textContent = selected
+          ? `Showing ${selected.toLowerCase()} catches only. Click ${selected} again to show all species.`
+          : "Click a species to show only its catches on the map.";
+      }
+
+      // Catches per month across the whole record. Months inside the slider
+      // period are green, the rest grey. Follows the species filter.
+      function drawTimeline() {
+        const svg = document.getElementById("timeline");
+        const W = svg.clientWidth, H = 70;
+        if (!W) return;
+        const ml = 16, mr = 16, mt = 4, mb = 16, ch = H - mt - mb;
+
+        const per = new Array(nMonths).fill(0);
+        rows.forEach(r => { if ((!selected || r.species === selected) && r.m >= 0 && r.m < nMonths) per[r.m]++; });
+        const max = Math.max(1, ...per);
+        const bw = (W - ml - mr) / nMonths;
+        const gap = bw > 4 ? 1 : 0;
+        const ia = monthIdx(win[0]), ib = monthIdx(win[1]);
+
+        let s = "";
+        per.forEach((n, i) => {
+          const h = ch * n / max;
+          const x = ml + i * bw;
+          const d = new Date(y0, m0 + i, 1);
+          const fill = i >= ia && i < ib ? "var(--forest)" : "#c3cbc8";
+          s += `<rect x="${(x + gap / 2).toFixed(1)}" y="${(mt + ch - h).toFixed(1)}" width="${Math.max(bw - gap, 0.5).toFixed(1)}" height="${h.toFixed(1)}" fill="${fill}"><title>${fmtMonth(d)}: ${n}</title></rect>`;
+          if (d.getMonth() === 0) {
+            s += `<line x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${mt}" y2="${mt + ch + 3}" stroke="#dcdcdc"/>`;
+            s += `<text x="${(x + 3).toFixed(1)}" y="${H - 3}" font-size="11" fill="#8a8a8a">${d.getFullYear()}</text>`;
+          }
+        });
+        s += `<line x1="${ml}" x2="${W - mr}" y1="${mt + ch}" y2="${mt + ch}" stroke="#8a8a8a"/>`;
+        svg.innerHTML = s;
+
+        document.getElementById("tl-title").textContent =
+          `${selected ? selected : "All"} catches per month (busiest month: ${max})`;
+      }
+
+      // Pop-up for a clicked trap: its catches by species in the slider period.
+      function trapPopup(attrs) {
+        const id = normId(attrs.GlobalID);
+        const [a, b] = win;
+        const counts = {};
+        let inWin = 0, ever = 0;
+        rows.forEach(r => {
+          if (r.trap !== id) return;
+          ever++;
+          if (r.t >= a && r.t < b) { counts[r.species] = (counts[r.species] || 0) + 1; inWin++; }
+        });
+
+        let html = '<div class="trap-pop">';
+        html +=`<p>${winLabel}: <strong>${inWin}</strong> ${inWin === 1 ? "catch" : "catches"}</p>`;
+        if (inWin) {
+          html += "<table>" + Object.keys(counts).sort((x, y) => counts[y] - counts[x])
+            .map(sp => `<tr><td>${sp}</td><td>${counts[sp]}</td></tr>`).join("") + "</table>";
+        }
+        html += `<p style="margin-top:6px">All records: ${ever} ${ever === 1 ? "catch" : "catches"}</p></div>`;
+        return html;
+      }
+    }
+
+    function fmtMonth(d) {
+      return d.toLocaleDateString("en-NZ", { month: "short", year: "numeric" });
+    }
+    function normId(g) {
+      return (g || "").replace(/[{}]/g, "").toLowerCase();
+    }
+    function esc(s) {
+      return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+    }
+  });
+  </script>
+</body>
+</html>
